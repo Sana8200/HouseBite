@@ -1,11 +1,28 @@
 .header {
     display: flex;
-    gap: 8px;
-    justify-content: end;
-    padding: 8px;
-    background-color: pink;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 24px;
+    background-color: #f8f8f8;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.header a {
+    text-decoration: none;
+    color: #555;
+    font-size: 14px;
+}
+
+.header a:first-child {
+    font-size: 18px;
+    font-weight: bold;
+    color: #863bff;
+}
+
+.header a:hover {
+    color: #863bff;
 }
 
 .header-spacer {
-    flex: 1
+    flex: 1;
 }
