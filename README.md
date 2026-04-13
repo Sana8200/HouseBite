@@ -7,6 +7,9 @@
 
 ## Web
 
+    cd web
+    npm install
+
 Start local development server. `npm run dev`.
 
 Create a production build `npm run build`.
