@@ -1,0 +1,42 @@
+.household-page {
+    padding: 24px;
+}
+
+.household-buttons {
+    display: flex;
+    gap: 16px;
+    margin: 24px 0;
+}
+
+.household-buttons button {
+    padding: 16px 32px;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.create-btn {
+    background-color: #7ec8e3;
+    color: white;
+}
+
+.join-btn {
+    background-color: #c4c4c4;
+    color: white;
+}
+
+.household-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.household-card {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
