@@ -1,0 +1,11 @@
+.header {
+    display: flex;
+    gap: 8px;
+    justify-content: end;
+    padding: 8px;
+    background-color: pink;
+}
+
+.header-spacer {
+    flex: 1
+}
