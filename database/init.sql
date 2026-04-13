@@ -6,6 +6,10 @@ CREATE TYPE restriction_type AS ENUM (
   'dairy_free', 'nut_free', 'halal', 'kosher'
 );
 
+CREATE TYPE size_unit AS ENUM (
+  'gr', 'ml', 'kg', 'L'
+);
+
 -- ─────────────────────────────────────────
 -- HOUSEHOLD
 -- ─────────────────────────────────────────
@@ -20,10 +24,7 @@ CREATE TABLE household (
 -- FAMILY MEMBER
 -- ─────────────────────────────────────────
 CREATE TABLE family_member (
-  id          uuid REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
-  first_name  VARCHAR(100) NOT NULL,
-  last_name   VARCHAR(100),
-  created_at  timestamptz DEFAULT now()
+  id          uuid REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY
 );
 
 -- ─────────────────────────────────────────
@@ -40,7 +41,7 @@ CREATE TABLE allocations (
 -- ─────────────────────────────────────────
 CREATE TABLE food_restriction (
   id          uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-  restriction restriction_type NOT NULL UNIQUE
+  restriction restriction_type NOT NULL
 );
 
 CREATE TABLE member_restriction (
@@ -76,6 +77,7 @@ CREATE TABLE product_specs (
   product_id      uuid REFERENCES product(id) ON DELETE CASCADE PRIMARY KEY,
   size            VARCHAR(250),
   quantity        INT NOT NULL DEFAULT 1,
+  unit            size_unit,
   expiration_date DATE,
   price           NUMERIC(10,2)
 );
