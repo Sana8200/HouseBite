@@ -8,4 +8,7 @@ export default defineConfig({
     react(),
     babel({ presets: [reactCompilerPreset()] })
   ],
+  server: {
+    host: true, // expose to all network interfaces so Docker can forward the port to the host machine
+  },
 })

@@ -1,3 +1,5 @@
+[auth]
+jwt_secret = "housebite-local-dev-jwt-secret-key-min-32-chars"
 
 [functions.hello-world]
 enabled = true

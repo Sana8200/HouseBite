@@ -1,0 +1,10 @@
+services:
+  web:
+    build: ./web
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./web:/app                 # mount entire web folder so changes reflect instantly (HMR)
+      - /app/node_modules          # keep node_modules from the image, don't overwrite with host
+    env_file:
+      - ./web/.env
