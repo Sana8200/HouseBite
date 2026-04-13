@@ -5,22 +5,24 @@
 // Setup type definitions for built-in Supabase Runtime APIs
 import "@supabase/functions-js/edge-runtime.d.ts"
 
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+}
+
 Deno.serve(async (req) => {
   if (req.method == "OPTIONS") {
-    return new Response(null, {headers: {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-      "Access-Control-Allow-Methods": "POST, OPTIONS",
-    }})
+    return new Response(null, {headers: corsHeaders})
   }
 
   const { name } = await req.json()
   const data = {
-    message: `Hello ${name}!`,
+    message: `Echo from server: ${name}`,
   }
 
   return new Response(
     JSON.stringify(data),
-    { headers: { "Content-Type": "application/json" } },
+    { headers: { ...corsHeaders, "Content-Type": "application/json" } },
   )
 })

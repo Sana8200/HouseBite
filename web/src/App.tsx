@@ -3,24 +3,61 @@ import './App.css'
 import { supabase } from './supabase'
 
 function App() {
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
   const [text, setText] = useState("test")
 
-  const btnClick = async () => {
-    const result = await supabase.functions.invoke("hello-world", {
+  const loginClick = async () => {
+    const result = await supabase.auth.signInWithPassword({
+      email,
+      password
+    })
+
+    if (result.error) {
+      window.alert(result.error)
+      return;
+    }
+
+    window.alert("OK")
+  }
+
+  const helloClick = async () => {
+    const result = await supabase.functions.invoke<{message: string}>("hello-world", {
       body: {
         name: text,
       }
     })
 
-    window.alert(JSON.stringify(result, null, 2));
+    if (result.error) {
+      window.alert(result.error)
+      return;
+    }
+
+    window.alert(result.data!.message);
   }
 
   return (
     <>
-      <input value={text} onChange={(e) => setText(e.target.value)}/>
-      <button onClick={() => void(btnClick())}>
-        Test
-      </button>
+      <div>
+        <p>Login</p>
+
+        <input type='email' value={email} onChange={(e) => setEmail(e.target.value)}/>
+        <input type='password' value={password} onChange={(e) => setPassword(e.target.value)}/>
+
+        <button onClick={() => void(loginClick())}>
+          Login
+        </button>
+      </div>
+
+      <div>
+        <p>Hello</p>
+
+        <input value={text} onChange={(e) => setText(e.target.value)}/>
+
+        <button onClick={() => void(helloClick())}>
+          Test
+        </button>
+      </div>
     </>
   )
 }
