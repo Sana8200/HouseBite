@@ -19,6 +19,7 @@ export function Header() {
             <NavLink to="/settings">Settings</NavLink>
             <NavLink to="/login">Login</NavLink>
             <NavLink to="/signup">Sign up</NavLink>
+            <NavLink to="/dashboard">Dashboard</NavLink>
         </div>
     )
 }
