@@ -15,6 +15,7 @@ export function Header() {
             <NavLink to="/about">About</NavLink>
             <NavLink to="/login">Login</NavLink>
             <NavLink to="/signup">Sign up</NavLink>
+            <NavLink to="/household">Household</NavLink>
         </div>
     )
 }
