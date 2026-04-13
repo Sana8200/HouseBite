@@ -1,5 +1,5 @@
 import './Dashboard.css';
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 // Types
@@ -12,23 +12,19 @@ interface Product {
   imageUrl?: string;
 }
 
-// Helper function to calculate days until expiry
-const getDaysUntilExpiry = (expiryDate: string): number => {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0); // Reset time to start of day
-  
-  const expiry = new Date(expiryDate);
-  expiry.setHours(0, 0, 0, 0);
-  
-  const diffTime = expiry.getTime() - today.getTime();
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  
-  return diffDays;
-};
+interface Recipe {
+  id: string;
+  name: string;
+  imageUrl?: string;
+  description?: string;
+  cookingTime?: number;
+}
 
+interface FavouriteRecipesProps {
+  recipes: Recipe[]; // Changed from 'products' to 'recipes' for clarity
+}
 
 // ----------------------------------------------------------------------------
-
 
 // Products in Danger Component (embedded in Dashboard)
 const ProductsInDanger: React.FC<{ products: Product[] }> = ({ products }) => {
@@ -97,7 +93,7 @@ const ProductsInDanger: React.FC<{ products: Product[] }> = ({ products }) => {
 
   return (
     <div className="products-in-danger-container">
-      <h2 className="section-title">⚠️ Products in Danger</h2>
+      <h2 className="section-title">These products will expire soon!</h2>
       
       <div className="products-grid">
         {sortedProducts.map((product) => {
@@ -145,17 +141,17 @@ const ProductsInDanger: React.FC<{ products: Product[] }> = ({ products }) => {
                 </p>
                 {priority === 'expired' && (
                   <div className="expired-badge">
-                    Expired!
+                    ❌ Expired!
                   </div>
                 )}
                 {priority === 'critical' && (
                   <div className="danger-badge critical">
-                    Use within {daysUntilExpiry} days!
+                    ⚠️ Use within {daysUntilExpiry} days!
                   </div>
                 )}
                 {priority === 'warning' && (
                   <div className="danger-badge warning">
-                    Use soon (expires in {daysUntilExpiry} days)
+                    ⚠️ Use soon (expires in {daysUntilExpiry} days)
                   </div>
                 )}
               </div>
@@ -170,7 +166,7 @@ const ProductsInDanger: React.FC<{ products: Product[] }> = ({ products }) => {
             onClick={handleFindRecipes}
             className="find-recipes-button"
           >
-            🍳 Find Recipes ({selectedProducts.length} product{selectedProducts.length !== 1 ? 's' : ''} selected)
+            Find Recipes ({selectedProducts.length} product{selectedProducts.length !== 1 ? 's' : ''} selected)
           </button>
         </div>
       )}
@@ -178,6 +174,94 @@ const ProductsInDanger: React.FC<{ products: Product[] }> = ({ products }) => {
   );
 };
 
+// ----------------------------------------------------------------------------
+
+// Favourite Recipes Component with Carousel
+const FavouriteRecipes: React.FC<FavouriteRecipesProps> = ({ recipes }) => {
+  const [scrollPosition, setScrollPosition] = useState(0);
+  const carouselRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
+
+  const handleViewAll = () => {
+    navigate('/all-recipes', {
+      state: { favouriteRecipes: recipes }
+    });
+  };
+
+  const scrollLeft = () => {
+    if (carouselRef.current) {
+      const newPosition = scrollPosition - 300;
+      carouselRef.current.scrollTo({ left: newPosition, behavior: 'smooth' });
+      setScrollPosition(newPosition);
+    }
+  };
+
+  const scrollRight = () => {
+    if (carouselRef.current) {
+      const newPosition = scrollPosition + 300;
+      carouselRef.current.scrollTo({ left: newPosition, behavior: 'smooth' });
+      setScrollPosition(newPosition);
+    }
+  };
+
+  if (!recipes.length) {
+    return (
+      <div className="favourite-recipes-empty">
+        <p>No favourite recipes yet. Start adding some!</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="favourite-recipes-container">
+      <div className="section-header">
+        <h2 className="section-title">Here are your favourite recipes</h2>
+        <button onClick={handleViewAll} className="view-all-button">
+          View all →
+        </button>
+      </div>
+      
+      <div className="carousel-wrapper">
+        {recipes.length > 3 && (
+          <button onClick={scrollLeft} className="carousel-arrow left-arrow" aria-label="Scroll left">
+            ‹
+          </button>
+        )}
+        
+        <div className="recipes-carousel" ref={carouselRef}>
+          {recipes.map((recipe) => (
+            <div key={recipe.id} className="recipe-card">
+              
+              {recipe.imageUrl && (
+                <img 
+                  src={recipe.imageUrl} 
+                  alt={recipe.name}
+                  className="recipe-image"
+                />
+              )}
+              
+              <div className="recipe-info">
+                <h3 className="recipe-name">{recipe.name}</h3>
+                {recipe.description && (
+                  <p className="recipe-description">{recipe.description}</p>
+                )}
+                {recipe.cookingTime && (
+                  <p className="recipe-time">⏱️ {recipe.cookingTime} min</p>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+        
+        {recipes.length > 3 && (
+          <button onClick={scrollRight} className="carousel-arrow right-arrow" aria-label="Scroll right">
+            ›
+          </button>
+        )}
+      </div>
+    </div>
+  );
+};
 
 // ----------------------------------------------------------------------------
 
@@ -227,12 +311,50 @@ const Dashboard: React.FC = () => {
     }
   ]);
 
+  const [favouriteRecipes] = useState<Recipe[]>([
+    {
+      id: '1',
+      name: 'Spaghetti Bolognese',
+      imageUrl: 'https://via.placeholder.com/300x180?text=Spaghetti+Bolognese',
+      description: 'Classic Italian pasta with meat sauce',
+      cookingTime: 35
+    },
+    {
+      id: '2',
+      name: 'Chicken Curry',
+      imageUrl: 'https://via.placeholder.com/300x180?text=Chicken+Curry',
+      description: 'Creamy and spicy Indian curry',
+      cookingTime: 45
+    },  
+    {
+      id: '3',
+      name: 'Grilled Salmon',
+      imageUrl: 'https://via.placeholder.com/300x180?text=Grilled+Salmon',
+      description: 'Healthy grilled salmon with lemon',
+      cookingTime: 20
+    },
+    {
+      id: '4',
+      name: 'Vegetable Stir Fry',
+      imageUrl: 'https://via.placeholder.com/300x180?text=Vegetable+Stir+Fry',
+      description: 'Quick and healthy vegetable stir fry',
+      cookingTime: 15
+    },
+    {
+      id: '5',
+      name: 'Margherita Pizza',
+      imageUrl: 'https://via.placeholder.com/300x180?text=Pizza',
+      description: 'Classic Italian pizza with fresh basil',
+      cookingTime: 25
+    }
+  ]);
+
   return (
     <div className="dashboard-container">
       <h1>Hello [user_name], welcome back!</h1>
       
-      {/* Only Products in Danger section for now */}
       <ProductsInDanger products={productsInDanger} />
+      <FavouriteRecipes recipes={favouriteRecipes} />
     </div>
   );
 };
