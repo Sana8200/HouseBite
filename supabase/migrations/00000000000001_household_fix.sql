@@ -8,9 +8,9 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO anon, authentic
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO anon, authenticated, service_role;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON ROUTINES TO anon, authenticated, service_role;
 
--- Add missing invite_code column (HouseHold.tsx references it)
+-- Add missing invite_id column (HouseHold.tsx references it)
 ALTER TABLE household
-  ADD COLUMN invite_code TEXT DEFAULT substr(md5(random()::text), 1, 8);
+  ADD COLUMN invite_id TEXT DEFAULT substr(md5(random()::text), 1, 8);
 
 -- Replace the FOR ALL policy on household (blocks INSERT because
 -- the household can't be in my_households() before it exists).
@@ -70,7 +70,7 @@ BEGIN
   RETURN json_build_object(
     'id', v_household.id,
     'house_name', v_household.house_name,
-    'invite_code', v_household.invite_code,
+    'invite_id', v_household.invite_id,
     'monthly_budget', v_household.monthly_budget
   );
 END;
