@@ -7,10 +7,14 @@ import { supabase } from '../../supabase';
 interface Product {
   id: string;
   name: string;
-  expiryDate: string;
+  expiryDate: string | null;
   quantity: number;
   householdName: string;
-  imageUrl?: string;
+}
+
+interface Household {
+  id: string;
+  house_name: string;
 }
 
 interface Recipe {
@@ -37,85 +41,50 @@ const ProductsInDanger: React.FC<{ products: Product[] }> = ({ products }) => {
   const [selectedFilterType, setSelectedFilterType] = useState<FilterType>('all');
   const navigate = useNavigate();
 
-  // Helper function to calculate days until expiry
-  const getDaysUntilExpiry = (expiryDate: string): number => {
+  const getDaysUntilExpiry = (expiryDate: string | null): number | null => {
+    if (!expiryDate) return null;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
     const expiry = new Date(expiryDate);
     expiry.setHours(0, 0, 0, 0);
-    
-    const diffTime = expiry.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    return diffDays;
+    return Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
   };
 
-  // Get priority level based on days until expiry
-  const getPriorityLevel = (daysUntilExpiry: number): 'expired' | 'critical' | 'warning' | 'normal' => {
-    if (daysUntilExpiry < 0) return 'expired';
-    if (daysUntilExpiry < 3) return 'critical';
-    if (daysUntilExpiry < 7) return 'warning';
+  const getPriorityLevel = (days: number | null): 'expired' | 'critical' | 'warning' | 'normal' => {
+    if (days === null) return 'normal';
+    if (days < 0) return 'expired';
+    if (days < 3) return 'critical';
+    if (days < 7) return 'warning';
     return 'normal';
   };
 
-  // Get unique households for filter dropdown
   const households = ['all', ...new Set(products.map(p => p.householdName))];
 
-  // Apply filters
   const filteredProducts = products.filter(product => {
-    const daysUntilExpiry = getDaysUntilExpiry(product.expiryDate);
-    const priority = getPriorityLevel(daysUntilExpiry);
-    
-    // Filter by household
-    if (selectedHousehold !== 'all' && product.householdName !== selectedHousehold) {
-      return false;
-    }
-    
-    // Filter by expiry status
-    if (selectedFilterType !== 'all' && priority !== selectedFilterType) {
-      return false;
-    }
-    
+    const days = getDaysUntilExpiry(product.expiryDate);
+    const priority = getPriorityLevel(days);
+    if (selectedHousehold !== 'all' && product.householdName !== selectedHousehold) return false;
+    if (selectedFilterType !== 'all' && priority !== selectedFilterType) return false;
     return true;
   });
 
-  // Sort filtered products by priority
   const sortedProducts = [...filteredProducts].sort((a, b) => {
-    const daysA = getDaysUntilExpiry(a.expiryDate);
-    const daysB = getDaysUntilExpiry(b.expiryDate);
-    return daysA - daysB;
+    const da = getDaysUntilExpiry(a.expiryDate) ?? Infinity;
+    const db = getDaysUntilExpiry(b.expiryDate) ?? Infinity;
+    return da - db;
   });
 
   const handleCheckboxChange = (productId: string) => {
     setSelectedProducts(prev =>
-      prev.includes(productId)
-        ? prev.filter(id => id !== productId)
-        : [...prev, productId]
+      prev.includes(productId) ? prev.filter(id => id !== productId) : [...prev, productId]
     );
   };
 
   const handleFindRecipes = () => {
-    const selectedProductObjects = products.filter(p => 
-      selectedProducts.includes(p.id)
-    );
-    
+    const selectedProductObjects = products.filter(p => selectedProducts.includes(p.id));
     navigate('/recipe-suggestions', {
-      state: { 
-        selectedProducts: selectedProductObjects,
-        selectedProductIds: selectedProducts
-      }
+      state: { selectedProducts: selectedProductObjects, selectedProductIds: selectedProducts }
     });
-  };
-
-  const handleHouseholdChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedHousehold(event.target.value);
-    setSelectedProducts([]); // Clear selections when filter changes
-  };
-
-  const handleFilterTypeChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedFilterType(event.target.value as FilterType);
-    setSelectedProducts([]); // Clear selections when filter changes
   };
 
   const clearFilters = () => {
@@ -135,31 +104,28 @@ const ProductsInDanger: React.FC<{ products: Product[] }> = ({ products }) => {
   return (
     <div className="products-in-danger-container">
       <h2 className="section-title">These products will expire soon</h2>
-      
-      {/* Filter Section */}
+
       <div className="filter-section">
         <div className="filter-group">
           <label htmlFor="household-filter">Household:</label>
-          <select 
+          <select
             id="household-filter"
-            value={selectedHousehold} 
-            onChange={handleHouseholdChange}
+            value={selectedHousehold}
+            onChange={e => { setSelectedHousehold(e.target.value); setSelectedProducts([]); }}
             className="filter-select"
           >
-            {households.map(household => (
-              <option key={household} value={household}>
-                {household === 'all' ? 'All Households' : household}
-              </option>
+            {households.map(h => (
+              <option key={h} value={h}>{h === 'all' ? 'All Households' : h}</option>
             ))}
           </select>
         </div>
 
         <div className="filter-group">
           <label htmlFor="status-filter">Status:</label>
-          <select 
+          <select
             id="status-filter"
-            value={selectedFilterType} 
-            onChange={handleFilterTypeChange}
+            value={selectedFilterType}
+            onChange={e => { setSelectedFilterType(e.target.value as FilterType); setSelectedProducts([]); }}
             className="filter-select"
           >
             <option value="all">All Products</option>
@@ -171,33 +137,26 @@ const ProductsInDanger: React.FC<{ products: Product[] }> = ({ products }) => {
         </div>
 
         {(selectedHousehold !== 'all' || selectedFilterType !== 'all') && (
-          <button onClick={clearFilters} className="clear-filters-button">
-            Clear Filters
-          </button>
+          <button onClick={clearFilters} className="clear-filters-button">Clear Filters</button>
         )}
       </div>
 
-      {/* Results count */}
       <div className="results-count">
         Showing {sortedProducts.length} product{sortedProducts.length !== 1 ? 's' : ''}
         {selectedHousehold !== 'all' && ` from ${selectedHousehold}`}
         {selectedFilterType !== 'all' && ` (${selectedFilterType})`}
       </div>
-      
-      {/* Products Grid */}
+
       {sortedProducts.length === 0 ? (
         <div className="no-results">
           <p>No products match the selected filters.</p>
-          <button onClick={clearFilters} className="clear-filters-link">
-            Clear filters to see all products
-          </button>
+          <button onClick={clearFilters} className="clear-filters-link">Clear filters to see all products</button>
         </div>
       ) : (
         <div className="products-grid">
-          {sortedProducts.map((product) => {
-            const daysUntilExpiry = getDaysUntilExpiry(product.expiryDate);
-            const priority = getPriorityLevel(daysUntilExpiry);
-            
+          {sortedProducts.map(product => {
+            const days = getDaysUntilExpiry(product.expiryDate);
+            const priority = getPriorityLevel(days ?? null);
             return (
               <div key={product.id} className={`product-card priority-${priority}`}>
                 <div className="checkbox-container">
@@ -208,49 +167,31 @@ const ProductsInDanger: React.FC<{ products: Product[] }> = ({ products }) => {
                     onChange={() => handleCheckboxChange(product.id)}
                     className="product-checkbox"
                   />
-                  <label htmlFor={`product-${product.id}`} className="checkbox-label">
-                    Select
-                  </label>
+                  <label htmlFor={`product-${product.id}`} className="checkbox-label">Select</label>
                 </div>
-                
-                {product.imageUrl && (
-                  <img 
-                    src={product.imageUrl} 
-                    alt={product.name}
-                    className="product-image"
-                  />
-                )}
-                
+
                 <div className="product-info">
                   <h3 className="product-name">{product.name}</h3>
-                  <p className="product-detail">
-                    Expires: {new Date(product.expiryDate).toLocaleDateString()}
-                    {' '}<span className="days-left">
-                      {daysUntilExpiry < 0 
-                        ? `(Expired ${Math.abs(daysUntilExpiry)} days ago)` 
-                        : `(Expires in ${daysUntilExpiry} days)`}
-                    </span>
-                  </p>
-                  <p className="product-detail">
-                    Quantity: {product.quantity}
-                  </p>
-                  <p className="product-detail">
-                    From household: {product.householdName}
-                  </p>
-                  {priority === 'expired' && (
-                    <div className="expired-badge">
-                      Expired
-                    </div>
+                  {product.expiryDate && days !== null ? (
+                    <p className="product-detail">
+                      Expires: {new Date(product.expiryDate).toLocaleDateString()}
+                      {' '}<span className="days-left">
+                        {days < 0
+                          ? `(Expired ${Math.abs(days)} days ago)`
+                          : `(Expires in ${days} days)`}
+                      </span>
+                    </p>
+                  ) : (
+                    <p className="product-detail">No expiration date</p>
                   )}
-                  {priority === 'critical' && (
-                    <div className="danger-badge critical">
-                      Use within {daysUntilExpiry} days
-                    </div>
+                  <p className="product-detail">Quantity: {product.quantity}</p>
+                  <p className="product-detail">From household: {product.householdName}</p>
+                  {priority === 'expired' && <div className="expired-badge">Expired</div>}
+                  {priority === 'critical' && days !== null && (
+                    <div className="danger-badge critical">Use within {days} days</div>
                   )}
-                  {priority === 'warning' && (
-                    <div className="danger-badge warning">
-                      Use soon (expires in {daysUntilExpiry} days)
-                    </div>
+                  {priority === 'warning' && days !== null && (
+                    <div className="danger-badge warning">Use soon (expires in {days} days)</div>
                   )}
                 </div>
               </div>
@@ -261,10 +202,7 @@ const ProductsInDanger: React.FC<{ products: Product[] }> = ({ products }) => {
 
       {selectedProducts.length > 0 && (
         <div className="find-recipes-container">
-          <button 
-            onClick={handleFindRecipes}
-            className="find-recipes-button"
-          >
+          <button onClick={handleFindRecipes} className="find-recipes-button">
             Find Recipes ({selectedProducts.length} product{selectedProducts.length !== 1 ? 's' : ''} selected)
           </button>
         </div>
@@ -282,9 +220,7 @@ const FavouriteRecipes: React.FC<FavouriteRecipesProps> = ({ recipes }) => {
   const navigate = useNavigate();
 
   const handleViewAll = () => {
-    navigate('/all-recipes', {
-      state: { favouriteRecipes: recipes }
-    });
+    navigate('/all-recipes', { state: { favouriteRecipes: recipes } });
   };
 
   const scrollLeft = () => {
@@ -315,47 +251,29 @@ const FavouriteRecipes: React.FC<FavouriteRecipesProps> = ({ recipes }) => {
     <div className="favourite-recipes-container">
       <div className="section-header">
         <h2 className="section-title">Here are your favourite recipes</h2>
-        <button onClick={handleViewAll} className="view-all-button">
-          View all →
-        </button>
+        <button onClick={handleViewAll} className="view-all-button">View all →</button>
       </div>
-      
+
       <div className="carousel-wrapper">
         {recipes.length > 3 && (
-          <button onClick={scrollLeft} className="carousel-arrow left-arrow" aria-label="Scroll left">
-            ‹
-          </button>
+          <button onClick={scrollLeft} className="carousel-arrow left-arrow" aria-label="Scroll left">‹</button>
         )}
-        
         <div className="recipes-carousel" ref={carouselRef}>
-          {recipes.map((recipe) => (
+          {recipes.map(recipe => (
             <div key={recipe.id} className="recipe-card">
-              
               {recipe.imageUrl && (
-                <img 
-                  src={recipe.imageUrl} 
-                  alt={recipe.name}
-                  className="recipe-image"
-                />
+                <img src={recipe.imageUrl} alt={recipe.name} className="recipe-image" />
               )}
-              
               <div className="recipe-info">
                 <h3 className="recipe-name">{recipe.name}</h3>
-                {recipe.description && (
-                  <p className="recipe-description">{recipe.description}</p>
-                )}
-                {recipe.cookingTime && (
-                  <p className="recipe-time">{recipe.cookingTime} min</p>
-                )}
+                {recipe.description && <p className="recipe-description">{recipe.description}</p>}
+                {recipe.cookingTime && <p className="recipe-time">{recipe.cookingTime} min</p>}
               </div>
             </div>
           ))}
         </div>
-        
         {recipes.length > 3 && (
-          <button onClick={scrollRight} className="carousel-arrow right-arrow" aria-label="Scroll right">
-            ›
-          </button>
+          <button onClick={scrollRight} className="carousel-arrow right-arrow" aria-label="Scroll right">›</button>
         )}
       </div>
     </div>
@@ -366,102 +284,203 @@ const FavouriteRecipes: React.FC<FavouriteRecipesProps> = ({ recipes }) => {
 
 // Main Dashboard Component
 const Dashboard: React.FC = () => {
-  const [email, setEmail] = useState<string | null>(null)
+  const [email, setEmail] = useState<string | null>(null);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [households, setHouseholds] = useState<Household[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [creating, setCreating] = useState(false);
+
+  const [newName, setNewName] = useState('');
+  const [newHouseholdId, setNewHouseholdId] = useState('');
+  const [newQuantity, setNewQuantity] = useState('1');
+  const [newSize, setNewSize] = useState('');
+  const [newUnit, setNewUnit] = useState('');
+  const [newExpirationDate, setNewExpirationDate] = useState('');
+  const [newPrice, setNewPrice] = useState('');
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      setEmail(data.user?.email ?? null)
-    })
-  }, [])
+    supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? null));
+    void fetchHouseholds();
+    void fetchProducts();
+  }, []);
 
-  // Example product data replace with actual data source
-  const [productsInDanger] = useState<Product[]>([
-    {
-      id: '1',
-      name: 'Fresh Milk',
-      expiryDate: '2026-04-14',
-      quantity: 2,
-      householdName: 'Household A',
-      imageUrl: 'https://via.placeholder.com/300x180?text=Milk'
-    },
-    {
-      id: '2',
-      name: 'Tomatoes',
-      expiryDate: '2026-03-18',
-      quantity: 5,
-      householdName: 'Household B',
-      imageUrl: 'https://via.placeholder.com/300x180?text=Tomatoes'
-    },
-    {
-      id: '3',
-      name: 'Chicken Breast',
-      expiryDate: '2026-04-18',
-      quantity: 1,
-      householdName: 'Household C',
-      imageUrl: 'https://via.placeholder.com/300x180?text=Chicken'
-    },
-    {
-      id: '4',
-      name: 'Spinach',
-      expiryDate: '2026-04-23',
-      quantity: 1,
-      householdName: 'Household A',
-      imageUrl: 'https://via.placeholder.com/300x180?text=Spinach'
-    },
-    {
-      id: '5',
-      name: 'Yogurt',
-      expiryDate: '2026-04-21',
-      quantity: 3,
-      householdName: 'Household B',
-      imageUrl: 'https://via.placeholder.com/300x180?text=Yogurt'
+  const fetchHouseholds = async () => {
+    const { data } = await supabase.from('household').select('id, house_name');
+    setHouseholds(data ?? []);
+  };
+
+  const fetchProducts = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('product')
+      .select(`
+        id,
+        name,
+        household:household_id(house_name),
+        product_specs(quantity, expiration_date)
+      `);
+
+    if (error) {
+      setError('Could not load products');
+      setLoading(false);
+      return;
     }
-  ]);
+
+    const mapped: Product[] = (data ?? []).map((p: any) => {
+      // Supabase may return product_specs as an object or array depending on version
+      const specs = Array.isArray(p.product_specs)
+        ? p.product_specs[0]
+        : p.product_specs;
+      return {
+        id: p.id,
+        name: p.name,
+        expiryDate: specs?.expiration_date ?? null,
+        quantity: specs?.quantity ?? 1,
+        householdName: p.household?.house_name ?? 'Unknown',
+      };
+    });
+
+    setProducts(mapped);
+    setLoading(false);
+  };
+
+  const handleCreate = async () => {
+    if (!newName.trim() || !newHouseholdId) {
+      setError('Name and household are required');
+      return;
+    }
+
+    setCreating(true);
+    setError(null);
+
+    const { data: product, error: productError } = await supabase
+      .from('product')
+      .insert({ name: newName.trim(), household_id: newHouseholdId })
+      .select()
+      .single();
+
+    if (productError) {
+      setError('Could not create product: ' + productError.message);
+      setCreating(false);
+      return;
+    }
+
+    const { error: specsError } = await supabase
+      .from('product_specs')
+      .insert({
+        product_id: product.id,
+        quantity: parseInt(newQuantity) || 1,
+        size: newSize || null,
+        unit: newUnit || null,
+        expiration_date: newExpirationDate || null,
+        price: newPrice ? parseFloat(newPrice) : null,
+      });
+
+    if (specsError) {
+      setError('Could not save product specs: ' + specsError.message);
+      setCreating(false);
+      return;
+    }
+
+    setNewName(''); setNewHouseholdId(''); setNewQuantity('1');
+    setNewSize(''); setNewUnit(''); setNewExpirationDate(''); setNewPrice('');
+    setShowCreateModal(false);
+    setCreating(false);
+    void fetchProducts();
+  };
 
   const [favouriteRecipes] = useState<Recipe[]>([
-    {
-      id: '1',
-      name: 'Spaghetti Bolognese',
-      imageUrl: 'https://via.placeholder.com/300x180?text=Spaghetti+Bolognese',
-      description: 'Classic Italian pasta with meat sauce',
-      cookingTime: 35
-    },
-    {
-      id: '2',
-      name: 'Chicken Curry',
-      imageUrl: 'https://via.placeholder.com/300x180?text=Chicken+Curry',
-      description: 'Creamy and spicy Indian curry',
-      cookingTime: 45
-    },  
-    {
-      id: '3',
-      name: 'Grilled Salmon',
-      imageUrl: 'https://via.placeholder.com/300x180?text=Grilled+Salmon',
-      description: 'Healthy grilled salmon with lemon',
-      cookingTime: 20
-    },
-    {
-      id: '4',
-      name: 'Vegetable Stir Fry',
-      imageUrl: 'https://via.placeholder.com/300x180?text=Vegetable+Stir+Fry',
-      description: 'Quick and healthy vegetable stir fry',
-      cookingTime: 15
-    },
-    {
-      id: '5',
-      name: 'Margherita Pizza',
-      imageUrl: 'https://via.placeholder.com/300x180?text=Pizza',
-      description: 'Classic Italian pizza with fresh basil',
-      cookingTime: 25
-    }
+    { id: '1', name: 'Spaghetti Bolognese', imageUrl: 'https://via.placeholder.com/300x180?text=Spaghetti+Bolognese', description: 'Classic Italian pasta with meat sauce', cookingTime: 35 },
+    { id: '2', name: 'Chicken Curry', imageUrl: 'https://via.placeholder.com/300x180?text=Chicken+Curry', description: 'Creamy and spicy Indian curry', cookingTime: 45 },
+    { id: '3', name: 'Grilled Salmon', imageUrl: 'https://via.placeholder.com/300x180?text=Grilled+Salmon', description: 'Healthy grilled salmon with lemon', cookingTime: 20 },
+    { id: '4', name: 'Vegetable Stir Fry', imageUrl: 'https://via.placeholder.com/300x180?text=Vegetable+Stir+Fry', description: 'Quick and healthy vegetable stir fry', cookingTime: 15 },
+    { id: '5', name: 'Margherita Pizza', imageUrl: 'https://via.placeholder.com/300x180?text=Pizza', description: 'Classic Italian pizza with fresh basil', cookingTime: 25 },
   ]);
 
   return (
     <div className="page dashboard">
-      <h1>Hello {email ?? 'there'}, welcome back</h1>
-      
-      <ProductsInDanger products={productsInDanger} />
+      <div className="section-header">
+        <h1>Hello {email ?? 'there'}, welcome back</h1>
+        <button className="btn btn-primary" onClick={() => setShowCreateModal(true)}>+ Add Product</button>
+      </div>
+
+      {error && (
+        <div className="error-banner">
+          {error}
+          <button className="error-dismiss" onClick={() => setError(null)}>×</button>
+        </div>
+      )}
+
+      {loading ? (
+        <p className="loading-text">Loading products...</p>
+      ) : (
+        <ProductsInDanger products={products} />
+      )}
+
       <FavouriteRecipes recipes={favouriteRecipes} />
+
+      {showCreateModal && (
+        <div className="modal-overlay" onClick={() => setShowCreateModal(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <h2>Add Product</h2>
+
+            <div className="modal-field">
+              <label>Name *</label>
+              <input type="text" value={newName} onChange={e => setNewName(e.target.value)} placeholder="e.g. Fresh Milk" />
+            </div>
+
+            <div className="modal-field">
+              <label>Household *</label>
+              <select value={newHouseholdId} onChange={e => setNewHouseholdId(e.target.value)}>
+                <option value="">Select a household</option>
+                {households.map(h => (
+                  <option key={h.id} value={h.id}>{h.house_name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="modal-field">
+              <label>Expiration Date</label>
+              <input type="date" value={newExpirationDate} onChange={e => setNewExpirationDate(e.target.value)} />
+            </div>
+
+            <div className="modal-field">
+              <label>Quantity</label>
+              <input type="number" min="1" value={newQuantity} onChange={e => setNewQuantity(e.target.value)} />
+            </div>
+
+            <div className="modal-field">
+              <label>Size</label>
+              <input type="text" value={newSize} onChange={e => setNewSize(e.target.value)} placeholder="e.g. 500" />
+            </div>
+
+            <div className="modal-field">
+              <label>Unit</label>
+              <select value={newUnit} onChange={e => setNewUnit(e.target.value)}>
+                <option value="">No unit</option>
+                <option value="gr">gr</option>
+                <option value="ml">ml</option>
+                <option value="kg">kg</option>
+                <option value="L">L</option>
+              </select>
+            </div>
+
+            <div className="modal-field">
+              <label>Price</label>
+              <input type="number" step="0.01" min="0" value={newPrice} onChange={e => setNewPrice(e.target.value)} placeholder="e.g. 4.99" />
+            </div>
+
+            <div className="modal-actions">
+              <button className="btn btn-secondary" onClick={() => setShowCreateModal(false)}>Cancel</button>
+              <button className="btn btn-primary" onClick={() => void handleCreate()} disabled={creating}>
+                {creating ? 'Adding...' : 'Add Product'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
