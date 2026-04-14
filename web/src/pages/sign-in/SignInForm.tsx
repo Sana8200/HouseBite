@@ -43,7 +43,7 @@ export function SignInForm(props: SignInProps) {
                 <TextInput
                     label="Email"
                     type="email"
-                    placeholder="youremail@gmail.com"
+                    placeholder="your@email.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                 />
@@ -55,7 +55,7 @@ export function SignInForm(props: SignInProps) {
                 />
 
                 <Button type="submit" variant="primary" disabled={disabled}>
-                    Sign-in
+                    Sign in
                 </Button>
             </Stack>
         </form>

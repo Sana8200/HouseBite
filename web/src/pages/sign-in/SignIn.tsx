@@ -29,7 +29,7 @@ export function SignIn({ setUser }: SignInProps) {
             }`}
             onClick={() => setActiveTab("signIn")}
           >
-            Login
+            Sign in
           </button>
 
           <button
@@ -39,7 +39,7 @@ export function SignIn({ setUser }: SignInProps) {
             }`}
             onClick={() => setActiveTab("signUp")}
           >
-            Sign Up
+            Sign up
           </button>
         </div>
 

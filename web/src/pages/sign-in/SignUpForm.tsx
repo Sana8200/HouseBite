@@ -42,9 +42,9 @@ export function SignUpForm(props: SignUpProps) {
                 }
 
                 <TextInput
-                    label="Full Name"
+                    label="Name"
                     type="text"
-                    placeholder="Michael Jordan"
+                    placeholder="Your name (does nothing)"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                 />
@@ -52,7 +52,7 @@ export function SignUpForm(props: SignUpProps) {
                 <TextInput 
                     label="Email"
                     type="email"
-                    placeholder="you@example.com"
+                    placeholder="your@email.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                 />
@@ -65,7 +65,7 @@ export function SignUpForm(props: SignUpProps) {
 
 
                 <Button type="submit" variant="primary" disabled={disabled}>
-                    Sign Up
+                    Sign up
                 </Button>
             </Stack>
         </form>
