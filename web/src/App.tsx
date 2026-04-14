@@ -9,6 +9,7 @@ import { SignIn } from "./pages/sign-in/SignIn";
 import { useEffect, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "./supabase";
+import { ReceiptScanner } from './components/ReceiptScanner';
 
 export function App() {
   const [loaded, setLoaded] = useState(false);
@@ -29,7 +30,8 @@ export function App() {
     routes = [
       <Route key="sign-in" path="sign-in" element={<Navigate to="/dashboard" />} />,
       <Route key="household" path="household" element={<HouseHold />} />,
-      <Route key="dashboard" path="dashboard" element={<Dashboard />} />
+      <Route key="dashboard" path="dashboard" element={<Dashboard />} />,
+      <Route key="receipt-scanner" path="receipt-scanner" element={<ReceiptScanner />} />
     ];
   } else {
     routes = [
