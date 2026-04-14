@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react"
+import { useNavigate } from "react-router-dom"
 import { supabase } from "../../supabase"
 import "./HouseHold.css"
 import {createHousehold} from "../../api/household.ts";
@@ -11,6 +12,7 @@ interface Household {
 }
 
 export function HouseHold() {
+    const navigate = useNavigate()
     const [households, setHouseholds] = useState<Household[]>([])
     const [showCreateModal, setShowCreateModal] = useState(false)
     const [showJoinModal, setShowJoinModal] = useState(false)
@@ -196,7 +198,7 @@ export function HouseHold() {
                                     </button>
                                 </div>
                             </div>
-                            <button className="go-btn">Go to household</button>
+                            <button className="go-btn" onClick={() => { void navigate("/dashboard") }}>Go to household</button>
                         </div>
                     ))}
                 </div>

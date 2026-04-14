@@ -24,7 +24,6 @@ export function Header(props: HeaderProps) {
 
             <div className="header-spacer"/>
 
-            {user && <NavLink to="/dashboard">Dashboard</NavLink>}
             {user && <NavLink to="/household">Households</NavLink>}
             {user && <NavLink to="/scan">Scan</NavLink>}
             {user && <NavLink to="/recipes">Recipes</NavLink>}
