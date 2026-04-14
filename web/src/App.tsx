@@ -28,14 +28,12 @@ export function App() {
   if (user) {
     routes = [
       <Route key="sign-in" path="sign-in" element={<Navigate to="/dashboard" />} />,
-      <Route key="sign-up" path="sign-up" element={<Navigate to="/dashboard" />} />,
       <Route path="household" element={<HouseHold />} />,
       <Route path="dashboard" element={<Dashboard />} />
     ];
   } else {
     routes = [
       <Route key="sign-in" path="sign-in" element={<SignIn setUser={setUser} />} />,
-      <Route key="sign-up" path="sign-up" element={<p>Sign-up</p>} />,
       <Route key="household" path="household" element={<Navigate to="/sign-in" />} />,
       <Route key="dashboard" path="dashboard" element={<Navigate to="/sign-in" />} />
     ];
