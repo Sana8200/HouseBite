@@ -23,7 +23,7 @@ export async function signIn(email: string, password: string): Promise<User> {
 }
 
 /**
- * @throws `AuthError` if the sign-in fails.
+ * @throws `AuthError` if the sign-up fails.
  */
 export async function signUp(email: string, password: string): Promise<User> {
     const result = await supabase.auth.signUp({
