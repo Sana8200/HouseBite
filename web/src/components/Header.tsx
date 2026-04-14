@@ -29,7 +29,6 @@ export function Header(props: HeaderProps) {
             {user && <NavLink to="/scan">Scan</NavLink>}
             {user && <NavLink to="/recipes">Recipes</NavLink>}
             {!user && <NavLink to="/sign-in">Sign-in</NavLink>}
-            {!user && <NavLink to="/sign-up">Sign-up</NavLink>}
             {user && <NavLink to="/settings">Settings</NavLink>}
             <NavLink to="/about">About</NavLink>
 
