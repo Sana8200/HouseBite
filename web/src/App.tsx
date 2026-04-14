@@ -46,7 +46,7 @@ export function App() {
     <BrowserRouter>
       <Header user={user}/>
       <Routes>
-        <Route index element={<Landing />} />
+        <Route index element={<Landing user={user} />} />
 
         {routes}
 
