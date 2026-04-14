@@ -284,7 +284,7 @@ const FavouriteRecipes: React.FC<FavouriteRecipesProps> = ({ recipes }) => {
 
 // Main Dashboard Component
 const Dashboard: React.FC = () => {
-  const [email, setEmail] = useState<string | null>(null);
+  const [displayName, setDisplayName] = useState<string | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [households, setHouseholds] = useState<Household[]>([]);
   const [loading, setLoading] = useState(true);
@@ -301,7 +301,11 @@ const Dashboard: React.FC = () => {
   const [newPrice, setNewPrice] = useState('');
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? null));
+    supabase.auth.getUser().then(({ data }) => {
+      const displayName = data.user?.user_metadata?.display_name as string | undefined;
+      const email = data.user?.email;
+      setDisplayName(displayName ?? email ?? null);
+    }).catch(() => {});
     void fetchHouseholds();
     void fetchProducts();
   }, []);
@@ -402,7 +406,7 @@ const Dashboard: React.FC = () => {
   return (
     <div className="page dashboard">
       <div className="section-header">
-        <h1>Hello {email ?? 'there'}, welcome back</h1>
+        <h1>Hello {displayName ?? 'there'}, welcome back</h1>
         <button className="btn btn-primary" onClick={() => setShowCreateModal(true)}>+ Add Product</button>
       </div>
 
