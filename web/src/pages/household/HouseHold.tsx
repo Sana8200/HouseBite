@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react"
 import { supabase } from "../../supabase"
 import "./HouseHold.css"
+import {createHousehold} from "../../api/household.ts";
 
 interface Household {
     id: string
@@ -52,42 +53,19 @@ export function HouseHold() {
         setCreating(true)
         setError(null)
 
-        // current user
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) {
-            setError("You must be logged in to create a household")
-            setCreating(false)
-            return
-        }
-
-        // Inserting the household
-        const { data: household, error: createError } = await supabase
-            .from("household")
-            .insert({
-                house_name: newName.trim(),
-                monthly_budget: newBudget ? parseFloat(newBudget) : null,
-            })
-            .select()
-            .single()
+        // Uses a SECURITY DEFINER SQL function that creates the household
+        // and links the current user in a single transaction. This replaces
+        // the previous two-step flow (insert household → insert allocation)
+        // which failed because RLS SELECT policies block RETURNING on a row
+        // whose allocation doesn't exist yet.
+        const { error: createError } = await createHousehold(
+            newName.trim(),
+            newBudget ? parseFloat(newBudget) : null
+        )
 
         if (createError) {
             console.error("Error creating household:", createError)
             setError("Could not create household: " + createError.message)
-            setCreating(false)
-            return
-        }
-
-        // Link the current user to the household
-        const { error: allocError } = await supabase
-            .from("allocations")
-            .insert({
-                member_id: user.id,
-                household_id: household.id,
-            })
-
-        if (allocError) {
-            console.error("Error joining household:", allocError)
-            setError("Household created but could not link your account: " + allocError.message)
             setCreating(false)
             return
         }
