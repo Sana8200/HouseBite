@@ -1,7 +1,10 @@
+/* Household page — specific styles only.
+   Shared primitives (.page, .btn, .card, .modal*,
+   .error-banner, .loading-text, .empty-text, .modal-hint,
+   .section-header) live in App.css. */
+
 .household-page {
-    padding: 24px;
     max-width: 900px;
-    margin: 0 auto;
 }
 
 .household-buttons {
@@ -21,17 +24,17 @@
 
 .household-buttons button:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
 }
 
 .create-btn {
-    background-color: #863bff;
+    background-color: var(--color-primary);
     color: white;
 }
 
 .join-btn {
     background-color: #e0e0e0;
-    color: #333;
+    color: var(--color-text);
 }
 
 /* Grid */
@@ -49,18 +52,18 @@
 
 /* Card */
 .household-card {
-    border: 1px solid #ddd;
-    border-radius: 12px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
     padding: 20px;
     display: flex;
     flex-direction: column;
     gap: 16px;
-    background: white;
+    background: var(--color-surface);
     transition: box-shadow 0.15s;
 }
 
 .household-card:hover {
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    box-shadow: var(--shadow-sm);
 }
 
 .household-card-info h3 {
@@ -70,7 +73,7 @@
 
 .household-budget {
     margin: 0 0 10px 0;
-    color: #666;
+    color: var(--color-muted);
     font-size: 14px;
 }
 
@@ -82,16 +85,16 @@
 }
 
 .invite-label {
-    color: #888;
+    color: var(--color-subtle);
 }
 
 .invite-code {
-    background: #f3f0ff;
+    background: var(--color-primary-soft);
     padding: 3px 8px;
     border-radius: 4px;
     font-family: monospace;
     font-size: 14px;
-    color: #863bff;
+    color: var(--color-primary);
     letter-spacing: 1px;
 }
 
@@ -111,10 +114,10 @@
 
 .go-btn {
     padding: 10px 20px;
-    border: 1px solid #863bff;
-    border-radius: 8px;
-    background: white;
-    color: #863bff;
+    border: 1px solid var(--color-primary);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    color: var(--color-primary);
     cursor: pointer;
     font-size: 14px;
     align-self: flex-start;
@@ -122,111 +125,16 @@
 }
 
 .go-btn:hover {
-    background: #863bff;
+    background: var(--color-primary);
     color: white;
 }
 
-/* Error */
-.household-error {
-    background: #fff0f0;
-    border: 1px solid #ffcccc;
-    color: #c00;
-    padding: 12px 16px;
-    border-radius: 8px;
-    margin-bottom: 16px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.error-dismiss {
-    background: none;
-    border: none;
-    font-size: 20px;
-    cursor: pointer;
-    color: #c00;
-    padding: 0 4px;
-}
-
-/* Loading / Empty */
-.household-loading,
-.household-empty {
-    color: #888;
-    padding: 32px 0;
-    text-align: center;
-}
-
-/* Modal */
-.modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.45);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-}
-
-.modal {
-    background: white;
-    border-radius: 16px;
-    padding: 32px;
-    width: 100%;
-    max-width: 420px;
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
-}
-
-.modal h2 {
-    margin: 0 0 20px 0;
-}
-
-.modal-hint {
-    color: #888;
-    font-size: 14px;
-    margin: -8px 0 16px 0;
-}
-
-.modal-field {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    margin-bottom: 16px;
-}
-
-.modal-field label {
-    font-size: 14px;
-    font-weight: 600;
-    color: #333;
-}
-
-.modal-field input {
-    padding: 10px 14px;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    font-size: 15px;
-    outline: none;
-    transition: border-color 0.15s;
-}
-
-.modal-field input:focus {
-    border-color: #863bff;
-}
-
-.modal-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 12px;
-    margin-top: 24px;
-}
-
+/* Modal action buttons (household-specific variants) */
 .cancel-btn {
     padding: 10px 20px;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    background: white;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
     cursor: pointer;
     font-size: 14px;
 }
@@ -234,8 +142,8 @@
 .confirm-btn {
     padding: 10px 24px;
     border: none;
-    border-radius: 8px;
-    background: #863bff;
+    border-radius: var(--radius-md);
+    background: var(--color-primary);
     color: white;
     cursor: pointer;
     font-size: 14px;

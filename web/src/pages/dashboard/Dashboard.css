@@ -1,14 +1,12 @@
-/* Dashboard Container */
-.dashboard-container {
-  padding: 20px;
-  max-width: 1200px;
-  margin: 0 auto;
-}
+/* Dashboard page — specific styles only.
+   Shared primitives (.page, .btn, .card, .modal*,
+   .error-banner, .loading-text, .empty-text,
+   .section-header) live in App.css. */
 
-.dashboard-container h1 {
+.dashboard h1 {
   font-size: 32px;
   margin-bottom: 30px;
-  color: #333;
+  color: var(--color-text);
 }
 
 /* Products in Danger Styles */
@@ -153,10 +151,10 @@
 
 /* Responsive Design */
 @media (max-width: 768px) {
-  .dashboard-container {
+  .dashboard {
     padding: 10px;
   }
-  
+
   .section-title {
     font-size: 20px;
   }
@@ -269,16 +267,6 @@
   100% {
     transform: scale(1);
   }
-}
-
-/* Section Header with View All button */
-.section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-  flex-wrap: wrap;
-  gap: 10px;
 }
 
 .view-all-button {

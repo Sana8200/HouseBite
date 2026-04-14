@@ -448,7 +448,7 @@ const Dashboard: React.FC = () => {
   ]);
 
   return (
-    <div className="dashboard-container">
+    <div className="page dashboard">
       <h1>Hello [user_name], welcome back</h1>
       
       <ProductsInDanger products={productsInDanger} />

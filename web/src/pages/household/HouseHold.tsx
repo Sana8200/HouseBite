@@ -5,7 +5,7 @@ import "./HouseHold.css"
 interface Household {
     id: string
     house_name: string
-    invite_code: string
+    invite_id: string
     monthly_budget: number | null
 }
 
@@ -20,14 +20,14 @@ export function HouseHold() {
     const [newBudget, setNewBudget] = useState("")
     const [creating, setCreating] = useState(false)
 
-    const [inviteCode, setInviteCode] = useState("")
+    const [inviteId, setInviteId] = useState("")
     const [joining, setJoining] = useState(false)
 
     const fetchHouseholds = async () => {
         setLoading(true)
         const { data, error } = await supabase
             .from("household")
-            .select("id, house_name, invite_code, monthly_budget")
+            .select("id, house_name, invite_id, monthly_budget")
 
         if (error) {
             console.error("Error fetching households:", error)
@@ -101,8 +101,8 @@ export function HouseHold() {
     }
 
     const handleJoin = async () => {
-        if (!inviteCode.trim()) {
-            setError("Invite code is required")
+        if (!inviteId.trim()) {
+            setError("Invite Id is required")
             return
         }
 
@@ -117,15 +117,15 @@ export function HouseHold() {
             return
         }
 
-        // Find the household by invite code
+        // Find the household by invite id
         const { data: household, error: findError } = await supabase
             .from("household")
             .select("id, house_name")
-            .eq("invite_code", inviteCode.trim().toLowerCase())
+            .eq("invite_id", inviteId.trim().toLowerCase())
             .single()
 
         if (findError || !household) {
-            setError("No household found with that invite code")
+            setError("No household found with that invite ID")
             setJoining(false)
             return
         }
@@ -160,23 +160,23 @@ export function HouseHold() {
         }
 
         // Reset and refresh
-        setInviteCode("")
+        setInviteId("")
         setShowJoinModal(false)
         setJoining(false)
         void fetchHouseholds()
     }
 
-    const copyInviteCode = (code: string) => {
-        void navigator.clipboard.writeText(code)
+    const copyInviteId = (id: string) => {
+        void navigator.clipboard.writeText(id)
     }
 
     return (
-        <div className="household-page">
+        <div className="page household-page">
             <h1>Households</h1>
             <p>Manage your shared households, invite members and customize your preferences.</p>
 
             {error && (
-                <div className="household-error">
+                <div className="error-banner">
                     {error}
                     <button className="error-dismiss" onClick={() => setError(null)}>×</button>
                 </div>
@@ -194,9 +194,9 @@ export function HouseHold() {
             <h2>Your Households</h2>
 
             {loading ? (
-                <p className="household-loading">Loading households...</p>
+                <p className="loading-text">Loading households...</p>
             ) : households.length === 0 ? (
-                <p className="household-empty">You are not part of any household yet. Create one or join with an invite code.</p>
+                <p className="empty-text">You are not part of any household yet. Create one or join with an invite code.</p>
             ) : (
                 <div className="household-grid">
                     {households.map((h) => (
@@ -207,11 +207,11 @@ export function HouseHold() {
                                     <p className="household-budget">Budget: {h.monthly_budget} kr/month</p>
                                 )}
                                 <div className="invite-code-row">
-                                    <span className="invite-label">Invite code:</span>
-                                    <code className="invite-code">{h.invite_code}</code>
+                                    <span className="invite-label">Invite Id:</span>
+                                    <code className="invite-code">{h.invite_id}</code>
                                     <button
                                         className="copy-btn"
-                                        onClick={() => copyInviteCode(h.invite_code)}
+                                        onClick={() => copyInviteId(h.invite_id)}
                                         title="Copy invite code"
                                     >
                                         Copy
@@ -266,15 +266,15 @@ export function HouseHold() {
                 <div className="modal-overlay" onClick={() => setShowJoinModal(false)}>
                     <div className="modal" onClick={(e) => e.stopPropagation()}>
                         <h2>Join a Household</h2>
-                        <p className="modal-hint">Ask a household member for their invite code.</p>
+                        <p className="modal-hint">Ask a household member for their invite ID.</p>
                         <div className="modal-field">
-                            <label htmlFor="invite-code">Invite Code</label>
+                            <label htmlFor="invite-code">Invite ID</label>
                             <input
                                 id="invite-code"
                                 type="text"
                                 placeholder="e.g. a1b2c3d4"
-                                value={inviteCode}
-                                onChange={(e) => setInviteCode(e.target.value)}
+                                value={inviteId}
+                                onChange={(e) => setInviteId(e.target.value)}
                             />
                         </div>
                         <div className="modal-actions">
