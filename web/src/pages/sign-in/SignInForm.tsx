@@ -1,8 +1,6 @@
 import { useState } from "react"
 import { signIn } from "../../supabase";
 import type { User } from "@supabase/supabase-js";
-//import { Input } from "../../components/ui/Input/Input";
-//import { Button } from "../../components/ui/Button/Button";
 import { Button, PasswordInput, Stack, Text, TextInput } from "@mantine/core";
 
 export interface SignInProps {
@@ -31,7 +29,7 @@ export function SignInForm(props: SignInProps) {
     const disabled = !email || !password;
 
     return (
-        <form className="sign-in-form" onSubmit={e => void(onSubmit(e))}>
+        <form className="auth-form" onSubmit={e => void(onSubmit(e))}>
             <Stack gap="md">
 
                 { error &&

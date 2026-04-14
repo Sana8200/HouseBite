@@ -2,7 +2,6 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { MantineProvider, createTheme } from "@mantine/core";
 import { App } from './App.tsx'
-import "./styles/tokens.css";
 import "./styles/globals.css";
 import "@mantine/core/styles.css";
 

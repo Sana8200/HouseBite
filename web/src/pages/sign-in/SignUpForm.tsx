@@ -1,8 +1,6 @@
 import { useState } from "react"
 import { signUp } from "../../supabase";
 import type { User } from "@supabase/supabase-js";
-//import { Button } from "../../components/ui/Button/Button";
-//import { Input } from "../../components/ui/Input/Input";
 import { Button, PasswordInput, Stack, Text, TextInput } from "@mantine/core";
 
 
