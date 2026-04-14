@@ -27,7 +27,7 @@ export function App() {
   let routes;
   if (user) {
     routes = [
-      <Route key="sign-in" path="sign-in" element={<Navigate to="/dashboard" />} />,
+      <Route key="sign-in" path="sign-in" element={<Navigate to="/household" />} />,
       <Route key="household" path="household" element={<HouseHold />} />,
       <Route key="dashboard" path="dashboard" element={<Dashboard />} />
     ];
