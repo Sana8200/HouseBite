@@ -2,6 +2,7 @@ import './Dashboard.css';
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../supabase';
+import { searchRecipes } from "../../lib/searchRecipes"
 
 // Types
 interface Product {
@@ -80,11 +81,11 @@ const ProductsInDanger: React.FC<{ products: Product[] }> = ({ products }) => {
     );
   };
 
-  const handleFindRecipes = () => {
-    const selectedProductObjects = products.filter(p => selectedProducts.includes(p.id));
-    navigate('/recipe-suggestions', {
-      state: { selectedProducts: selectedProductObjects, selectedProductIds: selectedProducts }
-    });
+  const handleFindRecipes = async () => {
+  const selectedProductObjects = products.filter(p => selectedProducts.includes(p.id))
+  const ingredientNames = selectedProductObjects.map(p => p.name)
+  const results = await searchRecipes(ingredientNames)
+  navigate('/recipes', { state: { recipes: results } })
   };
 
   const clearFilters = () => {
