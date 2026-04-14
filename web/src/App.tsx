@@ -28,8 +28,8 @@ export function App() {
   if (user) {
     routes = [
       <Route key="sign-in" path="sign-in" element={<Navigate to="/dashboard" />} />,
-      <Route path="household" element={<HouseHold />} />,
-      <Route path="dashboard" element={<Dashboard />} />
+      <Route key="household" path="household" element={<HouseHold />} />,
+      <Route key="dashboard" path="dashboard" element={<Dashboard />} />
     ];
   } else {
     routes = [
