@@ -302,9 +302,9 @@ const Dashboard: React.FC = () => {
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
-      const displayName = data.user?.user_metadata?.display_name as string | undefined;
+      const username = data.user?.user_metadata?.username as string | undefined;
       const email = data.user?.email;
-      setDisplayName(displayName ?? email ?? null);
+      setDisplayName(username ?? email?.split('@')[0] ?? null);
     }).catch(() => {});
     void fetchHouseholds();
     void fetchProducts();

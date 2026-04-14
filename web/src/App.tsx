@@ -5,6 +5,7 @@ import { Landing } from "./pages/landing/Landing";
 import { Header } from "./components/Header";
 import { HouseHold } from "./pages/household/HouseHold";
 import Dashboard from "./pages/dashboard/Dashboard";
+import { Account } from "./pages/Account/Account";
 import { SignIn } from "./pages/sign-in/SignIn";
 import { useEffect, useState } from "react";
 import type { User } from "@supabase/supabase-js";
@@ -29,13 +30,15 @@ export function App() {
     routes = [
       <Route key="sign-in" path="sign-in" element={<Navigate to="/household" />} />,
       <Route key="household" path="household" element={<HouseHold />} />,
-      <Route key="dashboard" path="dashboard" element={<Dashboard />} />
+      <Route key="dashboard" path="dashboard" element={<Dashboard />} />,
+      <Route key="account" path="Account" element={<Account user={user} />} />
     ];
   } else {
     routes = [
       <Route key="sign-in" path="sign-in" element={<SignIn setUser={setUser} />} />,
       <Route key="household" path="household" element={<Navigate to="/sign-in" />} />,
-      <Route key="dashboard" path="dashboard" element={<Navigate to="/sign-in" />} />
+      <Route key="dashboard" path="dashboard" element={<Navigate to="/sign-in" />} />,
+      <Route key="account" path="Account" element={<Navigate to="/sign-in" />} />
     ];
   }
 
