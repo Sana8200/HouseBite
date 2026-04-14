@@ -5,8 +5,12 @@
 
 .dashboard h1 {
   font-size: 32px;
-  margin-bottom: 30px;
+  margin: 0;
   color: var(--color-text);
+}
+
+.dashboard > .section-header {
+  margin-bottom: 30px;
 }
 
 /* Products in Danger Styles */
