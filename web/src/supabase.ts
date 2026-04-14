@@ -47,5 +47,5 @@ export async function signUp(email: string, password: string): Promise<User> {
 export async function signOut(): Promise<void> {
     await supabase.auth.signOut();
     history.pushState({}, "", "/");
-    navigation.reload();
+    window.location.reload();
 }
