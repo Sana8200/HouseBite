@@ -16,7 +16,7 @@ export function SignIn({ setUser }: SignInProps) {
 
   return (
     <div className="auth-page">
-      <Paper className="auth-card" radius="xl" shadow="md" withBorder>
+      <Paper className="auth-card" radius="xl" shadow="md" withBorder w={400}>
         <div
           className={`auth-switch ${
             activeTab === "signUp" ? "auth-switch--sign-up" : ""
