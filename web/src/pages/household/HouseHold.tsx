@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react"
-import { supabase } from "../../supabase"
 import "./HouseHold.css"
-import {createHousehold} from "../../api/household.ts";
+import { createHousehold, getHouseholds, joinHousehold } from "../../api/household"
 
 interface Household {
     id: string
@@ -25,10 +24,7 @@ export function HouseHold() {
     const [joining, setJoining] = useState(false)
 
     const fetchHouseholds = async () => {
-        setLoading(true)
-        const { data, error } = await supabase
-            .from("household")
-            .select("id, house_name, invite_id, monthly_budget")
+        const { data, error } = await getHouseholds()
 
         if (error) {
             console.error("Error fetching households:", error)
@@ -42,6 +38,9 @@ export function HouseHold() {
         setLoading(false)
     }
 
+    // Warns because fetchHouseholds calls setState internally;
+    // safe to suppress since all setState calls happen after await, not synchronously.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     useEffect(() => { void fetchHouseholds()}, [])
 
     const handleCreate = async () => {
@@ -53,11 +52,6 @@ export function HouseHold() {
         setCreating(true)
         setError(null)
 
-        // Uses a SECURITY DEFINER SQL function that creates the household
-        // and links the current user in a single transaction. This replaces
-        // the previous two-step flow (insert household → insert allocation)
-        // which failed because RLS SELECT policies block RETURNING on a row
-        // whose allocation doesn't exist yet.
         const { error: createError } = await createHousehold(
             newName.trim(),
             newBudget ? parseFloat(newBudget) : null
@@ -87,52 +81,11 @@ export function HouseHold() {
         setJoining(true)
         setError(null)
 
-        // Get current user
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) {
-            setError("You must be logged in to join a household")
-            setJoining(false)
-            return
-        }
+        const { error: joinError } = await joinHousehold(inviteId.trim())
 
-        // Find the household by invite id
-        const { data: household, error: findError } = await supabase
-            .from("household")
-            .select("id, house_name")
-            .eq("invite_id", inviteId.trim().toLowerCase())
-            .single()
-
-        if (findError || !household) {
-            setError("No household found with that invite ID")
-            setJoining(false)
-            return
-        }
-
-        // Check if already a member
-        const { data: existing } = await supabase
-            .from("allocations")
-            .select("member_id")
-            .eq("member_id", user.id)
-            .eq("household_id", household.id)
-            .maybeSingle()
-
-        if (existing) {
-            setError("You are already a member of " + household.house_name)
-            setJoining(false)
-            return
-        }
-
-        // Link the user to the household
-        const { error: allocError } = await supabase
-            .from("allocations")
-            .insert({
-                member_id: user.id,
-                household_id: household.id,
-            })
-
-        if (allocError) {
-            console.error("Error joining household:", allocError)
-            setError("Could not join household: " + allocError.message)
+        if (joinError) {
+            console.error("Error joining household:", joinError)
+            setError(joinError.message)
             setJoining(false)
             return
         }
