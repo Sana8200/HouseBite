@@ -1,29 +1,84 @@
 .header {
     display: flex;
-    flex-wrap: wrap;
     align-items: center;
-    gap: 16px;
-    padding: 12px 24px;
-    background-color: #f8f8f8;
-    border-bottom: 1px solid #e0e0e0;
+    gap: 24px;
+    padding: 16px 32px;
+    background: linear-gradient(135deg, #ffffff 0%, #f9f7ff 100%);
+    border-bottom: 1px solid #e8e0f0;
+    box-shadow: 0 2px 8px rgba(134, 59, 255, 0.08);
 }
 
-.header a {
+.header-logo {
+    font-size: 24px;
+    font-weight: 700;
+    color: #863bff;
     text-decoration: none;
-    color: #555;
-    font-size: 14px;
+    letter-spacing: -0.5px;
+    transition: color 0.2s ease;
 }
 
-.header a:first-child {
-    font-size: 18px;
-    font-weight: bold;
-    color: #863bff;
-}
-
-.header a:hover {
-    color: #863bff;
+.header-logo:hover {
+    color: #6d2ed4;
 }
 
 .header-spacer {
     flex: 1;
 }
+
+.header-nav {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.nav-link {
+    padding: 8px 16px;
+    text-decoration: none;
+    color: #666;
+    font-size: 14px;
+    font-weight: 500;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    border: none;
+    background: none;
+}
+
+.nav-link:hover {
+    color: #863bff;
+    background-color: #f0e8ff;
+}
+
+.nav-link.active {
+    color: #863bff;
+    background-color: #f0e8ff;
+    font-weight: 600;
+}
+
+.logout-link {
+    color: #d9534f;
+    border: 1px solid #d9534f;
+    margin-left: 8px;
+}
+
+.logout-link:hover {
+    color: #fff;
+    background-color: #d9534f;
+}
+
+@media (max-width: 768px) {
+    .header {
+        gap: 16px;
+        padding: 12px 20px;
+    }
+
+    .header-logo {
+        font-size: 20px;
+    }
+
+    .nav-link {
+        padding: 6px 12px;
+        font-size: 13px;
+    }
+}
+

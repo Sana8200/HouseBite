@@ -10,7 +10,6 @@ export interface HeaderProps {
 export function Header(props: HeaderProps) {
     const {user} = props;
 
-
     const logout = async (e: React.MouseEvent) => {
         e.preventDefault();
         await signOut();
@@ -18,20 +17,49 @@ export function Header(props: HeaderProps) {
 
     return (
         <div className="header">
-            <NavLink to="/">
+            <NavLink to="/" className="header-logo">
                 HouseBite
             </NavLink>
 
             <div className="header-spacer"/>
 
-            {user && <NavLink to="/household">Households</NavLink>}
-            {user && <NavLink to="/scan">Scan</NavLink>}
-            {user && <NavLink to="/recipes">Recipes</NavLink>}
-            {!user && <NavLink to="/sign-in">Sign-in</NavLink>}
-            {user && <NavLink to="/settings">Settings</NavLink>}
-            <NavLink to="/about">About</NavLink>
+            <nav className="header-nav">
+                {user ? (
+                    <>
+                        <NavLink to="/household" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>
+                            Households
+                        </NavLink>
+                        <NavLink to="/scan" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>
+                            Scan
+                        </NavLink>
+                        <NavLink to="/recipes" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>
+                            Recipes
+                        </NavLink>
+                        <NavLink to="/dashboard" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>
+                            Account
+                        </NavLink>
+                    </>
+                ) : (
+                    <>
+                        <NavLink to="/sign-in" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>
+                            Sign In
+                        </NavLink>
+                        <NavLink to="/sign-in" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>
+                            Sign Up
+                        </NavLink>
+                    </>
+                )}
+                
+                <NavLink to="/about" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>
+                    About
+                </NavLink>
 
-            {user && <a href="/" onClick={e => void(logout(e))}>Logout</a>}
+                {user && (
+                    <a href="/" onClick={e => void(logout(e))} className="nav-link logout-link">
+                        Logout
+                    </a>
+                )}
+            </nav>
         </div>
     )
 }
