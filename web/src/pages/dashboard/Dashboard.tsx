@@ -1,6 +1,7 @@
 import './Dashboard.css';
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '../../supabase';
 
 // Types
 interface Product {
@@ -365,6 +366,14 @@ const FavouriteRecipes: React.FC<FavouriteRecipesProps> = ({ recipes }) => {
 
 // Main Dashboard Component
 const Dashboard: React.FC = () => {
+  const [email, setEmail] = useState<string | null>(null)
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      setEmail(data.user?.email ?? null)
+    })
+  }, [])
+
   // Example product data replace with actual data source
   const [productsInDanger] = useState<Product[]>([
     {
@@ -449,7 +458,7 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="page dashboard">
-      <h1>Hello [user_name], welcome back</h1>
+      <h1>Hello {email ?? 'there'}, welcome back</h1>
       
       <ProductsInDanger products={productsInDanger} />
       <FavouriteRecipes recipes={favouriteRecipes} />
