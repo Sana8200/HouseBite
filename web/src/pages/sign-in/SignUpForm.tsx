@@ -1,6 +1,10 @@
 import { useState } from "react"
 import { signUp } from "../../supabase";
 import type { User } from "@supabase/supabase-js";
+//import { Button } from "../../components/ui/Button/Button";
+//import { Input } from "../../components/ui/Input/Input";
+import { Button, PasswordInput, Stack, Text, TextInput } from "@mantine/core";
+
 
 export interface SignUpProps {
     setUser: (user: User) => void,
@@ -13,6 +17,7 @@ export function SignUpForm(props: SignUpProps) {
 
     const [email, setEmail] = useState("")
     const [password, setPassword] = useState("")
+    const [fullName, setFullName] = useState("")
 
     const onSubmit = async (e: React.SubmitEvent) => {
         e.preventDefault();
@@ -25,28 +30,44 @@ export function SignUpForm(props: SignUpProps) {
         }
     }
 
-    const disabled = !email || !password;
+    const disabled = !fullName || !email || !password;
 
     return (
-        <form className="sign-in-form" onSubmit={e => void(onSubmit(e))}>
+        <form className="auth-form" onSubmit={e => void(onSubmit(e))}>
+            <Stack gap="md">
+                { error &&
+                    <Text>
+                        {error.message}
+                    </Text>
+                }
 
-            <p>Sign-up</p>
+                <TextInput
+                    label="Full Name"
+                    type="text"
+                    placeholder="Michael Jordan"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                />
 
-            { error &&
-                <div>
-                    {error.message}
-                </div>
-            }
+                <TextInput 
+                    label="Email"
+                    type="email"
+                    placeholder="you@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                />
+                
+                <PasswordInput
+                    label="Password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                />
 
-            <label>Email</label>
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}/>
-            
-            <label>Password</label>
-            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)}/>
 
-            <button type="submit" disabled={disabled}>
-                Sign-up
-            </button>
+                <Button type="submit" variant="primary" disabled={disabled}>
+                    Sign Up
+                </Button>
+            </Stack>
         </form>
     )
 }

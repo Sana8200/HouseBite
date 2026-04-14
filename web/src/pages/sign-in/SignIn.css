@@ -5,3 +5,115 @@
     gap: 8px;
     max-width: 500px;
 }
+
+.auth-page {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-8) var(--space-4);
+  background: var(--color-surface);
+}
+
+.auth-card {
+  max-width: 640px;
+  padding: var(--space-6);
+}
+
+.auth-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+  padding: var(--space-1);
+  border-radius: var(--radius-lg);
+  background-color: var(--color-primary-50);
+}
+
+.auth-tabs__item {
+  min-height: 48px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-primary-700);
+  font: inherit;
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+}
+
+.auth-tabs__item--active {
+  background-color: var(--color-primary-700);
+  color: var(--color-white);
+  box-shadow: var(--shadow-sm);
+}
+
+.auth-panel {
+  margin-top: var(--space-6);
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.auth-form .ui-button {
+  margin-top: var(--space-4);
+}
+
+.auth-content {
+  margin-top: var(--space-7);
+}
+
+.auth-form__forgot-password {
+  align-self: flex-end;
+  color: var(--color-primary-700);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-semibold);
+}
+
+.auth-form__error {
+  margin: 0;
+  color: var(--color-danger);
+}
+
+.auth-switch {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  padding: 6px;
+  border-radius: var(--radius-lg);
+  background-color: var(--color-primary-50);
+}
+
+.auth-switch::before {
+  content: "";
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  width: calc(50% - 6px);
+  height: calc(100% - 12px);
+  border-radius: var(--radius-md);
+  background-color: var(--color-primary-700);
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.25s ease;
+}
+
+.auth-switch--sign-up::before {
+  transform: translateX(100%);
+}
+
+.auth-switch__option {
+  position: relative;
+  z-index: 1;
+  min-height: 48px;
+  border: none;
+  background: transparent;
+  color: var(--color-primary-700);
+  font: inherit;
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+}
+
+.auth-switch__option.is-active {
+  color: var(--color-white);
+}
+
+
