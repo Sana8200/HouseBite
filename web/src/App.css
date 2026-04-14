@@ -5,7 +5,7 @@
    override the variables below.
    ───────────────────────────────────────── */
 
-/* :root {
+:root {
     --color-primary: #863bff;
     --color-primary-hover: #6f2ee0;
     --color-primary-soft: #f3f0ff;
@@ -39,9 +39,9 @@
 
     --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
         Helvetica, Arial, sans-serif;
-} */ 
+}
 
-/* Minimal reset 
+/* Minimal reset */
 html, body {
     margin: 0;
     background-color: var(--color-surface);
@@ -58,14 +58,14 @@ button {
     font-family: inherit;
 }
 
-/* Page container 
+/* Page container */
 .page {
     padding: var(--space-lg);
     max-width: 1200px;
     margin: 0 auto;
 }
 
-/* Buttons 
+/* Buttons */
 .btn {
     padding: 10px 20px;
     border-radius: var(--radius-md);
@@ -109,7 +109,7 @@ button {
     color: white;
 }
 
-/* Card 
+/* Card */
 .card {
     background: var(--color-surface);
     border: 1px solid var(--color-border);
@@ -123,7 +123,7 @@ button {
     transform: translateY(-2px);
 }
 
-/* Status messages 
+/* Status messages */
 .error-banner {
     background: var(--color-danger-soft);
     border: 1px solid var(--color-danger-border);
@@ -145,7 +145,7 @@ button {
     padding: 0 4px;
 }
 
-/* Section header — title on the left, action on the right 
+/* Section header — title on the left, action on the right */
 .section-header {
     display: flex;
     justify-content: space-between;
@@ -162,7 +162,7 @@ button {
     text-align: center;
 }
 
-/* Modal 
+/* Modal */
 .modal-overlay {
     position: fixed;
     inset: 0;
@@ -227,4 +227,4 @@ button {
     justify-content: flex-end;
     gap: var(--space-sm);
     margin-top: var(--space-lg);
-} */
+}
