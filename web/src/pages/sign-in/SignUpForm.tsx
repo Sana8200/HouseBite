@@ -17,20 +17,20 @@ export function SignUpForm(props: SignUpProps) {
 
     const [email, setEmail] = useState("")
     const [password, setPassword] = useState("")
-    const [fullName, setFullName] = useState("")
+    const [displayName, setDisplayName] = useState("")
 
     const onSubmit = async (e: React.SubmitEvent) => {
         e.preventDefault();
 
         try {
-            const user = await signUp(email, password);
+            const user = await signUp(email, password, displayName);
             setUser(user);
         } catch (error) {
             setError(error as Error);
         }
     }
 
-    const disabled = !fullName || !email || !password;
+    const disabled = !displayName || !email || !password;
 
     return (
         <form className="auth-form" onSubmit={e => void(onSubmit(e))}>
@@ -44,9 +44,9 @@ export function SignUpForm(props: SignUpProps) {
                 <TextInput
                     label="Name"
                     type="text"
-                    placeholder="Your name (does nothing)"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
+                    placeholder="Your name"
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
                 />
 
                 <TextInput 
