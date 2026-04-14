@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react"
+import { useNavigate } from "react-router-dom"
 import "./HouseHold.css"
 import { createHousehold, getHouseholds, joinHousehold } from "../../api/household"
 
@@ -10,6 +11,7 @@ interface Household {
 }
 
 export function HouseHold() {
+    const navigate = useNavigate()
     const [households, setHouseholds] = useState<Household[]>([])
     const [showCreateModal, setShowCreateModal] = useState(false)
     const [showJoinModal, setShowJoinModal] = useState(false)
@@ -19,9 +21,11 @@ export function HouseHold() {
     const [newName, setNewName] = useState("")
     const [newBudget, setNewBudget] = useState("")
     const [creating, setCreating] = useState(false)
+    const [createError, setCreateError] = useState<string | null>(null)
 
     const [inviteId, setInviteId] = useState("")
     const [joining, setJoining] = useState(false)
+    const [joinError, setJoinError] = useState<string | null>(null)
 
     const fetchHouseholds = async () => {
         const { data, error } = await getHouseholds()
@@ -45,21 +49,27 @@ export function HouseHold() {
 
     const handleCreate = async () => {
         if (!newName.trim()) {
-            setError("Household name is required")
+            setCreateError("Household name is required")
+            return
+        }
+
+        const parsedBudget = newBudget ? parseFloat(newBudget) : null
+        if (parsedBudget !== null && parsedBudget < 0) {
+            setCreateError("Budget cannot be negative")
             return
         }
 
         setCreating(true)
-        setError(null)
+        setCreateError(null)
 
-        const { error: createError } = await createHousehold(
+        const { error } = await createHousehold(
             newName.trim(),
-            newBudget ? parseFloat(newBudget) : null
+            parsedBudget
         )
 
-        if (createError) {
-            console.error("Error creating household:", createError)
-            setError("Could not create household: " + createError.message)
+        if (error) {
+            console.error("Error creating household:", error)
+            setCreateError("Could not create household: " + error.message)
             setCreating(false)
             return
         }
@@ -74,18 +84,18 @@ export function HouseHold() {
 
     const handleJoin = async () => {
         if (!inviteId.trim()) {
-            setError("Invite Id is required")
+            setJoinError("Invite Id is required")
             return
         }
 
         setJoining(true)
-        setError(null)
+        setJoinError(null)
 
-        const { error: joinError } = await joinHousehold(inviteId.trim())
+        const { error } = await joinHousehold(inviteId.trim())
 
-        if (joinError) {
-            console.error("Error joining household:", joinError)
-            setError(joinError.message)
+        if (error) {
+            console.error("Error joining household:", error)
+            setJoinError(error.message)
             setJoining(false)
             return
         }
@@ -114,10 +124,10 @@ export function HouseHold() {
             )}
 
             <div className="household-buttons">
-                <button className="create-btn" onClick={() => setShowCreateModal(true)}>
+                <button className="create-btn" onClick={() => { setCreateError(null); setShowCreateModal(true) }}>
                     + Create Household
                 </button>
-                <button className="join-btn" onClick={() => setShowJoinModal(true)}>
+                <button className="join-btn" onClick={() => { setJoinError(null); setShowJoinModal(true) }}>
                     + Join Household
                 </button>
             </div>
@@ -149,7 +159,7 @@ export function HouseHold() {
                                     </button>
                                 </div>
                             </div>
-                            <button className="go-btn">Go to household</button>
+                            <button className="go-btn" onClick={() => { void navigate("/dashboard") }}>Go to household</button>
                         </div>
                     ))}
                 </div>
@@ -160,6 +170,12 @@ export function HouseHold() {
                 <div className="modal-overlay" onClick={() => setShowCreateModal(false)}>
                     <div className="modal" onClick={(e) => e.stopPropagation()}>
                         <h2>Create a Household</h2>
+                        {createError && (
+                            <div className="error-banner">
+                                {createError}
+                                <button className="error-dismiss" onClick={() => setCreateError(null)}>×</button>
+                            </div>
+                        )}
                         <div className="modal-field">
                             <label htmlFor="house-name">Household Name</label>
                             <input
@@ -198,6 +214,12 @@ export function HouseHold() {
                     <div className="modal" onClick={(e) => e.stopPropagation()}>
                         <h2>Join a Household</h2>
                         <p className="modal-hint">Ask a household member for their invite ID.</p>
+                        {joinError && (
+                            <div className="error-banner">
+                                {joinError}
+                                <button className="error-dismiss" onClick={() => setJoinError(null)}>×</button>
+                            </div>
+                        )}
                         <div className="modal-field">
                             <label htmlFor="invite-code">Invite ID</label>
                             <input
