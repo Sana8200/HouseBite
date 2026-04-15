@@ -1,0 +1,26 @@
+-- from spoonacular recipe api filter parameters
+INSERT INTO food_restriction (category, name) VALUES
+  ('diet', 'gluten free'),
+  ('diet', 'ketogenic'),
+  ('diet', 'vegetarian'),
+  ('diet', 'lacto-vegetarian'),
+  ('diet', 'ovo-vegetarian'),
+  ('diet', 'vegan'),
+  ('diet', 'pescetarian'),
+  ('diet', 'paleo'),
+  ('diet', 'primal'),
+  ('diet', 'low fodmap'),
+  ('diet', 'whole30'),
+  ('intolerance', 'dairy'),
+  ('intolerance', 'egg'),
+  ('intolerance', 'gluten'),
+  ('intolerance', 'grain'),
+  ('intolerance', 'peanut'),
+  ('intolerance', 'seafood'),
+  ('intolerance', 'sesame'),
+  ('intolerance', 'shellfish'),
+  ('intolerance', 'soy'),
+  ('intolerance', 'sulfite'),
+  ('intolerance', 'tree nut'),
+  ('intolerance', 'wheat')
+ON CONFLICT DO NOTHING;
