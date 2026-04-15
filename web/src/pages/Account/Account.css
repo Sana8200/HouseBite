@@ -244,6 +244,47 @@
     margin: 6px 0 0 0;
 }
 
+/* Dietary preferences */
+.section-hint {
+    color: var(--color-muted);
+    font-size: 14px;
+    margin: -4px 0 var(--space-md) 0;
+}
+
+.restriction-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.restriction-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    font-size: 14px;
+    cursor: pointer;
+    background: var(--color-surface);
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.restriction-chip input {
+    margin: 0;
+    cursor: pointer;
+}
+
+.restriction-chip.is-on {
+    background: var(--color-primary-soft);
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+    font-weight: 500;
+}
+
 /* Danger zone */
 .account-danger {
     border-color: #f0c2c2;

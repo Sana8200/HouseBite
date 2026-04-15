@@ -31,11 +31,7 @@ export function Account({ user }: AccountProps) {
     const [savingName, setSavingName] = useState(false)
     const [nameError, setNameError] = useState<string | null>(null)
 
-    const [avatarUrl, setAvatarUrl] = useState<string | null>(
-        (user.user_metadata?.avatar_url as string | undefined) ?? null
-    )
-    const [uploadingAvatar, setUploadingAvatar] = useState(false)
-    const [avatarError, setAvatarError] = useState<string | null>(null)
+    const avatarUrl = (user.user_metadata?.avatar_url as string | undefined) ?? null
 
     const [showPasswordModal, setShowPasswordModal] = useState(false)
     const [newPassword, setNewPassword] = useState("")
@@ -48,6 +44,11 @@ export function Account({ user }: AccountProps) {
     const [deleteConfirm, setDeleteConfirm] = useState("")
     const [deleting, setDeleting] = useState(false)
     const [deleteError, setDeleteError] = useState<string | null>(null)
+
+    const [restrictions, setRestrictions] = useState<{ id: string; restriction: string }[]>([])
+    const [myRestrictionIds, setMyRestrictionIds] = useState<Set<string>>(new Set())
+    const [togglingId, setTogglingId] = useState<string | null>(null)
+    const [restrictionError, setRestrictionError] = useState<string | null>(null)
 
     useEffect(() => {
         const fetch = async () => {
@@ -69,10 +70,60 @@ export function Account({ user }: AccountProps) {
                 setTotalSpent(sum)
             }
 
+            const { data: allRestrictions, error: frErr } = await supabase
+                .from("food_restriction")
+                .select("id, restriction")
+                .order("restriction")
+            if (frErr) console.error("Error fetching restrictions:", frErr)
+            else setRestrictions(allRestrictions ?? [])
+
+            const { data: mine, error: mrErr } = await supabase
+                .from("member_restriction")
+                .select("restriction_id")
+                .eq("member_id", user.id)
+            if (mrErr) console.error("Error fetching my restrictions:", mrErr)
+            else setMyRestrictionIds(new Set((mine ?? []).map(m => m.restriction_id as string)))
+
             setLoading(false)
         }
         void fetch()
-    }, [])
+    }, [user.id])
+
+    const toggleRestriction = async (id: string) => {
+        setTogglingId(id)
+        setRestrictionError(null)
+        const has = myRestrictionIds.has(id)
+        const next = new Set(myRestrictionIds)
+
+        if (has) {
+            const { error } = await supabase
+                .from("member_restriction")
+                .delete()
+                .eq("member_id", user.id)
+                .eq("restriction_id", id)
+            if (error) {
+                setRestrictionError(error.message)
+                setTogglingId(null)
+                return
+            }
+            next.delete(id)
+        } else {
+            const { error } = await supabase
+                .from("member_restriction")
+                .insert({ member_id: user.id, restriction_id: id })
+            if (error) {
+                setRestrictionError(error.message)
+                setTogglingId(null)
+                return
+            }
+            next.add(id)
+        }
+        setMyRestrictionIds(next)
+        setTogglingId(null)
+    }
+
+    const formatRestriction = (r: string) =>
+        r.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())
 
     const saveUsername = async () => {
         const trimmed = draftName.trim()
@@ -100,43 +151,7 @@ export function Account({ user }: AccountProps) {
         setEditingName(false)
     }
 
-    const onAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0]
-        if (!file) return
 
-        setUploadingAvatar(true)
-        setAvatarError(null)
-
-        const ext = file.name.split(".").pop() ?? "jpg"
-        const path = `${user.id}/avatar.${ext}`
-
-        const { error: uploadErr } = await supabase.storage
-            .from("avatars")
-            .upload(path, file, { upsert: true, contentType: file.type })
-
-        if (uploadErr) {
-            setAvatarError(uploadErr.message)
-            setUploadingAvatar(false)
-            return
-        }
-
-        const { data: publicUrl } = supabase.storage
-            .from("avatars")
-            .getPublicUrl(path)
-
-        const url = `${publicUrl.publicUrl}?t=${Date.now()}`
-
-        const { error: metaErr } = await supabase.auth.updateUser({
-            data: { avatar_url: url },
-        })
-
-        setUploadingAvatar(false)
-        if (metaErr) {
-            setAvatarError(metaErr.message)
-            return
-        }
-        setAvatarUrl(url)
-    }
 
     const savePassword = async () => {
         if (newPassword.length < 6) {
@@ -188,8 +203,7 @@ export function Account({ user }: AccountProps) {
           })
         : "—"
 
-    const initials =
-        (username || user.email || "?").trim().charAt(0).toUpperCase()
+    const initials =(username || user.email || "?").trim().charAt(0).toUpperCase()
 
     return (
         <div className="page account-page">
@@ -202,23 +216,10 @@ export function Account({ user }: AccountProps) {
                     ) : (
                         <div className="avatar-fallback">{initials}</div>
                     )}
-                    <span className="avatar-overlay">
-                        {uploadingAvatar ? "Uploading..." : "Change"}
-                    </span>
-                    <input
-                        type="file"
-                        accept="image/*"
-                        onChange={e => void onAvatarChange(e)}
-                        disabled={uploadingAvatar}
-                        hidden
-                    />
                 </label>
                 <div>
                     <p className="identity-name">{username || "—"}</p>
                     <p className="identity-email">{user.email}</p>
-                    {avatarError && (
-                        <p className="account-error">{avatarError}</p>
-                    )}
                 </div>
             </section>
 
@@ -330,6 +331,39 @@ export function Account({ user }: AccountProps) {
                             ))}
                         </ul>
                     )
+                )}
+            </section>
+
+            <section className="account-section">
+                <h2>Dietary preferences</h2>
+                <p className="section-hint">
+                    Select any restrictions that apply. Recipes will respect
+                    these across your households.
+                </p>
+                {restrictions.length === 0 ? (
+                    <p className="empty-text">No options available.</p>
+                ) : (
+                    <ul className="restriction-list">
+                        {restrictions.map(r => {
+                            const checked = myRestrictionIds.has(r.id)
+                            return (
+                                <li key={r.id}>
+                                    <label className={`restriction-chip ${checked ? "is-on" : ""}`}>
+                                        <input
+                                            type="checkbox"
+                                            checked={checked}
+                                            disabled={togglingId === r.id}
+                                            onChange={() => void toggleRestriction(r.id)}
+                                        />
+                                        <span>{formatRestriction(r.restriction)}</span>
+                                    </label>
+                                </li>
+                            )
+                        })}
+                    </ul>
+                )}
+                {restrictionError && (
+                    <p className="account-error">{restrictionError}</p>
                 )}
             </section>
 
