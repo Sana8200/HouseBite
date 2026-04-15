@@ -317,7 +317,7 @@ export const Scan: React.FC = () => {
             
             <Space h="md"/>
             <div
-              className={`dropzone ${isDragActive ? 'dropzone-active' : ''}`}
+              className={`scan-dropzone ${isDragActive ? 'scan-dropzone-active' : ''}`}
               onDragOver={onDragOver}
               onDragLeave={onDragLeave}
               onDrop={onDrop}
@@ -328,15 +328,15 @@ export const Scan: React.FC = () => {
                 type="file"
                 accept="image/jpeg,image/png,image/jpg"
                 onChange={onFileSelect}
-                className="file-input"
+                className="scan-file-input"
               />
               {isDragActive ? (
-                <p className="dropzone-text">Drop your receipt here...</p>
+                <p className="scan-dropzone-text">Drop your receipt here...</p>
               ) : (
-                <div className="dropzone-content">
-                  <p className="dropzone-icon">camera icon</p>
-                  <p className="dropzone-text">Drag and drop a receipt image, or click to select</p>
-                  <p className="dropzone-hint">
+                <div className="scan-dropzone-content">
+                  <p className="scan-dropzone-icon">camera icon</p>
+                  <p className="scan-dropzone-text">Drag and drop a receipt image, or click to select</p>
+                  <p className="scan-dropzone-hint">
                     Supports JPEG, PNG (max 10MB)
                   </p>
                 </div>
@@ -346,54 +346,54 @@ export const Scan: React.FC = () => {
         }
 
         {error && (
-          <div className="error-message">
+          <div className="scan-error-message">
             ❌ {error}
           </div>
         )}
 
         {isProcessing && (
-          <div className="progress-container">
-            <div className="progress-bar-wrapper">
+          <div className="scan-progress-container">
+            <div className="scan-progress-bar-wrapper">
               <div
-                className="progress-bar"
+                className="scan-progress-bar"
                 style={{ width: `${ocrProgress}%` }}
               >
                 {ocrProgress > 0 && `${ocrProgress}%`}
               </div>
             </div>
-            <p className="progress-text">
+            <p className="scan-progress-text">
               {ocrProgress < 100 ? 'Reading your receipt...' : 'Processing complete!'}
             </p>
           </div>
         )}
         {image && !isProcessing && extractedData && (
-          <div className="results-container">
-            <div className="image-section">
-              <h3 className="section-title">Your Receipt</h3>
-              <img src={image} alt="Receipt" className="receipt-image" />
+          <div className="scan-results-container">
+            <div className="scan-image-section">
+              <h3 className="scan-section-title">Your Receipt</h3>
+              <img src={image} alt="Receipt" className="scan-receipt-image" />
             </div>
-            <div className="data-section">
-              <h3 className="section-title">Extracted Information</h3>
-              <div className="data-card">
+            <div className="scan-data-section">
+              <h3 className="scan-section-title">Extracted Information</h3>
+              <div className="scan-data-card">
                 <p><strong>Store:</strong> {extractedData.merchant}</p>
                 <p><strong>Date:</strong> {extractedData.date}</p>
                 <p><strong>Total:</strong> ${extractedData.total.toFixed(2)}</p>
         
                 <p><strong>🛒 Items ({extractedData.items.length}):</strong></p>
                 {extractedData.items.length > 0 ? (
-                  <ul className="items-list">
+                  <ul className="scan-items-list">
                     {extractedData.items.map((item, index) => (
-                      <li key={index} className="item-row">
+                      <li key={index} className="scan-item-row">
                         {item.name} - <strong>${item.price.toFixed(2)}</strong>
                       </li>
                     ))}
                   </ul>
                 ) : (
-                  <p className="no-items-message">No items detected. Try a clearer receipt image.</p>
+                  <p className="scan-no-items-message">No items detected. Try a clearer receipt image.</p>
                 )}
         
                 <button
-                  className="copy-button"
+                  className="scan-copy-button"
                   onClick={() => {
                     navigator.clipboard.writeText(JSON.stringify(extractedData, null, 2));
                     alert('Data copied to clipboard!');

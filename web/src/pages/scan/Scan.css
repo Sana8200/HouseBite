@@ -13,7 +13,7 @@
 }
 
 /* Dropzone Styles */
-.dropzone {
+.scan-dropzone {
   border: 2px dashed #ccc;
   border-radius: 8px;
   padding: 40px;
@@ -23,46 +23,46 @@
   cursor: pointer;
 }
 
-.dropzone:hover {
+.scan-dropzone:hover {
   border-color: #007bff;
   background-color: #f8f9fa;
 }
 
-.dropzone-active {
+.scan-dropzone-active {
   border-color: #007bff;
   background-color: #f0f8ff;
 }
 
-.dropzone-content {
+.scan-dropzone-content {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 10px;
 }
 
-.dropzone-icon {
+.scan-dropzone-icon {
   font-size: 48px;
   margin: 0;
 }
 
-.dropzone-text {
+.scan-dropzone-text {
   margin: 0;
   font-size: 16px;
   color: #666;
 }
 
-.dropzone-hint {
+.scan-dropzone-hint {
   margin: 0;
   font-size: 12px;
   color: #999;
 }
 
-.file-input {
+.scan-file-input {
   display: none;
 }
 
 /* Error Message */
-.error-message {
+.scan-error-message {
   margin-top: 20px;
   padding: 12px;
   background-color: #ffebee;
@@ -73,11 +73,11 @@
 }
 
 /* Progress Bar */
-.progress-container {
+.scan-progress-container {
   margin-top: 20px;
 }
 
-.progress-bar-wrapper {
+.scan-progress-bar-wrapper {
   background-color: #e0e0e0;
   border-radius: 4px;
   height: 24px;
@@ -85,7 +85,7 @@
   margin-bottom: 10px;
 }
 
-.progress-bar {
+.scan-progress-bar {
   background-color: #28a745;
   height: 24px;
   transition: width 0.3s ease;
@@ -97,7 +97,7 @@
   font-weight: bold;
 }
 
-.progress-text {
+.scan-progress-text {
   text-align: center;
   margin-top: 10px;
   color: #666;
@@ -105,7 +105,7 @@
 }
 
 /* Results Container */
-.results-container {
+.scan-results-container {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 24px;
@@ -113,80 +113,80 @@
 }
 
 @media (max-width: 768px) {
-  .results-container {
+  .scan-results-container {
     grid-template-columns: 1fr;
     gap: 20px;
   }
 }
 
 /* Image Section */
-.image-section {
+.scan-image-section {
   background-color: #fff;
   border-radius: 8px;
   overflow: hidden;
 }
 
-.section-title {
+.scan-section-title {
   margin: 0 0 15px 0;
   color: #333;
   font-size: 1.25rem;
 }
 
-.receipt-image {
+.scan-receipt-image {
   max-width: 100%;
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 /* Data Section */
-.data-section {
+.scan-data-section {
   background-color: #fff;
   border-radius: 8px;
 }
 
-.data-card {
+.scan-data-card {
   background-color: #f8f9fa;
   padding: 20px;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
-.data-card p {
+.scan-data-card p {
   margin: 10px 0;
   line-height: 1.5;
 }
 
-.data-card strong {
+.scan-data-card strong {
   color: #333;
 }
 
 /* Items List */
-.items-list {
+.scan-items-list {
   max-height: 300px;
   overflow-y: auto;
   padding-left: 20px;
   margin: 10px 0;
 }
 
-.item-row {
+.scan-item-row {
   margin-bottom: 8px;
   padding: 4px 0;
   border-bottom: 1px solid #e0e0e0;
   font-size: 14px;
 }
 
-.item-row:last-child {
+.scan-item-row:last-child {
   border-bottom: none;
 }
 
-.no-items-message {
+.scan-no-items-message {
   color: #666;
   font-style: italic;
   margin: 10px 0;
 }
 
 /* Copy Button */
-.copy-button {
+.scan-copy-button {
   margin-top: 15px;
   padding: 10px 20px;
   background-color: #007bff;
@@ -200,35 +200,29 @@
   width: 100%;
 }
 
-.copy-button:hover {
+.scan-copy-button:hover {
   background-color: #0056b3;
 }
 
-.copy-button:active {
+.scan-copy-button:active {
   transform: translateY(1px);
 }
 
-/* Animations */
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
 /* Scrollbar Styling */
-.items-list::-webkit-scrollbar {
+.scan-items-list::-webkit-scrollbar {
   width: 8px;
 }
 
-.items-list::-webkit-scrollbar-track {
+.scan-items-list::-webkit-scrollbar-track {
   background: #f1f1f1;
   border-radius: 4px;
 }
 
-.items-list::-webkit-scrollbar-thumb {
+.scan-items-list::-webkit-scrollbar-thumb {
   background: #888;
   border-radius: 4px;
 }
 
-.items-list::-webkit-scrollbar-thumb:hover {
+.scan-items-list::-webkit-scrollbar-thumb:hover {
   background: #555;
 }
