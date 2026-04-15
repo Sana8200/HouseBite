@@ -6,6 +6,7 @@ import { Header } from "./components/Header";
 import { HouseHold } from "./pages/household/HouseHold";
 import Dashboard from "./pages/dashboard/Dashboard";
 import { Recipes } from "./pages/recipes/recipes";
+import { Account } from "./pages/Account/Account";
 import { SignIn } from "./pages/sign-in/SignIn";
 import { useEffect, useState } from "react";
 import type { User } from "@supabase/supabase-js";
@@ -16,10 +17,14 @@ export function App() {
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
-    supabase.auth.onAuthStateChange((_e, s) => {
-      if (s?.user) setUser(s.user);
+    void(load());
+    async function load() {
+      const session = await supabase.auth.getSession();
+      if (session.data.session?.user) {
+        setUser(session.data.session?.user);
+      }
       setLoaded(true);
-    });
+    }
   }, []);
 
   // prevents redirect when reopening a tab. we need to wait until we know if we have a user signed in.
@@ -28,16 +33,18 @@ export function App() {
   let routes;
   if (user) {
     routes = [
-      <Route key="sign-in" path="sign-in" element={<Navigate to="/dashboard" />} />,
+      <Route key="sign-in" path="sign-in" element={<Navigate to="/household" />} />,
       <Route key="household" path="household" element={<HouseHold />} />,
       <Route key="dashboard" path="dashboard" element={<Dashboard />} />,
       <Route key="recipes" path="recipes" element={<Recipes />} />
+      <Route key="account" path="Account" element={<Account user={user} />} />
     ];
   } else {
     routes = [
       <Route key="sign-in" path="sign-in" element={<SignIn setUser={setUser} />} />,
       <Route key="household" path="household" element={<Navigate to="/sign-in" />} />,
-      <Route key="dashboard" path="dashboard" element={<Navigate to="/sign-in" />} />
+      <Route key="dashboard" path="dashboard" element={<Navigate to="/sign-in" />} />,
+      <Route key="account" path="Account" element={<Navigate to="/sign-in" />} />
     ];
   }
 
@@ -45,7 +52,7 @@ export function App() {
     <BrowserRouter>
       <Header user={user}/>
       <Routes>
-        <Route index element={<Landing />} />
+        <Route index element={<Landing user={user} />} />
 
         {routes}
 
