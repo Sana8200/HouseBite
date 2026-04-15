@@ -34,6 +34,8 @@ export function Account({ user }: {user: User}) {
     const [savingName, setSavingName] = useState(false)
     const [nameError, setNameError] = useState<string | null>(null)
 
+    const avatarUrl = (user.user_metadata?.avatar_url as string | undefined) ?? null
+
     // Password Modal
     const [showPasswordModal, setShowPasswordModal] = useState(false)
     const [newPassword, setNewPassword] = useState("")
@@ -48,6 +50,12 @@ export function Account({ user }: {user: User}) {
     const [deleting, setDeleting] = useState(false)
     const [deleteError, setDeleteError] = useState<string | null>(null)
 
+    const [restrictions, setRestrictions] = useState<{ id: string; name: string; category: "diet" | "intolerance" }[]>([])
+    const [myRestrictionIds, setMyRestrictionIds] = useState<Set<string>>(new Set())
+    const [togglingId, setTogglingId] = useState<string | null>(null)
+    const [restrictionError, setRestrictionError] = useState<string | null>(null)
+
+
     useEffect(() => {
         const fetch = async () => {
             const [householdsResult, totalResult] = await Promise.all([ // calls both in parallel
@@ -61,12 +69,96 @@ export function Account({ user }: {user: User}) {
             if (totalResult.error) console.error("Error fetching total spent:", totalResult.error)
             else setTotalSpent(totalResult.total)
 
+            const { data: allRestrictions, error: frErr } = await supabase
+                .from("food_restriction")
+                .select("id, name, category")
+                .order("category")
+                .order("name")
+            if (frErr) console.error("Error fetching restrictions:", frErr)
+            else setRestrictions(allRestrictions ?? [])
+
+            const { data: mine, error: mrErr } = await supabase
+                .from("member_restriction")
+                .select("restriction_id")
+                .eq("member_id", user.id)
+            if (mrErr) console.error("Error fetching my restrictions:", mrErr)
+            else setMyRestrictionIds(new Set((mine ?? []).map(m => m.restriction_id as string)))
+
             setLoading(false)
         }
         void fetch()
-    }, [])
+    }, [user.id])
 
-    const handleSaveUsername = async () => {
+    const toggleRestriction = async (id: string) => {
+        setTogglingId(id)
+        setRestrictionError(null)
+        const has = myRestrictionIds.has(id)
+        const next = new Set(myRestrictionIds)
+
+        if (has) {
+            const { error } = await supabase
+                .from("member_restriction")
+                .delete()
+                .eq("member_id", user.id)
+                .eq("restriction_id", id)
+            if (error) {
+                setRestrictionError(error.message)
+                setTogglingId(null)
+                return
+            }
+            next.delete(id)
+        } else {
+            const { error } = await supabase
+                .from("member_restriction")
+                .insert({ member_id: user.id, restriction_id: id })
+            if (error) {
+                setRestrictionError(error.message)
+                setTogglingId(null)
+                return
+            }
+            next.add(id)
+        }
+        setMyRestrictionIds(next)
+        setTogglingId(null)
+    }
+
+    const formatRestriction = (r: string) =>
+        r.replace(/\b\w/g, c => c.toUpperCase())
+
+    const diets = restrictions.filter(r => r.category === "diet")
+    const intolerances = restrictions.filter(r => r.category === "intolerance")
+
+    const renderCategory = (
+        label: string,
+        icon: string,
+        items: typeof restrictions
+    ) => (
+        <div className="dietary-category">
+            <h3 className="dietary-heading">
+                <span className="dietary-icon" aria-hidden>{icon}</span>
+                <span>{label}</span>
+            </h3>
+            <ul className="chip-row">
+                {items.map(r => {
+                    const on = myRestrictionIds.has(r.id)
+                    return (
+                        <li key={r.id}>
+                            <button
+                                type="button"
+                                className={`chip ${on ? "chip-on" : ""}`}
+                                disabled={togglingId === r.id}
+                                onClick={() => void toggleRestriction(r.id)}
+                            >
+                                {formatRestriction(r.name)}
+                            </button>
+                        </li>
+                    )
+                })}
+            </ul>
+        </div>
+    )
+
+    const saveUsername = async () => {
         const trimmed = draftName.trim()
         if (!trimmed) {
             setNameError("Username cannot be empty")
@@ -90,7 +182,9 @@ export function Account({ user }: {user: User}) {
         setEditingName(false)
     }
 
-    const handleSavePassword = async () => {
+
+
+    const savePassword = async () => {
         if (newPassword.length < 6) {
             setPasswordError("Password must be at least 6 characters")
             return
@@ -116,7 +210,7 @@ export function Account({ user }: {user: User}) {
         }, 1200)
     }
 
-    const handleDeleteAccount = async () => {
+    const confirmDelete = async () => {
         if (deleteConfirm !== "DELETE") {
             setDeleteError("Type DELETE to confirm")
             return
@@ -140,22 +234,27 @@ export function Account({ user }: {user: User}) {
           })
         : "—"
 
-    const initials =
-        (username || user.email || "?").trim().charAt(0).toUpperCase()
+    const initials =(username || user.email || "?").trim().charAt(0).toUpperCase()
 
     return (
         <div className="page account-page">
             <h1>Account</h1>
 
             <section className="account-section account-identity">
-                <div className="avatar-fallback">{initials}</div>
+                <label className="avatar-wrapper">
+                    {avatarUrl ? (
+                        <img src={avatarUrl} alt="avatar" className="avatar-img" />
+                    ) : (
+                        <div className="avatar-fallback">{initials}</div>
+                    )}
+                </label>
                 <div>
                     <p className="identity-name">{username || "—"}</p>
                     <p className="identity-email">{user.email}</p>
                 </div>
             </section>
 
-            <section className="account-section">
+            <section className="account-section account-profile">
                 <h2>Profile</h2>
                 <dl className="account-list">
                     <div className="account-row">
@@ -172,7 +271,7 @@ export function Account({ user }: {user: User}) {
                                     />
                                     <button
                                         className="account-save"
-                                        onClick={() => void handleSaveUsername()}
+                                        onClick={() => void saveUsername()}
                                         disabled={savingName}
                                     >
                                         {savingName ? "Saving..." : "Save"}
@@ -213,7 +312,11 @@ export function Account({ user }: {user: User}) {
                         <dd>{memberSince}</dd>
                     </div>
                     <div className="account-row">
-                        <dt>Total spent</dt>
+                        <dt> Personal Budget </dt>
+                        <dd>{}</dd>
+                    </div>
+                    <div className="account-row">
+                        <dt>Total spent this month</dt>
                         <dd>
                             {totalSpent === null
                                 ? "—"
@@ -223,7 +326,7 @@ export function Account({ user }: {user: User}) {
                 </dl>
             </section>
 
-            <section className="account-section">
+            <section className="account-section account-households">
                 <div className="account-households-header">
                     <h2>Households</h2>
                     {!loading && (
@@ -264,7 +367,48 @@ export function Account({ user }: {user: User}) {
                 )}
             </section>
 
-            <section className="account-section">
+            <section className="account-section account-dietary">
+                <h2>Food Preferences & Restrictions</h2>
+                <p className="section-hint">
+                    Add your dietary restrictions to get personalized recipe
+                    suggestions and let your household know what you can and
+                    cannot eat.
+                </p>
+
+                <div className="dietary-selected">
+                    <span className="dietary-label">Your selections</span>
+                    {myRestrictionIds.size === 0 ? (
+                        <span className="dietary-empty">None selected yet</span>
+                    ) : (
+                        <ul className="chip-row">
+                            {restrictions
+                                .filter(r => myRestrictionIds.has(r.id))
+                                .map(r => (
+                                    <li key={r.id}>
+                                        <button
+                                            type="button"
+                                            className="chip chip-on"
+                                            disabled={togglingId === r.id}
+                                            onClick={() => void toggleRestriction(r.id)}
+                                            title="Click to remove"
+                                        >
+                                            {formatRestriction(r.name)}
+                                        </button>
+                                    </li>
+                                ))}
+                        </ul>
+                    )}
+                </div>
+
+                {renderCategory("Intolerances", "⚠️", intolerances)}
+                {renderCategory("Diets", "🥗", diets)}
+
+                {restrictionError && (
+                    <p className="account-error">{restrictionError}</p>
+                )}
+            </section>
+
+            <section className="account-section account-security">
                 <h2>Security</h2>
                 <button
                     className="account-edit-btn"
@@ -333,7 +477,7 @@ export function Account({ user }: {user: User}) {
                             </button>
                             <button
                                 className="account-save"
-                                onClick={() => void handleSavePassword()}
+                                onClick={() => void savePassword()}
                                 disabled={savingPassword}
                             >
                                 {savingPassword ? "Saving..." : "Save"}
@@ -376,7 +520,7 @@ export function Account({ user }: {user: User}) {
                             </button>
                             <button
                                 className="danger-btn"
-                                onClick={() => void handleDeleteAccount()}
+                                onClick={() => void confirmDelete()}
                                 disabled={deleting}
                             >
                                 {deleting ? "Deleting..." : "Delete permanently"}
