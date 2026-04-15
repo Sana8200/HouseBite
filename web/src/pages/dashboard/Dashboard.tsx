@@ -140,19 +140,6 @@ const ProductsInDanger: React.FC<{ products: Product[] }> = ({ products }) => {
       <h2 className="section-title">These products will expire soon</h2>
 
       <div className="filter-section">
-        <div className="filter-group">
-          <label htmlFor="household-filter">Household:</label>
-          <select
-            id="household-filter"
-            value={selectedHousehold}
-            onChange={e => { setSelectedHousehold(e.target.value); setSelectedProducts([]); }}
-            className="filter-select"
-          >
-            {households.map(h => (
-              <option key={h} value={h}>{h === 'all' ? 'All Households' : h}</option>
-            ))}
-          </select>
-        </div>
 
         <div className="filter-group">
           <label htmlFor="status-filter">Status:</label>
