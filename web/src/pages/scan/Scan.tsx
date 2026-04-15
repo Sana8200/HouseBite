@@ -1,16 +1,11 @@
 // src/components/ReceiptScanner.tsx
 
 import React, { useState, useCallback, useRef } from 'react';
-import { createClient } from '@supabase/supabase-js';
 import Tesseract from 'tesseract.js';
-import './ReceiptScanner.css';
+import './Scan.css';
+import { supabase } from '../../supabase';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
-const supabase = supabaseUrl && supabaseAnonKey 
-  ? createClient(supabaseUrl, supabaseAnonKey)
-  : null;
 
 interface ExtractedData {
   merchant: string;
@@ -19,7 +14,7 @@ interface ExtractedData {
   items: Array<{name: string; price: number}>;
 }
 
-export const ReceiptScanner: React.FC = () => {
+export const Scan: React.FC = () => {
   const [image, setImage] = useState<string | null>(null);
   const [extractedData, setExtractedData] = useState<ExtractedData | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
