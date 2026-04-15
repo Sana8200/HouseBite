@@ -7,7 +7,6 @@ import { Header } from "./components/Header";
 import { HouseHold } from "./pages/household/HouseHold";
 import Dashboard from "./pages/dashboard/Dashboard";
 import { Account } from "./pages/Account/Account";
-import { Product } from "./pages/product/product";
 import { Receipts } from "./pages/receipts/receipts";
 import { SignIn } from "./pages/sign-in/SignIn";
 import { ShoppingList } from "./pages/shoppingList/shoppingList";
@@ -16,6 +15,7 @@ import { Pantry } from "./pages/pantry/pantry";
 import { useEffect, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "./supabase";
+import { Scan } from './pages/scan/Scan';
 
 export function App() {
   const [loaded, setLoaded] = useState(false);
@@ -44,10 +44,10 @@ export function App() {
       <Route key="recipes" path="recipes" element={<Recipes />} />,
       <Route key="shopping-list" path="shoppinglist" element={<ShoppingList />} />,
       <Route key="pantry" path="pantry" element={<Pantry />} />,
-      <Route key="scan" path="scan" element={<Product />} />,
       <Route key="receipts" path="receipts" element={<Receipts />} />,
       <Route key="about" path="about" element={<About />} />,
-      <Route key="account" path="Account" element={<Account user={user} />} />
+      <Route key="account" path="Account" element={<Account user={user} />} />,
+      <Route key="scan" path="scan" element={<Scan />} />
     ];
   } else {
     routes = [
@@ -55,10 +55,10 @@ export function App() {
       <Route key="household" path="household" element={<Navigate to="/sign-in" />} />,
       <Route key="dashboard" path="dashboard" element={<Navigate to="/sign-in" />} />,
       <Route key="shopping-list" path="shoppinglist" element={<Navigate to="/sign-in" />} />,
-      <Route key="scan" path="scan" element={<Navigate to="/sign-in" />} />,
       <Route key="receipts" path="receipts" element={<Navigate to="/sign-in" />} />,
       <Route key="about" path="about" element={<Navigate to="/sign-in" />} />,
-      <Route key="account" path="Account" element={<Navigate to="/sign-in" />} />
+      <Route key="account" path="Account" element={<Navigate to="/sign-in" />} />,
+      <Route key="scan" path="scan" element={<Navigate to="/sign-in" />} />
     ];
   }
 
