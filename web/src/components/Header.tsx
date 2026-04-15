@@ -35,7 +35,7 @@ export function Header(props: HeaderProps) {
                         <NavLink to="/recipes" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>
                             Recipes
                         </NavLink>
-                        <NavLink to="/dashboard" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>
+                        <NavLink to="/Account" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>
                             Account
                         </NavLink>
                     </>

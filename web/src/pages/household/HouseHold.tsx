@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
-import { supabase } from "../../supabase"
 import "./HouseHold.css"
-import {createHousehold} from "../../api/household.ts";
+import { createHousehold, getHouseholds, joinHousehold } from "../../api/household"
 
 interface Household {
     id: string
@@ -22,15 +21,14 @@ export function HouseHold() {
     const [newName, setNewName] = useState("")
     const [newBudget, setNewBudget] = useState("")
     const [creating, setCreating] = useState(false)
+    const [createError, setCreateError] = useState<string | null>(null)
 
     const [inviteId, setInviteId] = useState("")
     const [joining, setJoining] = useState(false)
+    const [joinError, setJoinError] = useState<string | null>(null)
 
     const fetchHouseholds = async () => {
-        setLoading(true)
-        const { data, error } = await supabase
-            .from("household")
-            .select("id, house_name, invite_id, monthly_budget")
+        const { data, error } = await getHouseholds()
 
         if (error) {
             console.error("Error fetching households:", error)
@@ -44,30 +42,34 @@ export function HouseHold() {
         setLoading(false)
     }
 
+    // Warns because fetchHouseholds calls setState internally;
+    // safe to suppress since all setState calls happen after await, not synchronously.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     useEffect(() => { void fetchHouseholds()}, [])
 
     const handleCreate = async () => {
         if (!newName.trim()) {
-            setError("Household name is required")
+            setCreateError("Household name is required")
+            return
+        }
+
+        const parsedBudget = newBudget ? parseFloat(newBudget) : null
+        if (parsedBudget !== null && parsedBudget < 0) {
+            setCreateError("Budget cannot be negative")
             return
         }
 
         setCreating(true)
-        setError(null)
+        setCreateError(null)
 
-        // Uses a SECURITY DEFINER SQL function that creates the household
-        // and links the current user in a single transaction. This replaces
-        // the previous two-step flow (insert household → insert allocation)
-        // which failed because RLS SELECT policies block RETURNING on a row
-        // whose allocation doesn't exist yet.
-        const { error: createError } = await createHousehold(
+        const { error } = await createHousehold(
             newName.trim(),
-            newBudget ? parseFloat(newBudget) : null
+            parsedBudget
         )
 
-        if (createError) {
-            console.error("Error creating household:", createError)
-            setError("Could not create household: " + createError.message)
+        if (error) {
+            console.error("Error creating household:", error)
+            setCreateError("Could not create household: " + error.message)
             setCreating(false)
             return
         }
@@ -82,59 +84,18 @@ export function HouseHold() {
 
     const handleJoin = async () => {
         if (!inviteId.trim()) {
-            setError("Invite Id is required")
+            setJoinError("Invite Id is required")
             return
         }
 
         setJoining(true)
-        setError(null)
+        setJoinError(null)
 
-        // Get current user
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) {
-            setError("You must be logged in to join a household")
-            setJoining(false)
-            return
-        }
+        const { error } = await joinHousehold(inviteId.trim())
 
-        // Find the household by invite id
-        const { data: household, error: findError } = await supabase
-            .from("household")
-            .select("id, house_name")
-            .eq("invite_id", inviteId.trim().toLowerCase())
-            .single()
-
-        if (findError || !household) {
-            setError("No household found with that invite ID")
-            setJoining(false)
-            return
-        }
-
-        // Check if already a member
-        const { data: existing } = await supabase
-            .from("allocations")
-            .select("member_id")
-            .eq("member_id", user.id)
-            .eq("household_id", household.id)
-            .maybeSingle()
-
-        if (existing) {
-            setError("You are already a member of " + household.house_name)
-            setJoining(false)
-            return
-        }
-
-        // Link the user to the household
-        const { error: allocError } = await supabase
-            .from("allocations")
-            .insert({
-                member_id: user.id,
-                household_id: household.id,
-            })
-
-        if (allocError) {
-            console.error("Error joining household:", allocError)
-            setError("Could not join household: " + allocError.message)
+        if (error) {
+            console.error("Error joining household:", error)
+            setJoinError(error.message)
             setJoining(false)
             return
         }
@@ -163,10 +124,10 @@ export function HouseHold() {
             )}
 
             <div className="household-buttons">
-                <button className="create-btn" onClick={() => setShowCreateModal(true)}>
+                <button className="create-btn" onClick={() => { setCreateError(null); setShowCreateModal(true) }}>
                     + Create Household
                 </button>
-                <button className="join-btn" onClick={() => setShowJoinModal(true)}>
+                <button className="join-btn" onClick={() => { setJoinError(null); setShowJoinModal(true) }}>
                     + Join Household
                 </button>
             </div>
@@ -209,6 +170,12 @@ export function HouseHold() {
                 <div className="modal-overlay" onClick={() => setShowCreateModal(false)}>
                     <div className="modal" onClick={(e) => e.stopPropagation()}>
                         <h2>Create a Household</h2>
+                        {createError && (
+                            <div className="error-banner">
+                                {createError}
+                                <button className="error-dismiss" onClick={() => setCreateError(null)}>×</button>
+                            </div>
+                        )}
                         <div className="modal-field">
                             <label htmlFor="house-name">Household Name</label>
                             <input
@@ -247,6 +214,12 @@ export function HouseHold() {
                     <div className="modal" onClick={(e) => e.stopPropagation()}>
                         <h2>Join a Household</h2>
                         <p className="modal-hint">Ask a household member for their invite ID.</p>
+                        {joinError && (
+                            <div className="error-banner">
+                                {joinError}
+                                <button className="error-dismiss" onClick={() => setJoinError(null)}>×</button>
+                            </div>
+                        )}
                         <div className="modal-field">
                             <label htmlFor="invite-code">Invite ID</label>
                             <input
