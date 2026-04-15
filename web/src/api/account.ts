@@ -34,16 +34,41 @@ export async function getTotalSpent() {
     return { total, error: null }
 }
 
-export async function saveUsername(name: string) {
-    return supabase.auth.updateUser({
-        data: { username: name, display_name: name },
-    })
-}
-
-export async function savePassword(password: string) {
-    return supabase.auth.updateUser({ password })
-}
-
 export async function deleteAccount() {
     return supabase.rpc("delete_account")
+}
+
+export interface FoodRestriction {
+    id: string
+    name: string
+    category: "diet" | "intolerance"
+}
+
+export async function getFoodRestrictions() {
+    return supabase
+        .from("food_restriction")
+        .select("id, name, category")
+        .order("category")
+        .order("name")
+}
+
+export async function getMyRestrictions(userId: string): Promise<{ data: { restriction_id: string }[] | null; error: unknown }> {
+    return supabase
+        .from("member_restriction")
+        .select("restriction_id")
+        .eq("member_id", userId)
+}
+
+export async function addRestriction(userId: string, restrictionId: string) {
+    return supabase
+        .from("member_restriction")
+        .insert({ member_id: userId, restriction_id: restrictionId })
+}
+
+export async function removeRestriction(userId: string, restrictionId: string) {
+    return supabase
+        .from("member_restriction")
+        .delete()
+        .eq("member_id", userId)
+        .eq("restriction_id", restrictionId)
 }

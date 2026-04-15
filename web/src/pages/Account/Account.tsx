@@ -1,14 +1,17 @@
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import type { User } from "@supabase/supabase-js"
-import { signOut } from "../../supabase"
+import { signOut, saveUsername, savePassword } from "../../api/auth"
 import {
     getHouseholds,
     getTotalSpent,
-    saveUsername,
-    savePassword,
     deleteAccount,
+    getFoodRestrictions,
+    getMyRestrictions,
+    addRestriction,
+    removeRestriction,
     type Household,
+    type FoodRestriction,
 } from "../../api/account"
 import "./Account.css"
 
@@ -50,8 +53,8 @@ export function Account({ user }: {user: User}) {
     const [deleting, setDeleting] = useState(false)
     const [deleteError, setDeleteError] = useState<string | null>(null)
 
-    const [restrictions, setRestrictions] = useState<{ id: string; name: string; category: "diet" | "intolerance" }[]>([])
-    const [myRestrictionIds, setMyRestrictionIds] = useState<Set<string>>(new Set())
+    const [availableRestrictions, setAvailableRestrictions] = useState<FoodRestriction[]>([])
+    const [userRestrictions, setUserRestrictions] = useState<Set<string>>(new Set())
     const [togglingId, setTogglingId] = useState<string | null>(null)
     const [restrictionError, setRestrictionError] = useState<string | null>(null)
 
@@ -69,20 +72,23 @@ export function Account({ user }: {user: User}) {
             if (totalResult.error) console.error("Error fetching total spent:", totalResult.error)
             else setTotalSpent(totalResult.total)
 
-            const { data: allRestrictions, error: frErr } = await supabase
-                .from("food_restriction")
-                .select("id, name, category")
-                .order("category")
-                .order("name")
-            if (frErr) console.error("Error fetching restrictions:", frErr)
-            else setRestrictions(allRestrictions ?? [])
+            const [availableRestrictionsResult, userRestrictionsResult] = await Promise.all([
+                getFoodRestrictions(),
+                getMyRestrictions(user.id),
+            ])
+            if (availableRestrictionsResult.error) {
+                console.error("Error fetching availableRestrictions:", availableRestrictionsResult.error)
+            }
+            else {
+                setAvailableRestrictions((availableRestrictionsResult.data ?? []) as FoodRestriction[])
+            }
 
-            const { data: mine, error: mrErr } = await supabase
-                .from("member_restriction")
-                .select("restriction_id")
-                .eq("member_id", user.id)
-            if (mrErr) console.error("Error fetching my restrictions:", mrErr)
-            else setMyRestrictionIds(new Set((mine ?? []).map(m => m.restriction_id as string)))
+            if (userRestrictionsResult.error){
+                console.error("Error fetching my availableRestrictions:", userRestrictionsResult.error)
+            }
+            else {
+                setUserRestrictions(new Set((userRestrictionsResult.data ?? []).map(m => m.restriction_id)))
+            }
 
             setLoading(false)
         }
@@ -92,15 +98,11 @@ export function Account({ user }: {user: User}) {
     const toggleRestriction = async (id: string) => {
         setTogglingId(id)
         setRestrictionError(null)
-        const has = myRestrictionIds.has(id)
-        const next = new Set(myRestrictionIds)
+        const has = userRestrictions.has(id)
+        const next = new Set(userRestrictions)
 
         if (has) {
-            const { error } = await supabase
-                .from("member_restriction")
-                .delete()
-                .eq("member_id", user.id)
-                .eq("restriction_id", id)
+            const { error } = await removeRestriction(user.id, id)
             if (error) {
                 setRestrictionError(error.message)
                 setTogglingId(null)
@@ -108,9 +110,7 @@ export function Account({ user }: {user: User}) {
             }
             next.delete(id)
         } else {
-            const { error } = await supabase
-                .from("member_restriction")
-                .insert({ member_id: user.id, restriction_id: id })
+            const { error } = await addRestriction(user.id, id)
             if (error) {
                 setRestrictionError(error.message)
                 setTogglingId(null)
@@ -118,20 +118,20 @@ export function Account({ user }: {user: User}) {
             }
             next.add(id)
         }
-        setMyRestrictionIds(next)
+        setUserRestrictions(next)
         setTogglingId(null)
     }
 
     const formatRestriction = (r: string) =>
         r.replace(/\b\w/g, c => c.toUpperCase())
 
-    const diets = restrictions.filter(r => r.category === "diet")
-    const intolerances = restrictions.filter(r => r.category === "intolerance")
+    const diets = availableRestrictions.filter(r => r.category === "diet")
+    const intolerances = availableRestrictions.filter(r => r.category === "intolerance")
 
     const renderCategory = (
         label: string,
         icon: string,
-        items: typeof restrictions
+        items: typeof availableRestrictions
     ) => (
         <div className="dietary-category">
             <h3 className="dietary-heading">
@@ -140,7 +140,7 @@ export function Account({ user }: {user: User}) {
             </h3>
             <ul className="chip-row">
                 {items.map(r => {
-                    const on = myRestrictionIds.has(r.id)
+                    const on = userRestrictions.has(r.id)
                     return (
                         <li key={r.id}>
                             <button
@@ -158,7 +158,7 @@ export function Account({ user }: {user: User}) {
         </div>
     )
 
-    const saveUsername = async () => {
+    const handleSaveUsername = async () => {
         const trimmed = draftName.trim()
         if (!trimmed) {
             setNameError("Username cannot be empty")
@@ -184,7 +184,7 @@ export function Account({ user }: {user: User}) {
 
 
 
-    const savePassword = async () => {
+    const handleSavePassword = async () => {
         if (newPassword.length < 6) {
             setPasswordError("Password must be at least 6 characters")
             return
@@ -210,7 +210,7 @@ export function Account({ user }: {user: User}) {
         }, 1200)
     }
 
-    const confirmDelete = async () => {
+    const handleDeleteAccount = async () => {
         if (deleteConfirm !== "DELETE") {
             setDeleteError("Type DELETE to confirm")
             return
@@ -271,7 +271,7 @@ export function Account({ user }: {user: User}) {
                                     />
                                     <button
                                         className="account-save"
-                                        onClick={() => void saveUsername()}
+                                        onClick={() => void handleSaveUsername()}
                                         disabled={savingName}
                                     >
                                         {savingName ? "Saving..." : "Save"}
@@ -377,12 +377,12 @@ export function Account({ user }: {user: User}) {
 
                 <div className="dietary-selected">
                     <span className="dietary-label">Your selections</span>
-                    {myRestrictionIds.size === 0 ? (
+                    {userRestrictions.size === 0 ? (
                         <span className="dietary-empty">None selected yet</span>
                     ) : (
                         <ul className="chip-row">
-                            {restrictions
-                                .filter(r => myRestrictionIds.has(r.id))
+                            {availableRestrictions
+                                .filter(r => userRestrictions.has(r.id))
                                 .map(r => (
                                     <li key={r.id}>
                                         <button
@@ -477,7 +477,7 @@ export function Account({ user }: {user: User}) {
                             </button>
                             <button
                                 className="account-save"
-                                onClick={() => void savePassword()}
+                                onClick={() => void handleSavePassword()}
                                 disabled={savingPassword}
                             >
                                 {savingPassword ? "Saving..." : "Save"}
@@ -520,7 +520,7 @@ export function Account({ user }: {user: User}) {
                             </button>
                             <button
                                 className="danger-btn"
-                                onClick={() => void confirmDelete()}
+                                onClick={() => void handleDeleteAccount()}
                                 disabled={deleting}
                             >
                                 {deleting ? "Deleting..." : "Delete permanently"}
