@@ -14,8 +14,8 @@ import { Recipes } from "./pages/recipes/recipes";
 import { Pantry } from "./pages/pantry/pantry";
 import { useEffect, useState } from "react";
 import type { User } from "@supabase/supabase-js";
-import { supabase } from "./supabase";
 import { Scan } from './pages/scan/Scan';
+import { getSession } from "./api/auth";
 
 export function App() {
   const [loaded, setLoaded] = useState(false);
@@ -24,7 +24,7 @@ export function App() {
   useEffect(() => {
     void(load());
     async function load() {
-      const session = await supabase.auth.getSession();
+      const session = await getSession();
       if (session.data.session?.user) {
         setUser(session.data.session?.user);
       }

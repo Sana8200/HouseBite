@@ -1,20 +1,24 @@
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import type { User } from "@supabase/supabase-js"
-import { supabase, signOut } from "../../supabase"
+import { signOut, saveUsername, savePassword } from "../../api/auth"
+import {
+    getHouseholds,
+    getTotalSpent,
+    deleteAccount,
+    getFoodRestrictions,
+    getMyRestrictions,
+    addRestriction,
+    removeRestriction,
+    type Household,
+    type FoodRestriction,
+} from "../../api/account"
 import "./Account.css"
 
-interface Household {
-    id: string
-    house_name: string
-}
-
-export interface AccountProps {
-    user: User
-}
-
-export function Account({ user }: AccountProps) {
+export function Account({ user }: {user: User}) {
     const navigate = useNavigate()
+
+    // Page Data
     const [households, setHouseholds] = useState<Household[]>([])
     const [loading, setLoading] = useState(true)
     const [expanded, setExpanded] = useState(false)
@@ -25,6 +29,8 @@ export function Account({ user }: AccountProps) {
         (user.user_metadata?.username as string | undefined) ??
         user.email?.split("@")[0] ??
         ""
+
+    // Username editable
     const [username, setUsername] = useState(initialUsername)
     const [editingName, setEditingName] = useState(false)
     const [draftName, setDraftName] = useState(initialUsername)
@@ -33,6 +39,7 @@ export function Account({ user }: AccountProps) {
 
     const avatarUrl = (user.user_metadata?.avatar_url as string | undefined) ?? null
 
+    // Password Modal
     const [showPasswordModal, setShowPasswordModal] = useState(false)
     const [newPassword, setNewPassword] = useState("")
     const [confirmPassword, setConfirmPassword] = useState("")
@@ -40,51 +47,48 @@ export function Account({ user }: AccountProps) {
     const [passwordError, setPasswordError] = useState<string | null>(null)
     const [passwordSuccess, setPasswordSuccess] = useState(false)
 
+    // Deletion modal
     const [showDeleteModal, setShowDeleteModal] = useState(false)
     const [deleteConfirm, setDeleteConfirm] = useState("")
     const [deleting, setDeleting] = useState(false)
     const [deleteError, setDeleteError] = useState<string | null>(null)
 
-    const [restrictions, setRestrictions] = useState<{ id: string; name: string; category: "diet" | "intolerance" }[]>([])
-    const [myRestrictionIds, setMyRestrictionIds] = useState<Set<string>>(new Set())
+    const [availableRestrictions, setAvailableRestrictions] = useState<FoodRestriction[]>([])
+    const [userRestrictions, setUserRestrictions] = useState<Set<string>>(new Set())
     const [togglingId, setTogglingId] = useState<string | null>(null)
     const [restrictionError, setRestrictionError] = useState<string | null>(null)
 
 
     useEffect(() => {
         const fetch = async () => {
-            const { data, error } = await supabase
-                .from("household")
-                .select("id, house_name")
-            if (error) console.error("Error fetching households:", error)
-            else setHouseholds(data ?? [])
+            const [householdsResult, totalResult] = await Promise.all([ // calls both in parallel
+                getHouseholds(),
+                getTotalSpent(),
+            ])
 
-            const { data: receipts, error: rErr } = await supabase
-                .from("receipt")
-                .select("total")
-            if (rErr) console.error("Error fetching receipts:", rErr)
+            if (householdsResult.error) console.error("Error fetching households:", householdsResult.error)
+            else setHouseholds(householdsResult.data ?? [])
+
+            if (totalResult.error) console.error("Error fetching total spent:", totalResult.error)
+            else setTotalSpent(totalResult.total)
+
+            const [availableRestrictionsResult, userRestrictionsResult] = await Promise.all([
+                getFoodRestrictions(),
+                getMyRestrictions(user.id),
+            ])
+            if (availableRestrictionsResult.error) {
+                console.error("Error fetching availableRestrictions:", availableRestrictionsResult.error)
+            }
             else {
-                const sum = (receipts ?? []).reduce(
-                    (acc, r) => acc + Number(r.total ?? 0),
-                    0
-                )
-                setTotalSpent(sum)
+                setAvailableRestrictions((availableRestrictionsResult.data ?? []) as FoodRestriction[])
             }
 
-            const { data: allRestrictions, error: frErr } = await supabase
-                .from("food_restriction")
-                .select("id, name, category")
-                .order("category")
-                .order("name")
-            if (frErr) console.error("Error fetching restrictions:", frErr)
-            else setRestrictions(allRestrictions ?? [])
-
-            const { data: mine, error: mrErr } = await supabase
-                .from("member_restriction")
-                .select("restriction_id")
-                .eq("member_id", user.id)
-            if (mrErr) console.error("Error fetching my restrictions:", mrErr)
-            else setMyRestrictionIds(new Set((mine ?? []).map(m => m.restriction_id as string)))
+            if (userRestrictionsResult.error){
+                console.error("Error fetching my availableRestrictions:", userRestrictionsResult.error)
+            }
+            else {
+                setUserRestrictions(new Set((userRestrictionsResult.data ?? []).map(m => m.restriction_id)))
+            }
 
             setLoading(false)
         }
@@ -94,15 +98,11 @@ export function Account({ user }: AccountProps) {
     const toggleRestriction = async (id: string) => {
         setTogglingId(id)
         setRestrictionError(null)
-        const has = myRestrictionIds.has(id)
-        const next = new Set(myRestrictionIds)
+        const has = userRestrictions.has(id)
+        const next = new Set(userRestrictions)
 
         if (has) {
-            const { error } = await supabase
-                .from("member_restriction")
-                .delete()
-                .eq("member_id", user.id)
-                .eq("restriction_id", id)
+            const { error } = await removeRestriction(user.id, id)
             if (error) {
                 setRestrictionError(error.message)
                 setTogglingId(null)
@@ -110,9 +110,7 @@ export function Account({ user }: AccountProps) {
             }
             next.delete(id)
         } else {
-            const { error } = await supabase
-                .from("member_restriction")
-                .insert({ member_id: user.id, restriction_id: id })
+            const { error } = await addRestriction(user.id, id)
             if (error) {
                 setRestrictionError(error.message)
                 setTogglingId(null)
@@ -120,20 +118,20 @@ export function Account({ user }: AccountProps) {
             }
             next.add(id)
         }
-        setMyRestrictionIds(next)
+        setUserRestrictions(next)
         setTogglingId(null)
     }
 
     const formatRestriction = (r: string) =>
         r.replace(/\b\w/g, c => c.toUpperCase())
 
-    const diets = restrictions.filter(r => r.category === "diet")
-    const intolerances = restrictions.filter(r => r.category === "intolerance")
+    const diets = availableRestrictions.filter(r => r.category === "diet")
+    const intolerances = availableRestrictions.filter(r => r.category === "intolerance")
 
     const renderCategory = (
         label: string,
         icon: string,
-        items: typeof restrictions
+        items: typeof availableRestrictions
     ) => (
         <div className="dietary-category">
             <h3 className="dietary-heading">
@@ -142,7 +140,7 @@ export function Account({ user }: AccountProps) {
             </h3>
             <ul className="chip-row">
                 {items.map(r => {
-                    const on = myRestrictionIds.has(r.id)
+                    const on = userRestrictions.has(r.id)
                     return (
                         <li key={r.id}>
                             <button
@@ -160,7 +158,7 @@ export function Account({ user }: AccountProps) {
         </div>
     )
 
-    const saveUsername = async () => {
+    const handleSaveUsername = async () => {
         const trimmed = draftName.trim()
         if (!trimmed) {
             setNameError("Username cannot be empty")
@@ -168,9 +166,7 @@ export function Account({ user }: AccountProps) {
         }
         setSavingName(true)
         setNameError(null)
-        const { error } = await supabase.auth.updateUser({
-            data: { username: trimmed, display_name: trimmed },
-        })
+        const { error } = await saveUsername(trimmed)
         setSavingName(false)
         if (error) {
             setNameError(error.message)
@@ -188,7 +184,7 @@ export function Account({ user }: AccountProps) {
 
 
 
-    const savePassword = async () => {
+    const handleSavePassword = async () => {
         if (newPassword.length < 6) {
             setPasswordError("Password must be at least 6 characters")
             return
@@ -199,7 +195,7 @@ export function Account({ user }: AccountProps) {
         }
         setSavingPassword(true)
         setPasswordError(null)
-        const { error } = await supabase.auth.updateUser({ password: newPassword })
+        const { error } = await savePassword(newPassword)
         setSavingPassword(false)
         if (error) {
             setPasswordError(error.message)
@@ -214,14 +210,14 @@ export function Account({ user }: AccountProps) {
         }, 1200)
     }
 
-    const confirmDelete = async () => {
+    const handleDeleteAccount = async () => {
         if (deleteConfirm !== "DELETE") {
             setDeleteError("Type DELETE to confirm")
             return
         }
         setDeleting(true)
         setDeleteError(null)
-        const { error } = await supabase.rpc("delete_account")
+        const { error } = await deleteAccount()
         if (error) {
             setDeleting(false)
             setDeleteError(error.message)
@@ -275,7 +271,7 @@ export function Account({ user }: AccountProps) {
                                     />
                                     <button
                                         className="account-save"
-                                        onClick={() => void saveUsername()}
+                                        onClick={() => void handleSaveUsername()}
                                         disabled={savingName}
                                     >
                                         {savingName ? "Saving..." : "Save"}
@@ -360,9 +356,7 @@ export function Account({ user }: AccountProps) {
                                     <span>{h.house_name}</span>
                                     <button
                                         className="go-btn"
-                                        onClick={() => {
-                                            void navigate("/dashboard")
-                                        }}
+                                        onClick={() => void navigate("/dashboard")}
                                     >
                                         Go to household
                                     </button>
@@ -383,12 +377,12 @@ export function Account({ user }: AccountProps) {
 
                 <div className="dietary-selected">
                     <span className="dietary-label">Your selections</span>
-                    {myRestrictionIds.size === 0 ? (
+                    {userRestrictions.size === 0 ? (
                         <span className="dietary-empty">None selected yet</span>
                     ) : (
                         <ul className="chip-row">
-                            {restrictions
-                                .filter(r => myRestrictionIds.has(r.id))
+                            {availableRestrictions
+                                .filter(r => userRestrictions.has(r.id))
                                 .map(r => (
                                     <li key={r.id}>
                                         <button
@@ -418,7 +412,12 @@ export function Account({ user }: AccountProps) {
                 <h2>Security</h2>
                 <button
                     className="account-edit-btn"
-                    onClick={() => setShowPasswordModal(true)}
+                    onClick={() => {
+                        setNewPassword("")
+                        setConfirmPassword("")
+                        setPasswordError(null)
+                        setShowPasswordModal(true)
+                    }}
                 >
                     Change password
                 </button>
@@ -442,10 +441,7 @@ export function Account({ user }: AccountProps) {
                     className="modal-overlay"
                     onClick={() => !savingPassword && setShowPasswordModal(false)}
                 >
-                    <div
-                        className="modal"
-                        onClick={e => e.stopPropagation()}
-                    >
+                    <div className="modal" onClick={e => e.stopPropagation()}>
                         <h2>Change password</h2>
                         <div className="modal-field">
                             <label>New password</label>
@@ -481,7 +477,7 @@ export function Account({ user }: AccountProps) {
                             </button>
                             <button
                                 className="account-save"
-                                onClick={() => void savePassword()}
+                                onClick={() => void handleSavePassword()}
                                 disabled={savingPassword}
                             >
                                 {savingPassword ? "Saving..." : "Save"}
@@ -496,10 +492,7 @@ export function Account({ user }: AccountProps) {
                     className="modal-overlay"
                     onClick={() => !deleting && setShowDeleteModal(false)}
                 >
-                    <div
-                        className="modal"
-                        onClick={e => e.stopPropagation()}
-                    >
+                    <div className="modal" onClick={e => e.stopPropagation()}>
                         <h2>Delete account</h2>
                         <p className="modal-hint">
                             This will permanently delete your account and all
@@ -527,7 +520,7 @@ export function Account({ user }: AccountProps) {
                             </button>
                             <button
                                 className="danger-btn"
-                                onClick={() => void confirmDelete()}
+                                onClick={() => void handleDeleteAccount()}
                                 disabled={deleting}
                             >
                                 {deleting ? "Deleting..." : "Delete permanently"}

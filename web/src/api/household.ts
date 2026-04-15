@@ -1,5 +1,12 @@
 import { supabase } from '../supabase'
 
+export interface Household {
+    id: string
+    house_name: string
+    invite_id: string
+    monthly_budget: number | null
+}
+
 // Wrapper for a SECURITY DEFINER SQL function that creates the household
 // and links the current user in a single transaction. This replaces
 // the previous two-step flow (insert household → insert allocation)
