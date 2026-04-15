@@ -148,3 +148,27 @@ supabase stop               # stop local database
 - **Never commit `web/.env`** — it's gitignored for a reason.
 - **Never develop against production** — your `.env` should always point to `localhost`, not to `ikemmjauwrahrrlgewta.supabase.co`.
 - **Never edit old migration files** — create a new one instead. Editing an already-applied migration does nothing in production.
+
+## Known issues and fixes
+
+### "Failed to resolve import" after a branch merge adds a new npm dependency
+
+**What happens:** A teammate merges a branch that adds a new package to `package.json` (e.g. `tesseract.js`). You pull the changes and run `docker compose up`, but Vite throws an error like:
+
+```
+Failed to resolve import "tesseract.js" from "src/pages/scan/Scan.tsx". Does the file exist?
+```
+
+**Why:** Docker Compose mounts your local `web/` folder into the container, but keeps `node_modules` in a separate anonymous volume that was created when you first built the image. That volume is never automatically updated — it still contains the old `node_modules` from before the new dependency was added. Rebuilding the image alone is not enough because Docker reuses the existing anonymous volume.
+
+**Fix:** Tear down the containers and delete the anonymous volumes, then rebuild:
+
+```bash
+docker compose down -v
+docker compose build --no-cache web
+docker compose up web
+```
+
+The `-v` flag deletes the anonymous `node_modules` volume, forcing Docker to use the freshly installed one from the new image.
+
+---
