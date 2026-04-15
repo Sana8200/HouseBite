@@ -66,4 +66,36 @@
   --bp-md: 768px;
   --bp-lg: 1024px;
   --bp-xl: 1280px;
+
+  /* ───────────────────────────────────────
+     Semantic aliases used by UI primitives.
+     Keep these mapped onto the scales above
+     so we have a single source of truth.
+     ─────────────────────────────────────── */
+
+  /* Accent (purple) — current product palette */
+  --color-primary: #863bff;
+  --color-primary-hover: #6f2ee0;
+  --color-primary-soft: #f3f0ff;
+
+  /* Text */
+  --color-muted: var(--color-text-muted);
+  --color-subtle: #8a8f89;
+
+  /* Surfaces */
+  --color-bg-soft: var(--color-surface-muted);
+
+  /* Feedback */
+  --color-danger-soft: #fff0f0;
+  --color-danger-border: #ffcccc;
+
+  /* Named spacing scale (used by shared primitives) */
+  --space-xs: 6px;
+  --space-sm: 12px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+
+  /* Alias for legacy usages */
+  --font-body: var(--font-family-base);
 }
