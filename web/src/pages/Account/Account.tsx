@@ -21,6 +21,7 @@ export function Account({ user }: AccountProps) {
     const [totalSpent, setTotalSpent] = useState<number | null>(null)
 
     const initialUsername =
+        (user.user_metadata?.display_name as string | undefined) ??
         (user.user_metadata?.username as string | undefined) ??
         user.email?.split("@")[0] ??
         ""
@@ -82,7 +83,7 @@ export function Account({ user }: AccountProps) {
         setSavingName(true)
         setNameError(null)
         const { error } = await supabase.auth.updateUser({
-            data: { username: trimmed },
+            data: { username: trimmed, display_name: trimmed },
         })
         setSavingName(false)
         if (error) {
@@ -181,10 +182,10 @@ export function Account({ user }: AccountProps) {
 
     const memberSince = user.created_at
         ? new Date(user.created_at).toLocaleDateString(undefined, {
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-          })
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+        })
         : "—"
 
     const initials =
