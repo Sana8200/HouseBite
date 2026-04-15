@@ -7,8 +7,10 @@
 html,
 body,
 #root {
-  min-height: 100%;
   margin: 0;
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  font-family: var(--font-family-base);
 }
 
 body {
