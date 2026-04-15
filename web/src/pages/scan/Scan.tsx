@@ -1,12 +1,8 @@
-// src/components/ReceiptScanner.tsx
-
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import Tesseract from 'tesseract.js';
 import './Scan.css';
 import { supabase } from '../../supabase';
 import { Button, Center, Container, Paper, Space, Text } from '@mantine/core';
-
-
 
 interface ExtractedData {
   merchant: string;
@@ -96,7 +92,7 @@ export const Scan: React.FC = () => {
     }
   }, []);
 
-  const takePhoto = async () => {
+  const takePhoto = () => {
     const videoOutput = videoOutputRef.current!;
     const canvas = canvasRef.current!;
 
@@ -119,7 +115,7 @@ export const Scan: React.FC = () => {
         file,
         'eng',
         {
-          logger: (m: any) => {
+          logger: (m) => {
             if (m.status === 'recognizing text') {
               setOcrProgress(Math.floor(m.progress * 100));
             }
@@ -161,10 +157,12 @@ export const Scan: React.FC = () => {
     
     // Extract date
     const datePatterns = [
+      /* eslint-disable no-useless-escape */
       /\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}/,
       /\d{4}[\/\-]\d{1,2}[\/\-]\d{1,2}/,
       /(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{1,2},?\s+\d{4}/i,
       /\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{4}/i
+      /* eslint-enable no-useless-escape */
     ];
     
     let date = "Date not found";
@@ -266,7 +264,7 @@ export const Scan: React.FC = () => {
     const file = event.target.files?.[0];
     if (!file) return;
     setDidCapture(true);
-    handleFile(file);
+    void(handleFile(file));
   };
 
   const onDragOver = (event: React.DragEvent) => {
@@ -284,7 +282,7 @@ export const Scan: React.FC = () => {
     setIsDragActive(false);
     const file = event.dataTransfer.files?.[0];
     if (file && file.type.startsWith('image/')) {
-      handleFile(file);
+      void(handleFile(file));
     } else {
       setError('Please drop a valid image file');
     }
@@ -297,7 +295,7 @@ export const Scan: React.FC = () => {
 
         <Center className="scan-video-container" style={hasCamera && !didCapture ? {} : {display: "none"}}>
           <video className="scan-video" ref={videoOutputRef}>Video stream not available.</video>
-          <Button className="scan-btn" size="lg" onClick={() => void(takePhoto())}>Scan</Button>
+          <Button className="scan-btn" size="lg" onClick={takePhoto}>Scan</Button>
         </Center>
 
         <Center style={hasCamera && didCapture ? {} : {display: "none"}}>
@@ -395,7 +393,7 @@ export const Scan: React.FC = () => {
                 <button
                   className="scan-copy-button"
                   onClick={() => {
-                    navigator.clipboard.writeText(JSON.stringify(extractedData, null, 2));
+                    void(navigator.clipboard.writeText(JSON.stringify(extractedData, null, 2)));
                     alert('Data copied to clipboard!');
                   }}
                 >
