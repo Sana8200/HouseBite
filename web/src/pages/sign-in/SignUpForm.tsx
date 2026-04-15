@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { signUp } from "../../supabase";
+import { signUp } from "../../api/auth";
 import type { User } from "@supabase/supabase-js";
 import { Button, PasswordInput, Stack, Text, TextInput } from "@mantine/core";
 

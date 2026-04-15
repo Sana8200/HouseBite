@@ -1,7 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router";
 import './App.css'
 import { About } from "./pages/about/About";
-import { Test } from './pages/test/Test'
 import { Landing } from "./pages/landing/Landing";
 import { Header } from "./components/Header";
 import { HouseHold } from "./pages/household/HouseHold";
@@ -15,7 +14,7 @@ import { Pantry } from "./pages/pantry/pantry";
 import { useEffect, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { Scan } from './pages/scan/Scan';
-import { getSession } from "./api/auth";
+import { getSession, onAuthStateChange } from "./api/auth";
 
 export function App() {
   const [loaded, setLoaded] = useState(false);
@@ -30,6 +29,12 @@ export function App() {
       }
       setLoaded(true);
     }
+
+    const { data: { subscription } } = onAuthStateChange((user) => {
+      setUser(user);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   // prevents redirect when reopening a tab. we need to wait until we know if we have a user signed in.
@@ -70,9 +75,6 @@ export function App() {
 
         {routes}
 
-        { import.meta.env.DEV &&
-          <Route path="test" element={<Test />} />
-        }
       </Routes>
     </BrowserRouter>
   )

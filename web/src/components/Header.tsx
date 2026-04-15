@@ -4,7 +4,7 @@ import { NavLink, useLocation, useNavigate } from "react-router"
 import "./Header.css"
 import type { User } from "@supabase/supabase-js"
 import { getHouseholds } from "../api/household";
-import { signOut } from "../supabase";
+import { signOut } from "../api/auth";
 
 export interface HeaderProps {
     user: User | null,
@@ -24,6 +24,7 @@ export function Header(props: HeaderProps) {
     const logout = async (e: React.MouseEvent) => {
         e.preventDefault();
         await signOut();
+        navigate("/");
     };
 
     useEffect(() => {
