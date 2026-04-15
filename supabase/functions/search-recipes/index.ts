@@ -1,10 +1,9 @@
   // supabase/functions/search-recipes/index.ts
   import "@supabase/functions-js/edge-runtime.d.ts"
-  import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
   Deno.serve(async (req) => {
     try {
-    const { ingredients, household_id } = await req.json()
+    const { ingredients } = await req.json()
 
     const proxyUrl = Deno.env.get("SPOONACULAR_PROXY_URL")
     const proxyKey = Deno.env.get("SPOONACULAR_PROXY_KEY")
@@ -21,8 +20,8 @@
       "X-RapidAPI-Host": "spoonacular-recipe-food-nutrition-v1.p.rapidapi.com",
     }
 
-    // find recipes by ingredients
-    const searchUrl = `${proxyUrl}/recipes/findByIngredients?ingredients=${encodeURIComponent(ingredients)}&number=3`
+    // fetch more candidates than needed so we can discard those without instructions
+    const searchUrl = `${proxyUrl}/recipes/findByIngredients?ingredients=${encodeURIComponent(ingredients)}&number=9`
     const rawRecipes = await fetch(searchUrl, { headers: rapidHeaders }).then(r => r.json())
 
     if (!Array.isArray(rawRecipes)) {
@@ -32,17 +31,22 @@
       })
     }
 
-    // fetch full details for each recipe
-    const detailPromises = rawRecipes.map((r: { id: number }) =>
-      fetch(`${proxyUrl}/recipes/${r.id}/information?includeNutrition=true`, { headers: rapidHeaders })
-        .then(res => res.json())
+    // fetch full details for each candidate
+    const details = await Promise.all(
+      rawRecipes.map((r: { id: number }) =>
+        fetch(`${proxyUrl}/recipes/${r.id}/information?includeNutrition=true`, { headers: rapidHeaders })
+          .then(res => res.json())
+      )
     )
-    const details = await Promise.all(detailPromises)
-    // each detail has: title, summary, servings, readyInMinutes, image, ...
+
+    // discard recipes without instructions, keep first 3 valid ones
+    const validDetails = details
+      .filter((d: any) => d.analyzedInstructions?.[0]?.steps?.length > 0)
+      .slice(0, 3)
 
     // clean — map Spoonacular shape → your DB shape
-    const cleaned = details.map((d: any) => {
-      const steps = d.analyzedInstructions?.[0]?.steps ?? []
+    const cleaned = validDetails.map((d: any) => {
+      const steps = d.analyzedInstructions[0].steps
       const nutrients = d.nutrition?.nutrients ?? []
       const calories = nutrients.find((n: any) => n.name === "Calories")
       const protein  = nutrients.find((n: any) => n.name === "Protein")
@@ -59,43 +63,14 @@
       }
     })
 
-    // use service role key to bypass RLS for inserts — edge function is trusted server-side code
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    )
-
-    const { data: inserted, error: insertError } = await supabase
-      .from("recipe")
-      .insert(cleaned)
-      .select("id, title, description, servings, prep_time")
-
-    if (insertError) {
-      return new Response(JSON.stringify({ error: insertError.message }), {
-        status: 500,
+    if (cleaned.length === 0) {
+      return new Response(JSON.stringify({ error: "No recipes with instructions found" }), {
+        status: 404,
         headers: { "Content-Type": "application/json" },
       })
     }
 
-    // link recipes to the household
-    const links = inserted.map((r: { id: string }) => ({
-      household_id,
-      recipe_id: r.id,
-    }))
-
-    const { error: linkError } = await supabase
-      .from("household_recipes")
-      .insert(links)
-
-    if (linkError) {
-      return new Response(JSON.stringify({ error: linkError.message }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      })
-    }
-
-    // return the cleaned recipes to the frontend
-    return new Response(JSON.stringify(inserted), {
+    return new Response(JSON.stringify(cleaned), {
       headers: { "Content-Type": "application/json" },
     })
   } catch (err) {

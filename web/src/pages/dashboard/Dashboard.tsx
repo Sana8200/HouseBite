@@ -87,8 +87,8 @@ const ProductsInDanger: React.FC<{ products: Product[] }> = ({ products }) => {
     const ingredientNames = selectedProductObjects.map(p => p.name)
     const householdId = selectedProductObjects[0]?.householdId
     if (!householdId) return
-    const results = await searchRecipes(ingredientNames, householdId)
-    navigate('/recipes', { state: { recipes: results } })
+    const results = await searchRecipes(ingredientNames)
+    navigate('/recipes', { state: { recipes: results, householdId } })
   };
 
   const clearFilters = () => {
