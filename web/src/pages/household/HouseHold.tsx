@@ -1,14 +1,7 @@
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import "./HouseHold.css"
-import { createHousehold, getHouseholds, joinHousehold } from "../../api/household"
-
-interface Household {
-    id: string
-    house_name: string
-    invite_id: string
-    monthly_budget: number | null
-}
+import { createHousehold, getHouseholds, joinHousehold, type Household } from "../../api/household"
 
 export function HouseHold() {
     const navigate = useNavigate()
