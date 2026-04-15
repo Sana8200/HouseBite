@@ -197,7 +197,7 @@
 }
 
 .find-recipes-button {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--color-primary) 0%, #764ba2 100%);
   color: white;
   border: none;
   padding: 12px 32px;
@@ -292,25 +292,6 @@
   margin-top: 10px;
 }
 
-/* Update danger badge for consistency */
-.danger-badge {
-  display: inline-block;
-  background: #ff9800;
-  color: white;
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 600;
-  margin-top: 10px;
-}
-
-/* Household text styling */
-.product-detail {
-  font-size: 14px;
-  color: #666;
-  margin: 5px 0;
-}
-
 /* Priority-based card borders */
 .product-card.priority-expired {
   border: 2px solid #dc3545;
@@ -353,8 +334,8 @@
 
 .view-all-button {
   background: transparent;
-  color: #667eea;
-  border: 1px solid #667eea;
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary);
   padding: 8px 16px;
   border-radius: 20px;
   cursor: pointer;
@@ -364,7 +345,7 @@
 }
 
 .view-all-button:hover {
-  background: #667eea;
+  background: var(--color-primary);
   color: white;
   transform: translateX(3px);
 }
@@ -443,9 +424,9 @@
 }
 
 .carousel-arrow:hover {
-  background: #667eea;
+  background: var(--color-primary);
   color: white;
-  border-color: #667eea;
+  border-color: var(--color-primary);
   transform: scale(1.05);
 }
 
@@ -526,7 +507,7 @@
 }
 
 .filter-select:hover {
-  border-color: #667eea;
+  border-color: var(--color-primary);
 }
 
 .clear-filters-button {
@@ -563,7 +544,7 @@
 .clear-filters-link {
   background: none;
   border: none;
-  color: #667eea;
+  color: var(--color-primary);
   cursor: pointer;
   text-decoration: underline;
   margin-top: 10px;
