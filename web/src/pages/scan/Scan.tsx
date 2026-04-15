@@ -74,14 +74,17 @@ export const Scan: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
+    let cancel = false;
+    let mediaStream: MediaStream | null = null;
     void(load());
     async function load() {
       try {
-        const mediaStream = await navigator.mediaDevices.getUserMedia({
+        mediaStream = await navigator.mediaDevices.getUserMedia({
           video: {
             facingMode: "environment"
           }
         });
+        if (cancel) stop();
         const videoOutput = videoOutputRef.current!;
         videoOutput.srcObject = mediaStream;
         await videoOutput.play();
@@ -90,6 +93,12 @@ export const Scan: React.FC = () => {
         setHasCamera(false);
       }
     }
+    function stop() {
+      cancel = true;
+      if (!mediaStream) return;
+      mediaStream.getTracks().forEach(s => s.stop());
+    }
+    return stop;
   }, []);
 
   const takePhoto = () => {
