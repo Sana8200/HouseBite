@@ -4,6 +4,7 @@ import React, { useState, useCallback, useRef, useEffect } from 'react';
 import Tesseract from 'tesseract.js';
 import './Scan.css';
 import { supabase } from '../../supabase';
+import { Button, Center, Container, Paper, Space, Text } from '@mantine/core';
 
 
 
@@ -22,6 +23,9 @@ export const Scan: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isDragActive, setIsDragActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [didCapture, setDidCapture] = useState(false);
+  const [hasCamera, setHasCamera] = useState(false);
 
   const handleFile = useCallback(async (file: Blob) => {
     if (!file) return;
@@ -76,16 +80,21 @@ export const Scan: React.FC = () => {
   useEffect(() => {
     void(load());
     async function load() {
-      const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: "environment"
-        }
-      });
-      const videoOutput = videoOutputRef.current!;
-      videoOutput.srcObject = mediaStream;
-      await videoOutput.play();
+      try {
+        const mediaStream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: "environment"
+          }
+        });
+        const videoOutput = videoOutputRef.current!;
+        videoOutput.srcObject = mediaStream;
+        await videoOutput.play();
+        setHasCamera(true);
+      } catch {
+        setHasCamera(false);
+      }
     }
-  });
+  }, []);
 
   const takePhoto = async () => {
     const videoOutput = videoOutputRef.current!;
@@ -99,6 +108,7 @@ export const Scan: React.FC = () => {
     context.drawImage(videoOutput, 0, 0, canvas.width, canvas.height);
 
     canvas.toBlob(blob => {
+      setDidCapture(true);
       void(handleFile(blob!));
     });
   };
@@ -254,7 +264,9 @@ export const Scan: React.FC = () => {
 
   const onFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file) handleFile(file);
+    if (!file) return;
+    setDidCapture(true);
+    handleFile(file);
   };
 
   const onDragOver = (event: React.DragEvent) => {
@@ -279,103 +291,121 @@ export const Scan: React.FC = () => {
   };
 
   return (
-    <div className="receipt-scanner">
-      <h1 className="scanner-title">Receipt Scanner</h1>
+    <Container size="md" p="md">
+      <Paper shadow="md" p="md">
+        <canvas ref={canvasRef} style={{display: "none"}}></canvas>
 
-      <canvas ref={canvasRef} style={{display: "none"}}></canvas>
-      <video ref={videoOutputRef}>Video stream not available.</video>
-      <br/>
-      <button onClick={() => void(takePhoto())}>Take photo</button>
-      
-      <div
-        className={`dropzone ${isDragActive ? 'dropzone-active' : ''}`}
-        onDragOver={onDragOver}
-        onDragLeave={onDragLeave}
-        onDrop={onDrop}
-        onClick={() => fileInputRef.current?.click()}
-      >
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/jpeg,image/png,image/jpg"
-          onChange={onFileSelect}
-          className="file-input"
-        />
-        {isDragActive ? (
-          <p className="dropzone-text">Drop your receipt here...</p>
-        ) : (
-          <div className="dropzone-content">
-            <p className="dropzone-icon">camera icon</p>
-            <p className="dropzone-text">Drag and drop a receipt image, or click to select</p>
-            <p className="dropzone-hint">
-              Supports JPEG, PNG (max 10MB)
+        <Center className="scan-video-container" style={hasCamera && !didCapture ? {} : {display: "none"}}>
+          <video className="scan-video" ref={videoOutputRef}>Video stream not available.</video>
+          <Button className="scan-btn" size="lg" onClick={() => void(takePhoto())}>Scan</Button>
+        </Center>
+
+        <Center style={hasCamera && didCapture ? {} : {display: "none"}}>
+          <Button size="lg" onClick={() => setDidCapture(false)}>New scan</Button>
+        </Center>
+
+        {!didCapture &&
+          <>
+            {hasCamera &&
+              <>
+                <Space h="md"/>
+                <Center>
+                  <Text size="lg">Or upload an image</Text>
+                </Center>
+              </>
+            }
+            
+            <Space h="md"/>
+            <div
+              className={`dropzone ${isDragActive ? 'dropzone-active' : ''}`}
+              onDragOver={onDragOver}
+              onDragLeave={onDragLeave}
+              onDrop={onDrop}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/jpg"
+                onChange={onFileSelect}
+                className="file-input"
+              />
+              {isDragActive ? (
+                <p className="dropzone-text">Drop your receipt here...</p>
+              ) : (
+                <div className="dropzone-content">
+                  <p className="dropzone-icon">camera icon</p>
+                  <p className="dropzone-text">Drag and drop a receipt image, or click to select</p>
+                  <p className="dropzone-hint">
+                    Supports JPEG, PNG (max 10MB)
+                  </p>
+                </div>
+              )}
+            </div>
+          </>
+        }
+
+        {error && (
+          <div className="error-message">
+            ❌ {error}
+          </div>
+        )}
+
+        {isProcessing && (
+          <div className="progress-container">
+            <div className="progress-bar-wrapper">
+              <div
+                className="progress-bar"
+                style={{ width: `${ocrProgress}%` }}
+              >
+                {ocrProgress > 0 && `${ocrProgress}%`}
+              </div>
+            </div>
+            <p className="progress-text">
+              {ocrProgress < 100 ? 'Reading your receipt...' : 'Processing complete!'}
             </p>
           </div>
         )}
-      </div>
-
-      {error && (
-        <div className="error-message">
-          ❌ {error}
-        </div>
-      )}
-
-      {isProcessing && (
-        <div className="progress-container">
-          <div className="progress-bar-wrapper">
-            <div 
-              className="progress-bar"
-              style={{ width: `${ocrProgress}%` }}
-            >
-              {ocrProgress > 0 && `${ocrProgress}%`}
+        {image && !isProcessing && extractedData && (
+          <div className="results-container">
+            <div className="image-section">
+              <h3 className="section-title">Your Receipt</h3>
+              <img src={image} alt="Receipt" className="receipt-image" />
+            </div>
+            <div className="data-section">
+              <h3 className="section-title">Extracted Information</h3>
+              <div className="data-card">
+                <p><strong>Store:</strong> {extractedData.merchant}</p>
+                <p><strong>Date:</strong> {extractedData.date}</p>
+                <p><strong>Total:</strong> ${extractedData.total.toFixed(2)}</p>
+        
+                <p><strong>🛒 Items ({extractedData.items.length}):</strong></p>
+                {extractedData.items.length > 0 ? (
+                  <ul className="items-list">
+                    {extractedData.items.map((item, index) => (
+                      <li key={index} className="item-row">
+                        {item.name} - <strong>${item.price.toFixed(2)}</strong>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="no-items-message">No items detected. Try a clearer receipt image.</p>
+                )}
+        
+                <button
+                  className="copy-button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(JSON.stringify(extractedData, null, 2));
+                    alert('Data copied to clipboard!');
+                  }}
+                >
+                  Copy Data
+                </button>
+              </div>
             </div>
           </div>
-          <p className="progress-text">
-            {ocrProgress < 100 ? 'Reading your receipt...' : 'Processing complete!'}
-          </p>
-        </div>
-      )}
-
-      {image && !isProcessing && extractedData && (
-        <div className="results-container">
-          <div className="image-section">
-            <h3 className="section-title">Your Receipt</h3>
-            <img src={image} alt="Receipt" className="receipt-image" />
-          </div>
-
-          <div className="data-section">
-            <h3 className="section-title">Extracted Information</h3>
-            <div className="data-card">
-              <p><strong>Store:</strong> {extractedData.merchant}</p>
-              <p><strong>Date:</strong> {extractedData.date}</p>
-              <p><strong>Total:</strong> ${extractedData.total.toFixed(2)}</p>
-              
-              <p><strong>🛒 Items ({extractedData.items.length}):</strong></p>
-              {extractedData.items.length > 0 ? (
-                <ul className="items-list">
-                  {extractedData.items.map((item, index) => (
-                    <li key={index} className="item-row">
-                      {item.name} - <strong>${item.price.toFixed(2)}</strong>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="no-items-message">No items detected. Try a clearer receipt image.</p>
-              )}
-              
-              <button 
-                className="copy-button"
-                onClick={() => {
-                  navigator.clipboard.writeText(JSON.stringify(extractedData, null, 2));
-                  alert('Data copied to clipboard!');
-                }}
-              >
-                Copy Data
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+        )}
+      </Paper>
+    </Container>
   );
 };
