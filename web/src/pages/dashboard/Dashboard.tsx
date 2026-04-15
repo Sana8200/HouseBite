@@ -1,5 +1,7 @@
 import './Dashboard.css';
 import React, { useState, useRef, useEffect } from 'react';
+import { Paper, SimpleGrid, Text } from '@mantine/core';
+import { IconLayoutGrid, IconReceipt, IconShoppingCart } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../supabase';
 import { searchRecipes } from "../../lib/searchRecipes"
@@ -31,8 +33,36 @@ interface FavouriteRecipesProps {
   recipes: FavRecipe[];
 }
 
+interface DashboardNavCards {
+  title: string;
+  description: string;
+  route: string;
+  icon: React.ReactNode;
+}
+
 // Filter types
 type FilterType = 'all' | 'expired' | 'critical' | 'warning' | 'normal';
+
+const dashboardNavCards: DashboardNavCards[] = [
+  {
+    title: 'Shopping List',
+    description: 'Manage the household shopping list and keep track of what still needs to be bought.',
+    route: '/shoppinglist',
+    icon: <IconShoppingCart size={24} stroke={1.8} />,
+  },
+  {
+    title: 'Pantry',
+    description: 'Review pantry items, spot products that are running low and check what expires soon.',
+    route: '/pantry',
+    icon: <IconLayoutGrid size={24} stroke={1.8} />,
+  },
+  {
+    title: 'Receipts',
+    description: 'Open recent receipts and review purchases already captured for the household.',
+    route: '/receipts',
+    icon: <IconReceipt size={24} stroke={1.8} />,
+  },
+];
 
 // ----------------------------------------------------------------------------
 
@@ -269,6 +299,7 @@ const FavouriteRecipes: React.FC<FavouriteRecipesProps> = ({ recipes }) => {
 
 // Main Dashboard Component
 const Dashboard: React.FC = () => {
+  const navigate = useNavigate();
   const [displayName, setDisplayName] = useState<string | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [households, setHouseholds] = useState<Household[]>([]);
@@ -402,6 +433,34 @@ const Dashboard: React.FC = () => {
           <button className="error-dismiss" onClick={() => setError(null)}>×</button>
         </div>
       )}
+
+      <SimpleGrid
+        cols={{ base: 1, md: 2, xl: 3 }}
+        spacing="lg"
+        className="dashboard-nav"
+        aria-label="Dashboard navigation"
+      >
+        {dashboardNavCards.map((card) => (
+          <Paper
+            key={card.route}
+            component="button"
+            className="dashboard-nav-card"
+            onClick={() => navigate(card.route)}
+            radius="lg"
+            withBorder
+          >
+            <span className="dashboard-nav-card__icon" aria-hidden="true">
+              {card.icon}
+            </span>
+            <Text component="h2" className="dashboard-nav-card__title">
+              {card.title}
+            </Text>
+            <Text className="dashboard-nav-card__description">
+              {card.description}
+            </Text>
+          </Paper>
+        ))}
+      </SimpleGrid>
 
       {loading ? (
         <p className="loading-text">Loading products...</p>
