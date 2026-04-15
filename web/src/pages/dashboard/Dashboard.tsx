@@ -19,16 +19,16 @@ interface Household {
   house_name: string;
 }
 
-interface Recipe {
+interface FavRecipe {
   id: string;
-  name: string;
-  imageUrl?: string;
-  description?: string;
-  cookingTime?: number;
+  title: string;
+  description: string | null;
+  servings: number | null;
+  prep_time: number | null;
 }
 
 interface FavouriteRecipesProps {
-  recipes: Recipe[];
+  recipes: FavRecipe[];
 }
 
 // Filter types
@@ -219,29 +219,10 @@ const ProductsInDanger: React.FC<{ products: Product[] }> = ({ products }) => {
 
 // Favourite Recipes Component with Carousel
 const FavouriteRecipes: React.FC<FavouriteRecipesProps> = ({ recipes }) => {
-  const [scrollPosition, setScrollPosition] = useState(0);
   const carouselRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
-  const handleViewAll = () => {
-    navigate('/all-recipes', { state: { favouriteRecipes: recipes } });
-  };
-
-  const scrollLeft = () => {
-    if (carouselRef.current) {
-      const newPosition = scrollPosition - 300;
-      carouselRef.current.scrollTo({ left: newPosition, behavior: 'smooth' });
-      setScrollPosition(newPosition);
-    }
-  };
-
-  const scrollRight = () => {
-    if (carouselRef.current) {
-      const newPosition = scrollPosition + 300;
-      carouselRef.current.scrollTo({ left: newPosition, behavior: 'smooth' });
-      setScrollPosition(newPosition);
-    }
-  };
+  const scroll = (dir: number) => carouselRef.current?.scrollBy({ left: dir * 300, behavior: 'smooth' });
 
   if (!recipes.length) {
     return (
@@ -255,30 +236,30 @@ const FavouriteRecipes: React.FC<FavouriteRecipesProps> = ({ recipes }) => {
     <div className="favourite-recipes-container">
       <div className="section-header">
         <h2 className="section-title">Here are your favourite recipes</h2>
-        <button onClick={handleViewAll} className="view-all-button">View all →</button>
       </div>
 
       <div className="carousel-wrapper">
-        {recipes.length > 3 && (
-          <button onClick={scrollLeft} className="carousel-arrow left-arrow" aria-label="Scroll left">‹</button>
-        )}
+        <button onClick={() => scroll(-1)} className="carousel-arrow left-arrow" aria-label="Scroll left">‹</button>
         <div className="recipes-carousel" ref={carouselRef}>
-          {recipes.map(recipe => (
-            <div key={recipe.id} className="recipe-card">
-              {recipe.imageUrl && (
-                <img src={recipe.imageUrl} alt={recipe.name} className="recipe-image" />
-              )}
-              <div className="recipe-info">
-                <h3 className="recipe-name">{recipe.name}</h3>
-                {recipe.description && <p className="recipe-description">{recipe.description}</p>}
-                {recipe.cookingTime && <p className="recipe-time">{recipe.cookingTime} min</p>}
+          {recipes.map(recipe => {
+            const nutrition = recipe.description?.split('\n\n')[0] ?? ''
+            return (
+              <div
+                key={recipe.id}
+                className="recipe-card"
+                style={{ cursor: 'pointer' }}
+                onClick={() => navigate('/recipes', { state: { openRecipeId: recipe.id } })}
+              >
+                <div className="recipe-info">
+                  <h3 className="recipe-name">{recipe.title}</h3>
+                  <p className="recipe-time">Servings: {recipe.servings ?? '?'} · Prep: {recipe.prep_time ?? '?'} min</p>
+                  <p className="recipe-description">{nutrition}</p>
+                </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
-        {recipes.length > 3 && (
-          <button onClick={scrollRight} className="carousel-arrow right-arrow" aria-label="Scroll right">›</button>
-        )}
+        <button onClick={() => scroll(1)} className="carousel-arrow right-arrow" aria-label="Scroll right">›</button>
       </div>
     </div>
   );
@@ -308,6 +289,11 @@ const Dashboard: React.FC = () => {
     supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? null));
     void fetchHouseholds();
     void fetchProducts();
+    void supabase
+      .from('recipe')
+      .select('id, title, description, servings, prep_time')
+      .order('created_at', { ascending: false })
+      .then(({ data }) => setFavouriteRecipes(data ?? []));
   }, []);
 
   const fetchHouseholds = async () => {
@@ -397,13 +383,7 @@ const Dashboard: React.FC = () => {
     void fetchProducts();
   };
 
-  const [favouriteRecipes] = useState<Recipe[]>([
-    { id: '1', name: 'Spaghetti Bolognese', imageUrl: 'https://via.placeholder.com/300x180?text=Spaghetti+Bolognese', description: 'Classic Italian pasta with meat sauce', cookingTime: 35 },
-    { id: '2', name: 'Chicken Curry', imageUrl: 'https://via.placeholder.com/300x180?text=Chicken+Curry', description: 'Creamy and spicy Indian curry', cookingTime: 45 },
-    { id: '3', name: 'Grilled Salmon', imageUrl: 'https://via.placeholder.com/300x180?text=Grilled+Salmon', description: 'Healthy grilled salmon with lemon', cookingTime: 20 },
-    { id: '4', name: 'Vegetable Stir Fry', imageUrl: 'https://via.placeholder.com/300x180?text=Vegetable+Stir+Fry', description: 'Quick and healthy vegetable stir fry', cookingTime: 15 },
-    { id: '5', name: 'Margherita Pizza', imageUrl: 'https://via.placeholder.com/300x180?text=Pizza', description: 'Classic Italian pizza with fresh basil', cookingTime: 25 },
-  ]);
+  const [favouriteRecipes, setFavouriteRecipes] = useState<FavRecipe[]>([]);
 
   return (
     <div className="page dashboard">

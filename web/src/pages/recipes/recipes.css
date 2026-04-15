@@ -1,0 +1,153 @@
+.recipes-page {
+  padding: 2rem;
+}
+
+.recipes-page h1 {
+  margin-bottom: 1.5rem;
+}
+
+.recipes-page h2 {
+  margin: 2rem 0 1rem;
+}
+
+/* Carousel */
+.recipe-carousel-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.recipe-carousel {
+  display: flex;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  gap: 20px;
+  padding: 10px 5px;
+  flex: 1;
+  align-items: flex-start;
+  scrollbar-width: thin;
+}
+
+.recipe-carousel::-webkit-scrollbar { height: 8px; }
+.recipe-carousel::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
+.recipe-carousel::-webkit-scrollbar-thumb { background: #888; border-radius: 10px; }
+.recipe-carousel::-webkit-scrollbar-thumb:hover { background: #555; }
+
+/* Card */
+.recipe-card {
+  min-width: 280px;
+  max-width: 280px;
+  flex-shrink: 0;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s;
+  cursor: pointer;
+}
+
+.recipe-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.recipe-card-body {
+  padding: 16px;
+}
+
+.recipe-card-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 8px;
+  color: #333;
+}
+
+.recipe-card-meta {
+  font-size: 13px;
+  color: #666;
+  margin: 4px 0;
+}
+
+.recipe-card-nutrition {
+  font-size: 12px;
+  color: #888;
+  margin-top: 8px;
+  line-height: 1.5;
+}
+
+.recipe-card-instructions {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #eee;
+  font-size: 13px;
+  color: #444;
+  white-space: pre-wrap;
+  line-height: 1.6;
+}
+
+.recipe-card-delete {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+  padding: 8px;
+  border: 1px solid #e53e3e;
+  border-radius: 8px;
+  background: white;
+  color: #e53e3e;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.recipe-card-delete:hover {
+  background: #e53e3e;
+  color: white;
+}
+
+.recipe-card-save {
+  display: block;
+  width: 100%;
+  margin-top: 12px;
+  padding: 8px;
+  border: none;
+  border-radius: 8px;
+  background: #667eea;
+  color: white;
+  font-size: 13px;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.recipe-card-save:hover:not(:disabled) { opacity: 0.85; }
+.recipe-card-save:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* Arrows */
+.recipe-carousel-arrow {
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 24px;
+  font-weight: bold;
+  color: #333;
+  flex-shrink: 0;
+  transition: all 0.2s;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.recipe-carousel-arrow:hover {
+  background: #667eea;
+  color: white;
+  border-color: #667eea;
+}
+
+@media (max-width: 768px) {
+  .recipe-card { min-width: 240px; max-width: 240px; }
+  .recipe-carousel-arrow { width: 32px; height: 32px; font-size: 18px; }
+}

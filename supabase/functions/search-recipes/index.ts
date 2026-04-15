@@ -53,11 +53,12 @@
       const fat      = nutrients.find((n: any) => n.name === "Fat")
 
       const nutritionText = `Calories: ${calories?.amount ?? "?"} ${calories?.unit ?? ""} | Protein: ${protein?.amount ?? "?"} ${protein?.unit ?? ""} | Fat: ${fat?.amount ?? "?"} ${fat?.unit ?? ""}`
+      const ingredientsText = (d.extendedIngredients ?? []).map((ing: any) => `• ${ing.original}`).join("\n")
       const stepsText = steps.map((s: any) => `${s.number}. ${s.step}`).join("\n")
 
       return {
         title: d.title,
-        description: `${nutritionText}\n\n${stepsText}`,
+        description: `${nutritionText}\n\n${ingredientsText}\n\n${stepsText}`,
         servings: d.servings,
         prep_time: d.readyInMinutes,
       }
