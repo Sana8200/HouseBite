@@ -7,14 +7,19 @@
     padding: var(--space-xl) var(--space-lg);
     display: grid;
     gap: var(--space-lg);
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: minmax(320px, 1fr) 1.2fr;
+    align-items: start;
     grid-template-areas:
-        "title     title"
-        "identity  identity"
-        "profile   dietary"
+        "title      title"
+        "identity   dietary"
+        "profile    dietary"
         "households households"
-        "security  security"
-        "danger    danger";
+        "security   security"
+        "danger     danger";
+}
+
+.account-dietary {
+    height: 100%;
 }
 
 .account-page > h1 {
@@ -39,10 +44,14 @@
             "title"
             "identity"
             "profile"
+            "dietary"
             "households"
             "security"
-            "dietary"
             "danger";
+    }
+
+    .account-dietary {
+        height: auto;
     }
 }
 
@@ -341,25 +350,24 @@
    Dietary preferences
    ────────────────────────────────────────── */
 
+.dietary-selected {
+    padding: var(--space-md);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-soft);
+    margin-bottom: var(--space-lg);
+    min-height: 64px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 10px;
+}
+
 .dietary-label {
-    display: block;
     font-size: 12px;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.04em;
     color: var(--color-subtle);
-    margin-bottom: 10px;
-}
-
-.dietary-selected {
-    padding: var(--space-md);
-    border-radius: var(--radius-md);
-    background: var(--color-bg-soft);
-    margin-bottom: var(--space-md);
-    min-height: 72px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
 }
 
 .dietary-empty {
@@ -368,8 +376,29 @@
     font-style: italic;
 }
 
-.dietary-picker {
-    padding-top: 4px;
+.dietary-category {
+    margin-top: var(--space-lg);
+}
+
+.dietary-category:first-of-type {
+    margin-top: 0;
+}
+
+.dietary-heading {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 0 10px 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-text);
+    text-transform: none;
+    letter-spacing: 0;
+}
+
+.dietary-icon {
+    font-size: 16px;
+    line-height: 1;
 }
 
 .chip-row {
@@ -384,15 +413,25 @@
 .chip {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 7px 14px;
+    padding: 8px 18px;
     border-radius: 999px;
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 500;
     cursor: pointer;
     font-family: inherit;
-    transition: transform 0.1s, background 0.15s, border-color 0.15s,
-        color 0.15s;
+    background: var(--color-surface);
+    color: var(--color-text);
+    border: 1.5px solid #d9d9d9;
+    transition: border-color 0.15s, color 0.15s, background 0.15s,
+        transform 0.1s;
+}
+
+.chip:hover:not(:disabled) {
+    border-color: #9c9c9c;
+}
+
+.chip:active:not(:disabled) {
+    transform: scale(0.96);
 }
 
 .chip:disabled {
@@ -400,39 +439,16 @@
     cursor: not-allowed;
 }
 
-.chip:active:not(:disabled) {
-    transform: scale(0.95);
+.chip-on {
+    border-color: #5cc85c;
+    color: #2f7a2f;
+    background: #f5fcf5;
+    box-shadow: 0 0 0 1px #5cc85c;
 }
 
-.chip-filled {
-    background: var(--color-primary);
-    color: white;
-    border: 1px solid var(--color-primary);
-}
-
-.chip-filled:hover:not(:disabled) {
-    background: var(--color-primary-hover);
-    border-color: var(--color-primary-hover);
-}
-
-.chip-x {
-    font-size: 16px;
-    line-height: 1;
-    margin-left: 2px;
-    opacity: 0.85;
-}
-
-.chip-outline {
-    background: var(--color-surface);
-    color: var(--color-muted);
-    border: 1px dashed var(--color-border);
-}
-
-.chip-outline:hover:not(:disabled) {
-    background: var(--color-primary-soft);
-    border-color: var(--color-primary);
-    border-style: solid;
-    color: var(--color-primary);
+.chip-on:hover:not(:disabled) {
+    border-color: #4cb24c;
+    box-shadow: 0 0 0 1px #4cb24c;
 }
 
 /* ──────────────────────────────────────────
