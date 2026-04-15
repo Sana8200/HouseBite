@@ -1,6 +1,6 @@
 // src/components/ReceiptScanner.tsx
 
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import Tesseract from 'tesseract.js';
 import './Scan.css';
 import { supabase } from '../../supabase';
@@ -23,7 +23,7 @@ export const Scan: React.FC = () => {
   const [isDragActive, setIsDragActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFile = useCallback(async (file: File) => {
+  const handleFile = useCallback(async (file: Blob) => {
     if (!file) return;
 
     // Validate file type
@@ -70,7 +70,40 @@ export const Scan: React.FC = () => {
     }
   }, []);
 
-  const extractTextFromImage = async (file: File): Promise<string> => {
+  const videoOutputRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    void(load());
+    async function load() {
+      const mediaStream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: "environment"
+        }
+      });
+      const videoOutput = videoOutputRef.current!;
+      videoOutput.srcObject = mediaStream;
+      await videoOutput.play();
+    }
+  });
+
+  const takePhoto = async () => {
+    const videoOutput = videoOutputRef.current!;
+    const canvas = canvasRef.current!;
+
+    const context = canvas.getContext("2d")!;
+
+    canvas.width = videoOutput.videoWidth;
+    canvas.height = videoOutput.videoHeight;
+
+    context.drawImage(videoOutput, 0, 0, canvas.width, canvas.height);
+
+    canvas.toBlob(blob => {
+      void(handleFile(blob!));
+    });
+  };
+
+  const extractTextFromImage = async (file: Blob): Promise<string> => {
     return new Promise((resolve, reject) => {
       Tesseract.recognize(
         file,
@@ -177,7 +210,7 @@ export const Scan: React.FC = () => {
     return { merchant, date, total, items: uniqueItems };
   };
 
-  const saveToDatabase = async (file: File, data: ExtractedData) => {
+  const saveToDatabase = async (file: Blob | File, data: ExtractedData) => {
     if (!supabase) return;
     
     try {
@@ -187,7 +220,7 @@ export const Scan: React.FC = () => {
         return;
       }
 
-      const fileExt = file.name.split('.').pop();
+      const fileExt = file instanceof File ? file.name.split('.').pop() : "png";
       const fileName = `${user.id}/${Date.now()}-receipt.${fileExt}`;
 
       const { error: uploadError } = await supabase.storage
@@ -248,6 +281,11 @@ export const Scan: React.FC = () => {
   return (
     <div className="receipt-scanner">
       <h1 className="scanner-title">Receipt Scanner</h1>
+
+      <canvas ref={canvasRef} style={{display: "none"}}></canvas>
+      <video ref={videoOutputRef}>Video stream not available.</video>
+      <br/>
+      <button onClick={() => void(takePhoto())}>Take photo</button>
       
       <div
         className={`dropzone ${isDragActive ? 'dropzone-active' : ''}`}
