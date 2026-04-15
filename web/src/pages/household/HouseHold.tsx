@@ -117,10 +117,10 @@ export function HouseHold() {
             )}
 
             <div className="household-buttons">
-                <button className="create-btn" onClick={() => { setCreateError(null); setShowCreateModal(true) }}>
+                <button className="btn btn-primary household-cta" onClick={() => { setCreateError(null); setShowCreateModal(true) }}>
                     + Create Household
                 </button>
-                <button className="join-btn" onClick={() => { setJoinError(null); setShowJoinModal(true) }}>
+                <button className="btn btn-secondary household-cta" onClick={() => { setJoinError(null); setShowJoinModal(true) }}>
                     + Join Household
                 </button>
             </div>
@@ -153,7 +153,7 @@ export function HouseHold() {
                                 </div>
                             </div>
                             <button
-                                className="go-btn"
+                                className="btn btn-outline"
                                 onClick={() => {
                                     void navigate("/dashboard", {
                                         state: {
@@ -202,10 +202,10 @@ export function HouseHold() {
                             />
                         </div>
                         <div className="modal-actions">
-                            <button className="cancel-btn" onClick={() => setShowCreateModal(false)}>
+                            <button className="btn btn-outline" onClick={() => setShowCreateModal(false)}>
                                 Cancel
                             </button>
-                            <button className="confirm-btn" onClick={() => void handleCreate()} disabled={creating}>
+                            <button className="btn btn-primary" onClick={() => void handleCreate()} disabled={creating}>
                                 {creating ? "Creating..." : "Create"}
                             </button>
                         </div>
@@ -236,10 +236,10 @@ export function HouseHold() {
                             />
                         </div>
                         <div className="modal-actions">
-                            <button className="cancel-btn" onClick={() => setShowJoinModal(false)}>
+                            <button className="btn btn-outline" onClick={() => setShowJoinModal(false)}>
                                 Cancel
                             </button>
-                            <button className="confirm-btn" onClick={() => void handleJoin()} disabled={joining}>
+                            <button className="btn btn-primary" onClick={() => void handleJoin()} disabled={joining}>
                                 {joining ? "Joining..." : "Join"}
                             </button>
                         </div>
