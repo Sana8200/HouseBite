@@ -374,7 +374,7 @@ export function Account({ user }: AccountProps) {
             </section>
 
             <section className="account-section account-dietary">
-                <h2>Dietary preferences</h2>
+                <h2>Food Preferences & Restrictions</h2>
                 <p className="section-hint">
                     Add your dietary restrictions to get personalized recipe
                     suggestions and let your household know what you can and
