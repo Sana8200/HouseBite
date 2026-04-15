@@ -5,6 +5,7 @@
 .scan-video-container > video {
   display: block;
   overflow: hidden;
+  border-radius: var(--radius-md);
 }
 
 .scan-video-container > .scan-btn {
