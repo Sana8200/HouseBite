@@ -16,10 +16,14 @@ export function App() {
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
-    supabase.auth.onAuthStateChange((_e, s) => {
-      if (s?.user) setUser(s.user);
+    void(load());
+    async function load() {
+      const session = await supabase.auth.getSession();
+      if (session.data.session?.user) {
+        setUser(session.data.session?.user);
+      }
       setLoaded(true);
-    });
+    }
   }, []);
 
   // prevents redirect when reopening a tab. we need to wait until we know if we have a user signed in.
