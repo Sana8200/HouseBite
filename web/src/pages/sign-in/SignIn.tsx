@@ -1,7 +1,7 @@
 import "./SignIn.css";
 import { useState } from "react";
 import type { User } from "@supabase/supabase-js";
-import { Paper } from "@mantine/core";
+import { Container, Paper } from "@mantine/core";
 import { SignInForm } from "./SignInForm";
 import { SignUpForm } from "./SignUpForm";
 
@@ -15,8 +15,8 @@ export function SignIn({ setUser }: SignInProps) {
   const [activeTab, setActiveTab] = useState<AuthTab>("signIn");
 
   return (
-    <div className="auth-page">
-      <Paper className="auth-card" radius="xl" shadow="md" withBorder>
+    <Container p="md" size="xs">
+      <Paper p="md" radius="xl" shadow="md" withBorder>
         <div
           className={`auth-switch ${
             activeTab === "signUp" ? "auth-switch--sign-up" : ""
@@ -51,6 +51,6 @@ export function SignIn({ setUser }: SignInProps) {
           )}
         </div>
       </Paper>
-    </div>
+    </Container>
   );
 }
