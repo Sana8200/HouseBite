@@ -36,7 +36,7 @@ export function App() {
       <Route key="sign-in" path="sign-in" element={<Navigate to="/household" />} />,
       <Route key="household" path="household" element={<HouseHold />} />,
       <Route key="dashboard" path="dashboard" element={<Dashboard />} />,
-      <Route key="recipes" path="recipes" element={<Recipes />} />
+      <Route key="recipes" path="recipes" element={<Recipes />} />,
       <Route key="account" path="Account" element={<Account user={user} />} />
     ];
   } else {
