@@ -50,6 +50,7 @@ export function Account({ user }: AccountProps) {
     const [togglingId, setTogglingId] = useState<string | null>(null)
     const [restrictionError, setRestrictionError] = useState<string | null>(null)
 
+
     useEffect(() => {
         const fetch = async () => {
             const { data, error } = await supabase
@@ -223,7 +224,7 @@ export function Account({ user }: AccountProps) {
                 </div>
             </section>
 
-            <section className="account-section">
+            <section className="account-section account-profile">
                 <h2>Profile</h2>
                 <dl className="account-list">
                     <div className="account-row">
@@ -291,7 +292,7 @@ export function Account({ user }: AccountProps) {
                 </dl>
             </section>
 
-            <section className="account-section">
+            <section className="account-section account-households">
                 <div className="account-households-header">
                     <h2>Households</h2>
                     {!loading && (
@@ -334,40 +335,69 @@ export function Account({ user }: AccountProps) {
                 )}
             </section>
 
-            <section className="account-section">
+            <section className="account-section account-dietary">
                 <h2>Dietary preferences</h2>
                 <p className="section-hint">
-                    Select any restrictions that apply. Recipes will respect
-                    these across your households.
+                    Add your dietary restrictions to get personalized recipe suggestions and 
+                    let your household know what you can and cannot eat.
                 </p>
-                {restrictions.length === 0 ? (
-                    <p className="empty-text">No options available.</p>
-                ) : (
-                    <ul className="restriction-list">
-                        {restrictions.map(r => {
-                            const checked = myRestrictionIds.has(r.id)
-                            return (
-                                <li key={r.id}>
-                                    <label className={`restriction-chip ${checked ? "is-on" : ""}`}>
-                                        <input
-                                            type="checkbox"
-                                            checked={checked}
+
+                <div className="dietary-selected">
+                    <span className="dietary-label">Your restrictions</span>
+                    {myRestrictionIds.size === 0 ? (
+                        <span className="dietary-empty">None selected yet</span>
+                    ) : (
+                        <ul className="chip-row">
+                            {restrictions
+                                .filter(r => myRestrictionIds.has(r.id))
+                                .map(r => (
+                                    <li key={r.id}>
+                                        <button
+                                            type="button"
+                                            className="chip chip-filled"
                                             disabled={togglingId === r.id}
-                                            onChange={() => void toggleRestriction(r.id)}
-                                        />
-                                        <span>{formatRestriction(r.restriction)}</span>
-                                    </label>
-                                </li>
-                            )
-                        })}
-                    </ul>
-                )}
+                                            onClick={() => void toggleRestriction(r.id)}
+                                            title="Click to remove"
+                                        >
+                                            {formatRestriction(r.restriction)}
+                                            <span className="chip-x" aria-hidden>×</span>
+                                        </button>
+                                    </li>
+                                ))}
+                        </ul>
+                    )}
+                </div>
+
+                <div className="dietary-picker">
+                    <span className="dietary-label">Add more</span>
+                    {restrictions.filter(r => !myRestrictionIds.has(r.id)).length === 0 ? (
+                        <span className="dietary-empty">All set.</span>
+                    ) : (
+                        <ul className="chip-row">
+                            {restrictions
+                                .filter(r => !myRestrictionIds.has(r.id))
+                                .map(r => (
+                                    <li key={r.id}>
+                                        <button
+                                            type="button"
+                                            className="chip chip-outline"
+                                            disabled={togglingId === r.id}
+                                            onClick={() => void toggleRestriction(r.id)}
+                                        >
+                                            + {formatRestriction(r.restriction)}
+                                        </button>
+                                    </li>
+                                ))}
+                        </ul>
+                    )}
+                </div>
+
                 {restrictionError && (
                     <p className="account-error">{restrictionError}</p>
                 )}
             </section>
 
-            <section className="account-section">
+            <section className="account-section account-security">
                 <h2>Security</h2>
                 <button
                     className="account-edit-btn"
