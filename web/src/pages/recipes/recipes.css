@@ -91,17 +91,17 @@
   width: 100%;
   margin-top: 8px;
   padding: 8px;
-  border: 1px solid #e53e3e;
+  border: 1px solid var(--color-danger);
   border-radius: 8px;
   background: white;
-  color: #e53e3e;
+  color: var(--color-danger);
   font-size: 13px;
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
 }
 
 .recipe-card-delete:hover {
-  background: #e53e3e;
+  background: var(--color-danger);
   color: white;
 }
 
@@ -112,7 +112,7 @@
   padding: 8px;
   border: none;
   border-radius: 8px;
-  background: #667eea;
+  background: var(--color-primary);
   color: white;
   font-size: 13px;
   cursor: pointer;
@@ -142,9 +142,9 @@
 }
 
 .recipe-carousel-arrow:hover {
-  background: #667eea;
+  background: var(--color-primary);
   color: white;
-  border-color: #667eea;
+  border-color: var(--color-primary);
 }
 
 @media (max-width: 768px) {
