@@ -1,33 +1,9 @@
-/* 
- * Most of this file will be removed when we switch to the new ui framework.
- * Variables should be put in styles/tokens.css
- * Global overrides should be put in styles/globals.css
- * Page or component specific styles should be put in a corresponding css file.
+/*
+ * App-wide primitives only.
+ * Design tokens live in styles/tokens.css.
+ * Reset + body defaults live in styles/globals.css.
+ * Page- or component-specific styles live next to the component.
  */
-
-:root {
-    --color-primary: #863bff;
-    --color-primary-hover: #6f2ee0;
-    --color-primary-soft: #f3f0ff;
-
-    --color-muted: #666;
-    --color-subtle: #888;
-
-    --color-bg-soft: #f8f9fa;
-
-    --color-danger-soft: #fff0f0;
-    --color-danger-border: #ffcccc;
-
-    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.12);
-    --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.2);
-
-    --space-xs: 6px;
-    --space-sm: 12px;
-    --space-md: 16px;
-    --space-lg: 24px;
-    --space-xl: 32px;
-}
 
 /* Page container */
 .page {
@@ -41,7 +17,7 @@
     padding: 10px 20px;
     border-radius: var(--radius-md);
     border: 1px solid transparent;
-    font-size: 14px;
+    font-size: var(--font-size-200);
     cursor: pointer;
     transition: transform 0.15s, box-shadow 0.15s, background 0.15s,
         color 0.15s, opacity 0.15s;
@@ -61,7 +37,7 @@
 
 .btn-primary {
     background: var(--color-primary);
-    color: white;
+    color: var(--color-white);
 }
 
 .btn-secondary {
@@ -77,7 +53,7 @@
 
 .btn-outline:hover:not(:disabled) {
     background: var(--color-primary);
-    color: white;
+    color: var(--color-white);
 }
 
 /* Card */
@@ -94,11 +70,11 @@
     transform: translateY(-2px);
 }
 
-/* Status messages */
+/* Status banners / text */
 .error-banner {
     background: var(--color-danger-soft);
     border: 1px solid var(--color-danger-border);
-    color: #c00;
+    color: var(--color-danger);
     padding: var(--space-sm) var(--space-md);
     border-radius: var(--radius-md);
     margin-bottom: var(--space-md);
@@ -110,10 +86,17 @@
 .error-dismiss {
     background: none;
     border: none;
-    font-size: 20px;
+    font-size: var(--font-size-400);
     cursor: pointer;
-    color: #c00;
+    color: var(--color-danger);
     padding: 0 4px;
+}
+
+.loading-text,
+.empty-text {
+    color: var(--color-subtle);
+    padding: var(--space-xl) 0;
+    text-align: center;
 }
 
 /* Section header — title on the left, action on the right */
@@ -124,13 +107,6 @@
     margin-bottom: var(--space-md);
     flex-wrap: wrap;
     gap: 10px;
-}
-
-.loading-text,
-.empty-text {
-    color: var(--color-subtle);
-    padding: var(--space-xl) 0;
-    text-align: center;
 }
 
 /* Modal */
@@ -159,7 +135,7 @@
 
 .modal-hint {
     color: var(--color-subtle);
-    font-size: 14px;
+    font-size: var(--font-size-200);
     margin: -8px 0 var(--space-md) 0;
 }
 
@@ -171,8 +147,8 @@
 }
 
 .modal-field label {
-    font-size: 14px;
-    font-weight: 600;
+    font-size: var(--font-size-200);
+    font-weight: var(--font-weight-semibold);
 }
 
 .modal-field input,
@@ -181,7 +157,7 @@
     padding: 10px 14px;
     border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
-    font-size: 15px;
+    font-size: var(--font-size-300);
     outline: none;
     transition: border-color 0.15s;
     font-family: inherit;
