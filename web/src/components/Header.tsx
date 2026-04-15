@@ -15,6 +15,13 @@ export function Header(props: HeaderProps) {
         await signOut();
     };
 
+    const authenticatedLinks = [
+        { to: "/household", label: "Households" },
+        { to: "/scan", label: "Scan" },
+        { to: "/recipes", label: "Recipes" },
+        { to: "/Account", label: "Account" },
+    ];
+
     return (
         <div className="header">
             <NavLink to="/" className="header-logo">
@@ -24,29 +31,17 @@ export function Header(props: HeaderProps) {
             <div className="header-spacer"/>
 
             <nav className="header-nav">
-                {user ? (
+                {user && (
                     <>
-                        <NavLink to="/household" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>
-                            Households
-                        </NavLink>
-                        <NavLink to="/scan" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>
-                            Scan
-                        </NavLink>
-                        <NavLink to="/recipes" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>
-                            Recipes
-                        </NavLink>
-                        <NavLink to="/Account" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>
-                            Account
-                        </NavLink>
-                    </>
-                ) : (
-                    <>
-                        <NavLink to="/sign-in" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>
-                            Sign In
-                        </NavLink>
-                        <NavLink to="/sign-in" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>
-                            Sign Up
-                        </NavLink>
+                        {authenticatedLinks.map((link) => (
+                            <NavLink
+                                key={link.to}
+                                to={link.to}
+                                className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}
+                            >
+                                {link.label}
+                            </NavLink>
+                        ))}
                     </>
                 )}
                 

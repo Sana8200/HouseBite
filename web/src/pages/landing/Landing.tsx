@@ -19,7 +19,7 @@ export function Landing(props: LandingProps) {
                 { !user &&
                     <Link to="/sign-in">
                         <Button>
-                            Sign up now!
+                            Let's get started!
                         </Button>
                     </Link>
                 }

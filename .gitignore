@@ -28,3 +28,5 @@ supabase/.temp/
 
 # OS
 .DS_Store
+
+supabase/functions/.env
