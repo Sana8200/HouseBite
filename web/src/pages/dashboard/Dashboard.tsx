@@ -11,6 +11,7 @@ interface Product {
   expiryDate: string | null;
   quantity: number;
   householdName: string;
+  householdId: string;
 }
 
 interface Household {
@@ -82,10 +83,12 @@ const ProductsInDanger: React.FC<{ products: Product[] }> = ({ products }) => {
   };
 
   const handleFindRecipes = async () => {
-  const selectedProductObjects = products.filter(p => selectedProducts.includes(p.id))
-  const ingredientNames = selectedProductObjects.map(p => p.name)
-  const results = await searchRecipes(ingredientNames)
-  navigate('/recipes', { state: { recipes: results } })
+    const selectedProductObjects = products.filter(p => selectedProducts.includes(p.id))
+    const ingredientNames = selectedProductObjects.map(p => p.name)
+    const householdId = selectedProductObjects[0]?.householdId
+    if (!householdId) return
+    const results = await searchRecipes(ingredientNames, householdId)
+    navigate('/recipes', { state: { recipes: results } })
   };
 
   const clearFilters = () => {
@@ -319,6 +322,7 @@ const Dashboard: React.FC = () => {
       .select(`
         id,
         name,
+        household_id,
         household:household_id(house_name),
         product_specs(quantity, expiration_date)
       `);
@@ -340,6 +344,7 @@ const Dashboard: React.FC = () => {
         expiryDate: specs?.expiration_date ?? null,
         quantity: specs?.quantity ?? 1,
         householdName: p.household?.house_name ?? 'Unknown',
+        householdId: p.household_id,
       };
     });
 
