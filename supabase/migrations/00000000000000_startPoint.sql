@@ -1,13 +1,6 @@
 -- ─────────────────────────────────────────
 -- ENUMS
 -- ─────────────────────────────────────────
-CREATE TYPE restriction_type AS ENUM (
-  'vegan', 'vegetarian', 'pescetarian',
-  'gluten_free', 'dairy_free', 'lactose_free',
-  'nut_free', 'peanut_free', 'egg_free', 'soy_free', 'shellfish_free',
-  'low_sugar', 'low_carb', 'halal', 'kosher'
-);
-
 CREATE TYPE size_unit AS ENUM (
   'gr', 'ml', 'kg', 'L'
 );
@@ -42,8 +35,10 @@ CREATE TABLE allocations (
 -- FOOD RESTRICTIONS
 -- ─────────────────────────────────────────
 CREATE TABLE food_restriction (
-  id          uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-  restriction restriction_type NOT NULL
+  id       uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  category TEXT NOT NULL CHECK (category IN ('diet', 'intolerance')),
+  name     TEXT NOT NULL,
+  UNIQUE (category, name)
 );
 
 CREATE TABLE member_restriction (
