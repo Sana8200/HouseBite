@@ -159,7 +159,19 @@ export function HouseHold() {
                                     </button>
                                 </div>
                             </div>
-                            <button className="go-btn" onClick={() => { void navigate("/dashboard") }}>Go to household</button>
+                            <button
+                                className="go-btn"
+                                onClick={() => {
+                                    void navigate("/dashboard", {
+                                        state: {
+                                            householdId: h.id,
+                                            householdName: h.house_name,
+                                        },
+                                    })
+                                }}
+                            >
+                                Go to household
+                            </button>
                         </div>
                     ))}
                 </div>

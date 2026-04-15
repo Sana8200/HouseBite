@@ -13,6 +13,12 @@
   margin-bottom: 30px;
 }
 
+.dashboard-subtitle {
+  margin: var(--space-1) 0 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-200);
+}
+
 .dashboard-nav {
   margin-bottom: var(--space-6);
   padding: var(--space-3);

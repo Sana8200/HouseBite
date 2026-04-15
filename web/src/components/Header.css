@@ -51,6 +51,21 @@
   cursor: pointer;
 }
 
+.header-households-trigger {
+  font: inherit;
+  gap: var(--space-2);
+}
+
+.header-households-trigger::after {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(45deg) translateY(-1px);
+  opacity: 0.8;
+}
+
 .nav-link:hover {
   color: var(--color-primary-800);
   background-color: var(--color-primary-100);
@@ -73,4 +88,39 @@
   color: var(--color-white);
   background-color: var(--color-danger);
   border-color: var(--color-danger);
+}
+
+.header-households-menu {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-white);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+}
+
+.header-households-menu [data-menu-label] {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: var(--space-3) var(--space-4) var(--space-2);
+}
+
+.header-households-menu [data-menu-item] {
+  min-height: 44px;
+  padding: var(--space-3) var(--space-4);
+  color: var(--color-text);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-medium);
+  border-radius: 0;
+}
+
+.header-households-menu [data-menu-item]:hover {
+  background: var(--color-primary-50);
+  color: var(--color-primary-800);
+}
+
+.header-households-menu [data-disabled] {
+  color: var(--color-text-muted);
 }

@@ -2,7 +2,7 @@ import './Dashboard.css';
 import React, { useState, useRef, useEffect } from 'react';
 import { Paper, SimpleGrid, Text } from '@mantine/core';
 import { IconLayoutGrid, IconReceipt, IconShoppingCart } from '@tabler/icons-react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../../supabase';
 import { searchRecipes } from "../../lib/searchRecipes"
 
@@ -19,6 +19,11 @@ interface Product {
 interface Household {
   id: string;
   house_name: string;
+}
+
+interface DashboardLocationState {
+  householdId?: string;
+  householdName?: string;
 }
 
 interface FavRecipe {
@@ -287,9 +292,13 @@ const FavouriteRecipes: React.FC<FavouriteRecipesProps> = ({ recipes }) => {
 // Main Dashboard Component
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const locationState = (location.state as DashboardLocationState | null) ?? null;
   const [displayName, setDisplayName] = useState<string | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [households, setHouseholds] = useState<Household[]>([]);
+  const [selectedHouseholdId, setSelectedHouseholdId] = useState<string | null>(locationState?.householdId ?? null);
+  const [selectedHouseholdName, setSelectedHouseholdName] = useState<string | null>(locationState?.householdName ?? null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -312,7 +321,6 @@ const Dashboard: React.FC = () => {
       setDisplayName(displayName ?? username ?? email?.split('@')[0] ?? null);
     }).catch(() => {});
     void fetchHouseholds();
-    void fetchProducts();
     void supabase
       .from('recipe')
       .select('id, title, description, servings, prep_time')
@@ -320,14 +328,43 @@ const Dashboard: React.FC = () => {
       .then(({ data }) => setFavouriteRecipes(data ?? []));
   }, []);
 
+  useEffect(() => {
+    if (!households.length) return;
+
+    if (locationState?.householdId) {
+      setSelectedHouseholdId(locationState.householdId);
+      setSelectedHouseholdName(
+        locationState.householdName
+          ?? households.find((household) => household.id === locationState.householdId)?.house_name
+          ?? null
+      );
+      return;
+    }
+
+    if (!selectedHouseholdId) {
+      setSelectedHouseholdId(households[0].id);
+      setSelectedHouseholdName(households[0].house_name);
+    }
+  }, [households, locationState?.householdId, locationState?.householdName, selectedHouseholdId]);
+
+  useEffect(() => {
+    if (!selectedHouseholdId) {
+      setProducts([]);
+      setLoading(false);
+      return;
+    }
+
+    void fetchProducts(selectedHouseholdId);
+  }, [selectedHouseholdId]);
+
   const fetchHouseholds = async () => {
     const { data } = await supabase.from('household').select('id, house_name');
     setHouseholds(data ?? []);
   };
 
-  const fetchProducts = async () => {
+  const fetchProducts = async (householdId: string | null) => {
     setLoading(true);
-    const { data, error } = await supabase
+    let query = supabase
       .from('product')
       .select(`
         id,
@@ -336,6 +373,12 @@ const Dashboard: React.FC = () => {
         household:household_id(house_name),
         product_specs(quantity, expiration_date)
       `);
+
+    if (householdId) {
+      query = query.eq('household_id', householdId);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       setError('Could not load products');
@@ -412,7 +455,12 @@ const Dashboard: React.FC = () => {
   return (
     <div className="page dashboard">
       <div className="section-header">
-        <h1>Hello {displayName ?? 'there'}, welcome back</h1>
+        <div>
+          <h1>Hello {displayName ?? 'there'}, welcome back</h1>
+          <p className="dashboard-subtitle">
+            Viewing household: {selectedHouseholdName ?? 'Choose a household'}
+          </p>
+        </div>
         <button className="btn btn-primary" onClick={() => setShowCreateModal(true)}>+ Add Product</button>
       </div>
 
