@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
-import { getHouseholdMembers } from "../../api/household"
+import { Paper, Avatar, Text, Title, Group, UnstyledButton, Stack } from "@mantine/core"
 import { IconShare } from "@tabler/icons-react"
+import { getHouseholdMembers } from "../../api/household"
 import { InviteModal } from "./InviteModal"
 import "./HouseholdMembers.css"
 
@@ -39,7 +40,7 @@ export function HouseholdMembers({ householdId, inviteId }: HouseholdMembersProp
         void fetch()
     }, [householdId])
 
-    if (loading) return <p className="loading-text">Loading members...</p>
+    if (loading) return <Text c="dimmed" ta="center" py="xl">Loading members...</Text>
     if (members.length === 0) return null
 
     const getName = (m: Member) =>
@@ -49,32 +50,52 @@ export function HouseholdMembers({ householdId, inviteId }: HouseholdMembersProp
         getName(m).charAt(0).toUpperCase()
 
     return (
-        <div className="hh-members">
-            <h3 className="hh-members-title">Here are the members of your household</h3>
-            <div className="hh-members-grid">
-                {members.map(m => (
-                    <div key={m.id} className="hh-member-card">
-                        <div className="hh-member-avatar">{getInitial(m)}</div>
-                        <span className="hh-member-name">{getName(m)}</span>
-                    </div>
-                ))}
-                {inviteId && (
-                    <button
-                        type="button"
-                        className="hh-member-card hh-invite-card"
-                        onClick={() => setShowInvite(true)}
-                    >
-                        <div className="hh-invite-icon">
-                            <IconShare size={24} />
-                        </div>
-                        <span className="hh-member-name">invite someone</span>
-                    </button>
-                )}
-            </div>
+        <Paper className="hh-members" radius="xl" p="xl" mt="lg">
+            <Title order={3} size="h5" mb="md" c="#3a3929">
+                Here are the members of your household
+            </Title>
 
-            {showInvite && inviteId && (
-                <InviteModal inviteId={inviteId} onClose={() => setShowInvite(false)} />
+            <Group gap="md" wrap="wrap">
+                {members.map(m => (
+                    <Paper key={m.id} className="hh-member-card" radius="lg" p="lg" shadow="xs" w={140}>
+                        <Stack align="center" gap="xs">
+                            <Avatar size={80} radius="md">
+                                {getInitial(m)}
+                            </Avatar>
+                            <Text size="sm" fw={600} c="#3a3929" ta="center" truncate maw={120}>
+                                {getName(m)}
+                            </Text>
+                        </Stack>
+                    </Paper>
+                ))}
+
+                {inviteId && (
+                    <UnstyledButton
+                        className="hh-invite-card"
+                        onClick={() => setShowInvite(true)}
+                        w={140}
+                    >
+                        <Paper radius="lg" p="lg" className="hh-invite-inner">
+                            <Stack align="center" gap="xs">
+                                <Avatar size={80} radius="md">
+                                    <IconShare size={28} />
+                                </Avatar>
+                                <Text size="xs" ta="center">
+                                    invite someone
+                                </Text>
+                            </Stack>
+                        </Paper>
+                    </UnstyledButton>
+                )}
+            </Group>
+
+            {inviteId && (
+                <InviteModal
+                    inviteId={inviteId}
+                    opened={showInvite}
+                    onClose={() => setShowInvite(false)}
+                />
             )}
-        </div>
+        </Paper>
     )
 }

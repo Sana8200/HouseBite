@@ -1,52 +1,56 @@
-import { useState } from "react"
 import { IconUserPlus, IconCopy, IconCheck } from "@tabler/icons-react"
+import { Modal, Group, Text, Title, Code, ActionIcon, CopyButton } from "@mantine/core"
 
 interface InviteModalProps {
     inviteId: string
+    opened: boolean
     onClose: () => void
 }
 
-export function InviteModal({ inviteId, onClose }: InviteModalProps) {
-    const [copied, setCopied] = useState(false)
-
-    const copyCode = () => {
-        void navigator.clipboard.writeText(inviteId)
-        setCopied(true)
-    }
-
+export function InviteModal({ inviteId, opened, onClose }: InviteModalProps) {
     return (
-        <div className="invite-overlay" onClick={onClose}>
-            <div className="invite-modal" onClick={e => e.stopPropagation()}>
-                <button type="button" className="invite-close" onClick={onClose} aria-label="Close">
-                    ×
-                </button>
+        <Modal opened={opened} onClose={onClose} centered radius="lg" size="sm">
+            <Group gap="sm" mb="xs">
+                <IconUserPlus size={24} color="var(--color-primary-600)" />
+                <Title order={3} size="h4">Invite to household</Title>
+            </Group>
 
-                <div className="invite-header">
-                    <span className="invite-header-icon"><IconUserPlus size={28} /></span>
-                    <h3>{copied ? "Code copied!" : "Invite to household"}</h3>
-                </div>
+            <Text size="sm" c="dimmed" mb="lg">
+                Share this code with the person you want to invite.
+                They can paste it on the <strong>Households</strong> page to join.
+            </Text>
 
-                <p className="invite-desc">
-                    Share this code with the person you want to invite.
-                    They can paste it on the <strong>Households</strong> page to join.
-                </p>
+            <Group
+                gap="sm"
+                p="sm"
+                style={{ background: "var(--color-surface-muted)", borderRadius: "var(--radius-md)" }}
+            >
+                <CopyButton value={inviteId}>
+                    {({ copied, copy }) => (
+                        <ActionIcon
+                            variant="subtle"
+                            color={copied ? "green" : "gray"}
+                            onClick={copy}
+                            title="Copy to clipboard"
+                        >
+                            {copied ? <IconCheck size={18} /> : <IconCopy size={18} />}
+                        </ActionIcon>
+                    )}
+                </CopyButton>
+                <Code style={{ flex: 1, fontSize: "var(--font-size-300)", letterSpacing: 0.5 }}>
+                    {inviteId}
+                </Code>
+            </Group>
 
-                <div className="invite-code-row">
-                    <button
-                        type="button"
-                        className={`invite-copy-btn ${copied ? "is-copied" : ""}`}
-                        onClick={copyCode}
-                        title="Copy to clipboard"
-                    >
-                        {copied ? <IconCheck size={20} /> : <IconCopy size={20} />}
-                    </button>
-                    <code className="invite-code">{inviteId}</code>
-                </div>
-
-                {copied && (
-                    <p className="invite-success">Now send this code to your friend!</p>
-                )}
-            </div>
-        </div>
+            <CopyButton value={inviteId}>
+                {({ copied }) =>
+                    copied ? (
+                        <Text size="sm" c="green" ta="center" mt="sm" fw={500}>
+                            Now send this code to your friend!
+                        </Text>
+                    ) : null
+                }
+            </CopyButton>
+        </Modal>
     )
 }
