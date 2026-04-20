@@ -5,6 +5,7 @@ import { IconLayoutGrid, IconReceipt, IconShoppingCart } from '@tabler/icons-rea
 import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../../supabase';
 import { searchRecipes } from "../../lib/searchRecipes"
+import { HouseholdMembers } from "../../components/dashboard/HouseholdMembers"
 
 // Types
 interface Product {
@@ -19,6 +20,7 @@ interface Product {
 interface Household {
   id: string;
   house_name: string;
+  invite_id?: string;
 }
 
 interface DashboardLocationState {
@@ -358,7 +360,7 @@ const Dashboard: React.FC = () => {
   }, [selectedHouseholdId]);
 
   const fetchHouseholds = async () => {
-    const { data } = await supabase.from('household').select('id, house_name');
+    const { data } = await supabase.from('household').select('id, house_name, invite_id');
     setHouseholds(data ?? []);
   };
 
@@ -503,6 +505,13 @@ const Dashboard: React.FC = () => {
         <p className="loading-text">Loading products...</p>
       ) : (
         <ProductsInDanger products={products} />
+      )}
+
+      {selectedHouseholdId && (
+        <HouseholdMembers
+          householdId={selectedHouseholdId}
+          inviteId={households.find(h => h.id === selectedHouseholdId)?.invite_id}
+        />
       )}
 
       <FavouriteRecipes recipes={favouriteRecipes} />
