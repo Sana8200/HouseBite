@@ -1,43 +1,38 @@
 import { useEffect, useState } from "react"
-import { useNavigate } from "react-router-dom"
 import type { User } from "@supabase/supabase-js"
 import { signOut, saveUsername, savePassword } from "../../api/auth"
 import {
-    getHouseholds,
     getTotalSpent,
     deleteAccount,
     getFoodRestrictions,
     getMyRestrictions,
     addRestriction,
     removeRestriction,
-    type Household,
     type FoodRestriction,
 } from "../../api/account"
-import "./Account.css"
+import { getAvatar, getUsername } from "../../utils/user"
+import { ActionIcon, Alert, Avatar, Button, Card, Center, Chip, Container, Divider, Flex, Grid, Group, Loader, Modal, Space, Stack, Text, TextInput, Title } from "@mantine/core"
+import { IconEdit, IconDeviceFloppyFilled } from '@tabler/icons-react';
 
-export function Account({ user }: {user: User}) {
-    const navigate = useNavigate()
+interface AccountProps {
+    user: User;
+}
+
+export function Account(props: AccountProps) {
+    const { user } = props;
 
     // Page Data
-    const [households, setHouseholds] = useState<Household[]>([])
     const [loading, setLoading] = useState(true)
-    const [expanded, setExpanded] = useState(false)
     const [totalSpent, setTotalSpent] = useState<number | null>(null)
 
-    const initialUsername =
-        (user.user_metadata?.display_name as string | undefined) ??
-        (user.user_metadata?.username as string | undefined) ??
-        user.email?.split("@")[0] ??
-        ""
-
     // Username editable
-    const [username, setUsername] = useState(initialUsername)
+    const [username, setUsername] = useState(getUsername(user))
     const [editingName, setEditingName] = useState(false)
-    const [draftName, setDraftName] = useState(initialUsername)
+    const [draftName, setDraftName] = useState(username)
     const [savingName, setSavingName] = useState(false)
     const [nameError, setNameError] = useState<string | null>(null)
 
-    const avatarUrl = (user.user_metadata?.avatar_url as string | undefined) ?? null
+    const avatar = getAvatar(user);
 
     // Password Modal
     const [showPasswordModal, setShowPasswordModal] = useState(false)
@@ -61,34 +56,20 @@ export function Account({ user }: {user: User}) {
 
     useEffect(() => {
         const fetch = async () => {
-            const [householdsResult, totalResult] = await Promise.all([ // calls both in parallel
-                getHouseholds(),
+            const [totalResult, availableRestrictionsResult, userRestrictionsResult] = await Promise.all([
                 getTotalSpent(),
-            ])
-
-            if (householdsResult.error) console.error("Error fetching households:", householdsResult.error)
-            else setHouseholds(householdsResult.data ?? [])
-
-            if (totalResult.error) console.error("Error fetching total spent:", totalResult.error)
-            else setTotalSpent(totalResult.total)
-
-            const [availableRestrictionsResult, userRestrictionsResult] = await Promise.all([
                 getFoodRestrictions(),
                 getMyRestrictions(user.id),
-            ])
-            if (availableRestrictionsResult.error) {
-                console.error("Error fetching availableRestrictions:", availableRestrictionsResult.error)
-            }
-            else {
-                setAvailableRestrictions((availableRestrictionsResult.data ?? []) as FoodRestriction[])
-            }
+            ]);
 
-            if (userRestrictionsResult.error){
-                console.error("Error fetching my availableRestrictions:", userRestrictionsResult.error)
-            }
-            else {
-                setUserRestrictions(new Set((userRestrictionsResult.data ?? []).map(m => m.restriction_id)))
-            }
+            if (totalResult.error) console.error("Error fetching total spent:", totalResult.error);
+            else setTotalSpent(totalResult.total);
+
+            if (availableRestrictionsResult.error) console.error("Error fetching availableRestrictions:", availableRestrictionsResult.error);
+            else setAvailableRestrictions((availableRestrictionsResult.data ?? []) as FoodRestriction[]);
+
+            if (userRestrictionsResult.error) console.error("Error fetching my availableRestrictions:", userRestrictionsResult.error);
+            else setUserRestrictions(new Set((userRestrictionsResult.data ?? []).map(m => m.restriction_id)));
 
             setLoading(false)
         }
@@ -122,43 +103,14 @@ export function Account({ user }: {user: User}) {
         setTogglingId(null)
     }
 
-    const formatRestriction = (r: string) =>
-        r.replace(/\b\w/g, c => c.toUpperCase())
-
     const diets = availableRestrictions.filter(r => r.category === "diet")
     const intolerances = availableRestrictions.filter(r => r.category === "intolerance")
 
-    const renderCategory = (
-        label: string,
-        icon: string,
-        items: typeof availableRestrictions
-    ) => (
-        <div className="dietary-category">
-            <h3 className="dietary-heading">
-                <span className="dietary-icon" aria-hidden>{icon}</span>
-                <span>{label}</span>
-            </h3>
-            <ul className="chip-row">
-                {items.map(r => {
-                    const on = userRestrictions.has(r.id)
-                    return (
-                        <li key={r.id}>
-                            <button
-                                type="button"
-                                className={`chip ${on ? "chip-on" : ""}`}
-                                disabled={togglingId === r.id}
-                                onClick={() => void toggleRestriction(r.id)}
-                            >
-                                {formatRestriction(r.name)}
-                            </button>
-                        </li>
-                    )
-                })}
-            </ul>
-        </div>
-    )
-
     const handleSaveUsername = async () => {
+        if (draftName == username) {
+            setEditingName(false);
+            return;
+        }
         const trimmed = draftName.trim()
         if (!trimmed) {
             setNameError("Username cannot be empty")
@@ -176,13 +128,12 @@ export function Account({ user }: {user: User}) {
         setEditingName(false)
     }
 
-    const cancelEdit = () => {
-        setDraftName(username)
-        setNameError(null)
-        setEditingName(false)
-    }
-
-
+    const handleChangePasswordClick = () => {
+        setNewPassword("")
+        setConfirmPassword("")
+        setPasswordError(null)
+        setShowPasswordModal(true)
+    };
 
     const handleSavePassword = async () => {
         if (newPassword.length < 6) {
@@ -211,10 +162,7 @@ export function Account({ user }: {user: User}) {
     }
 
     const handleDeleteAccount = async () => {
-        if (deleteConfirm !== "DELETE") {
-            setDeleteError("Type DELETE to confirm")
-            return
-        }
+        if (deleteConfirm !== "DELETE") return;
         setDeleting(true)
         setDeleteError(null)
         const { error } = await deleteAccount()
@@ -234,301 +182,265 @@ export function Account({ user }: {user: User}) {
         })
         : "—"
 
-    const initials =(username || user.email || "?").trim().charAt(0).toUpperCase()
+    if (loading) return (
+        <Center p="md">
+            <Loader/>
+        </Center>
+    );
 
     return (
-        <div className="page account-page">
-            <h1>Account</h1>
+        <Container size="lg" p="md">
+            <Title>Account</Title>
 
-            <section className="account-section account-identity">
-                <label className="avatar-wrapper">
-                    {avatarUrl ? (
-                        <img src={avatarUrl} alt="avatar" className="avatar-img" />
-                    ) : (
-                        <div className="avatar-fallback">{initials}</div>
-                    )}
-                </label>
-                <div>
-                    <p className="identity-name">{username || "—"}</p>
-                    <p className="identity-email">{user.email}</p>
-                </div>
-            </section>
+            <Grid mt="md">
+                <Grid.Col span={{base: 12, md: 5}}>
+                    <Stack>
+                        <Card shadow="md">
+                            <Flex align="center" gap="md">
+                                <Avatar src={avatar} name={username} color="initials" size="xl"/>
+                                <div>
+                                    <Text size="xl">{username || "—"}</Text>
+                                    <Text c="dimmed">{user.email}</Text>
+                                </div>
+                            </Flex>
+                        </Card>
 
-            <section className="account-section account-profile">
-                <h2>Profile</h2>
-                <dl className="account-list">
-                    <div className="account-row">
-                        <dt>Username</dt>
-                        <dd>
-                            {editingName ? (
-                                <div className="account-edit">
-                                    <input
-                                        type="text"
-                                        value={draftName}
-                                        onChange={e => setDraftName(e.target.value)}
-                                        disabled={savingName}
-                                        autoFocus
-                                    />
-                                    <button
-                                        className="account-save"
-                                        onClick={() => void handleSaveUsername()}
-                                        disabled={savingName}
-                                    >
-                                        {savingName ? "Saving..." : "Save"}
-                                    </button>
-                                    <button
-                                        className="account-cancel"
-                                        onClick={cancelEdit}
-                                        disabled={savingName}
-                                    >
-                                        Cancel
-                                    </button>
-                                </div>
-                            ) : (
-                                <div className="account-view">
-                                    <span>{username || "—"}</span>
-                                    <button
-                                        className="account-edit-btn"
-                                        onClick={() => {
-                                            setDraftName(username)
-                                            setEditingName(true)
-                                        }}
-                                    >
-                                        Edit
-                                    </button>
-                                </div>
-                            )}
+                        <Card shadow="md">
+                            <Title order={4}>Profile</Title>
+
                             {nameError && (
-                                <p className="account-error">{nameError}</p>
+                                <>
+                                    <Alert variant="light" color="red" mt="md">
+                                        {nameError}
+                                    </Alert>
+                                </>
                             )}
-                        </dd>
-                    </div>
-                    <div className="account-row">
-                        <dt>Email</dt>
-                        <dd>{user.email}</dd>
-                    </div>
-                    <div className="account-row">
-                        <dt>Member since</dt>
-                        <dd>{memberSince}</dd>
-                    </div>
-                    <div className="account-row">
-                        <dt> Personal Budget </dt>
-                        <dd>{}</dd>
-                    </div>
-                    <div className="account-row">
-                        <dt>Total spent this month</dt>
-                        <dd>
-                            {totalSpent === null
-                                ? "—"
-                                : `${totalSpent.toFixed(2)} kr`}
-                        </dd>
-                    </div>
-                </dl>
-            </section>
 
-            <section className="account-section account-households">
-                <div className="account-households-header">
-                    <h2>Households</h2>
-                    {!loading && (
-                        <button
-                            className="account-expand-btn"
-                            onClick={() => setExpanded(v => !v)}
-                            aria-expanded={expanded}
-                        >
-                            {households.length}{" "}
-                            {households.length === 1 ? "household" : "households"}
-                            <span className="chev">{expanded ? "▲" : "▼"}</span>
-                        </button>
-                    )}
-                </div>
+                            <Stack gap="xs" mt="md">
+                                <Flex>
+                                    <Text c="dimmed">Username</Text>
+                                    <Space flex={1}/>
+                                    {!editingName && 
+                                        <>
+                                            <Text fw={500}>{username || "-"}</Text>
+                                            <ActionIcon variant="transparent" ml="xs"
+                                                onClick={() => {
+                                                    setDraftName(username)
+                                                    setEditingName(true)
+                                                }}>
+                                                <IconEdit/>
+                                            </ActionIcon>
+                                        </>
+                                    }
+                                    {editingName &&
+                                        <TextInput
+                                            value={draftName}
+                                            onChange={e => setDraftName(e.target.value)}
+                                            disabled={savingName}
+                                            loading={savingName}
+                                            autoFocus
+                                            rightSectionPointerEvents="auto"
+                                            rightSection={
+                                                <>
+                                                    <ActionIcon variant="transparent" onClick={() => void handleSaveUsername()} disabled={savingName}>
+                                                        <IconDeviceFloppyFilled/>
+                                                    </ActionIcon>
+                                                </>
+                                            }/>
+                                    }
+                                    
+                                </Flex>
+                                <Divider/>
+                                <Flex>
+                                    <Text c="dimmed">Email</Text>
+                                    <Space flex={1}/>
+                                    <Text fw={500}>{user.email || "-"}</Text>
+                                </Flex>
+                                <Divider/>
+                                <Flex>
+                                    <Text c="dimmed">Member since</Text>
+                                    <Space flex={1}/>
+                                    <Text fw={500}>{memberSince}</Text>
+                                </Flex>
+                                <Divider/>
+                                <Flex>
+                                    <Text c="dimmed">Personal budget</Text>
+                                    <Space flex={1}/>
+                                    <Text fw={500}>TODO</Text>
+                                </Flex>
+                                <Divider/>
+                                <Flex>
+                                    <Text c="dimmed">Spent this month</Text>
+                                    <Space flex={1}/>
+                                    <Text fw={500}>
+                                        {totalSpent?.toFixed(2) || '-'} kr
+                                    </Text>
+                                </Flex>
+                            </Stack>
 
-                {loading ? (
-                    <p className="loading-text">Loading households...</p>
-                ) : households.length === 0 ? (
-                    <p className="empty-text">
-                        You are not part of any household yet.
-                    </p>
-                ) : (
-                    expanded && (
-                        <ul className="account-household-list">
-                            {households.map(h => (
-                                <li key={h.id} className="account-household-item">
-                                    <span>{h.house_name}</span>
-                                    <button
-                                        className="go-btn"
-                                        onClick={() => void navigate("/dashboard")}
-                                    >
-                                        Go to household
-                                    </button>
-                                </li>
-                            ))}
-                        </ul>
-                    )
-                )}
-            </section>
+                        </Card>
+                    </Stack>
+                </Grid.Col>
+                
+                <Grid.Col span={{base: 12, md: 7}}>
+                    <Card shadow="md">
+                        <Title order={4}>Food Preferences & Restrictions</Title>
+                        <Text c="dimmed">
+                            Add your dietary restrictions to get personalized recipe
+                            suggestions and let your household know what you can and
+                            cannot eat.
+                        </Text>
 
-            <section className="account-section account-dietary">
-                <h2>Food Preferences & Restrictions</h2>
-                <p className="section-hint">
-                    Add your dietary restrictions to get personalized recipe
-                    suggestions and let your household know what you can and
-                    cannot eat.
-                </p>
+                        {restrictionError && (
+                            <>
+                                <Alert variant="light" color="red" mt="md">
+                                    {restrictionError}
+                                </Alert>
+                            </>
+                        )}
 
-                <div className="dietary-selected">
-                    <span className="dietary-label">Your selections</span>
-                    {userRestrictions.size === 0 ? (
-                        <span className="dietary-empty">None selected yet</span>
-                    ) : (
-                        <ul className="chip-row">
-                            {availableRestrictions
-                                .filter(r => userRestrictions.has(r.id))
-                                .map(r => (
-                                    <li key={r.id}>
-                                        <button
-                                            type="button"
-                                            className="chip chip-on"
-                                            disabled={togglingId === r.id}
-                                            onClick={() => void toggleRestriction(r.id)}
-                                            title="Click to remove"
-                                        >
+                        <Card p="md" shadow="none" withBorder mt="md">
+                            <Text fw={500}>Your selections</Text>
+                            <Space h="xs"/>
+                            {userRestrictions.size === 0 && <Text>None selected</Text>}
+                            <Group>
+                                {availableRestrictions
+                                    .filter(r => userRestrictions.has(r.id))
+                                    .map(r => (
+                                        <Chip key={r.id} checked onClick={() => void toggleRestriction(r.id)}>
                                             {formatRestriction(r.name)}
-                                        </button>
-                                    </li>
-                                ))}
-                        </ul>
-                    )}
-                </div>
+                                        </Chip>
+                                    ))
+                                }
+                            </Group>
+                        </Card>
+                        <Space h="md"/>
+                        <RestrictionCategory label="Intolerance's" items={intolerances}
+                            togglingId={togglingId} toggleRestriction={id => void toggleRestriction(id)} userRestrictions={userRestrictions}/>
+                        <Space h="md"/>
+                        <RestrictionCategory label="Diets's" items={diets}
+                            togglingId={togglingId} toggleRestriction={id => void toggleRestriction(id)} userRestrictions={userRestrictions}/>
+                    </Card>
+                </Grid.Col>
+            </Grid>
 
-                {renderCategory("Intolerances", "⚠️", intolerances)}
-                {renderCategory("Diets", "🥗", diets)}
+            <Stack mt="md">
+                <Card shadow="md">
+                    <div>
+                        <Title order={4}>Security</Title>
+                        <Button onClick={handleChangePasswordClick} mt="sm">
+                            Change password
+                        </Button>
+                    </div>
+                </Card>
 
-                {restrictionError && (
-                    <p className="account-error">{restrictionError}</p>
+                <Card shadow="md">
+                    <div>
+                        <Title order={4} c="red">Danger zone</Title>
+                        <Text>Deleting your account is permanent and cannot be undone.</Text>
+                        <Button color="red" onClick={() => setShowDeleteModal(true)} mt="sm">
+                            Delete account
+                        </Button>
+                    </div>
+                </Card>
+            </Stack>
+
+            <Modal title="Change password"
+                opened={showPasswordModal} onClose={() => !savingPassword && setShowPasswordModal(false)}>
+
+                {passwordError && (
+                    <Alert variant="light" color="red">{passwordError}</Alert>
                 )}
-            </section>
+                {passwordSuccess && (
+                    <Alert variant="light" color="green">Password updated.</Alert>
+                )}
 
-            <section className="account-section account-security">
-                <h2>Security</h2>
-                <button
-                    className="account-edit-btn"
-                    onClick={() => {
-                        setNewPassword("")
-                        setConfirmPassword("")
-                        setPasswordError(null)
-                        setShowPasswordModal(true)
-                    }}
-                >
-                    Change password
-                </button>
-            </section>
+                <TextInput 
+                    label="New password"
+                    type="password"
+                    value={newPassword}
+                    onChange={e => setNewPassword(e.target.value)}
+                    disabled={savingPassword}
+                    mt="sm"/>
 
-            <section className="account-section account-danger">
-                <h2>Danger zone</h2>
-                <p className="danger-text">
-                    Deleting your account is permanent and cannot be undone.
-                </p>
-                <button
-                    className="danger-btn"
-                    onClick={() => setShowDeleteModal(true)}
-                >
-                    Delete account
-                </button>
-            </section>
+                <TextInput
+                    label="Confirm password"
+                    type="password"
+                    value={confirmPassword}
+                    onChange={e => setConfirmPassword(e.target.value)}
+                    disabled={savingPassword}
+                    mt="sm"/>
 
-            {showPasswordModal && (
-                <div
-                    className="modal-overlay"
-                    onClick={() => !savingPassword && setShowPasswordModal(false)}
-                >
-                    <div className="modal" onClick={e => e.stopPropagation()}>
-                        <h2>Change password</h2>
-                        <div className="modal-field">
-                            <label>New password</label>
-                            <input
-                                type="password"
-                                value={newPassword}
-                                onChange={e => setNewPassword(e.target.value)}
-                                disabled={savingPassword}
-                            />
-                        </div>
-                        <div className="modal-field">
-                            <label>Confirm password</label>
-                            <input
-                                type="password"
-                                value={confirmPassword}
-                                onChange={e => setConfirmPassword(e.target.value)}
-                                disabled={savingPassword}
-                            />
-                        </div>
-                        {passwordError && (
-                            <p className="account-error">{passwordError}</p>
-                        )}
-                        {passwordSuccess && (
-                            <p className="success-text">Password updated.</p>
-                        )}
-                        <div className="modal-actions">
-                            <button
-                                className="account-cancel"
-                                onClick={() => setShowPasswordModal(false)}
-                                disabled={savingPassword}
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                className="account-save"
-                                onClick={() => void handleSavePassword()}
-                                disabled={savingPassword}
-                            >
-                                {savingPassword ? "Saving..." : "Save"}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+                <Flex justify="end" gap="md" mt="sm">
+                    <Button
+                        onClick={() => void handleSavePassword()}
+                        disabled={savingPassword || !newPassword || newPassword != confirmPassword}
+                        loading={savingPassword}>
+                            Save
+                    </Button>
+                </Flex>
+            </Modal>
 
-            {showDeleteModal && (
-                <div
-                    className="modal-overlay"
-                    onClick={() => !deleting && setShowDeleteModal(false)}
-                >
-                    <div className="modal" onClick={e => e.stopPropagation()}>
-                        <h2>Delete account</h2>
-                        <p className="modal-hint">
-                            This will permanently delete your account and all
-                            your data. Type <strong>DELETE</strong> to confirm.
-                        </p>
-                        <div className="modal-field">
-                            <input
-                                type="text"
-                                value={deleteConfirm}
-                                onChange={e => setDeleteConfirm(e.target.value)}
-                                disabled={deleting}
-                                placeholder="DELETE"
-                            />
-                        </div>
-                        {deleteError && (
-                            <p className="account-error">{deleteError}</p>
-                        )}
-                        <div className="modal-actions">
-                            <button
-                                className="account-cancel"
-                                onClick={() => setShowDeleteModal(false)}
-                                disabled={deleting}
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                className="danger-btn"
-                                onClick={() => void handleDeleteAccount()}
-                                disabled={deleting}
-                            >
-                                {deleting ? "Deleting..." : "Delete permanently"}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-        </div>
+            <Modal title="Delete account"
+                opened={showDeleteModal} onClose={() => !deleting && setShowDeleteModal(false)}>
+                <Text>
+                    This will permanently delete your account and all
+                    your data. Type <strong>DELETE</strong> to confirm.
+                </Text>
+
+                {deleteError && (
+                    <>
+                        <Alert variant="light" color="red" mt="sn">
+                            {deleteError}
+                        </Alert>
+                    </>
+                )}
+
+                <TextInput
+                    mt="sm"
+                    value={deleteConfirm}
+                    onChange={e => setDeleteConfirm(e.target.value)}
+                    disabled={deleting}
+                    placeholder="DELETE" />
+
+                <Flex justify="end" gap="md" mt="sm">
+                    <Button color="red" onClick={() => void handleDeleteAccount()} disabled={deleting || deleteConfirm !== "DELETE"} loading={deleting}>Delete permanently</Button>
+                </Flex>
+            </Modal>
+
+        </Container>
     )
+}
+
+interface RestrictionCategoryProps {
+    label: string;
+    items: FoodRestriction[];
+    togglingId: string | null;
+    toggleRestriction: (id: string) => void;
+    userRestrictions: Set<string>;
+}
+
+function RestrictionCategory(props: RestrictionCategoryProps) {
+    const { label, items, togglingId, toggleRestriction, userRestrictions } = props;
+
+    return (
+        <Card p="md" shadow="none" withBorder>
+            <Text fw={500}>{label}</Text>
+            <Group wrap="wrap" mt="xs">
+                {items.map(r => {
+                    const on = userRestrictions.has(r.id);
+                    return (
+                        <Chip key={r.id} checked={on} disabled={togglingId == r.id} onClick={() => void toggleRestriction(r.id)}>
+                            {formatRestriction(r.name)}
+                        </Chip>
+                    );
+                })}
+            </Group>
+
+        </Card>
+    );
+}
+
+function formatRestriction(r: string) {
+    return r.replace(/\b\w/g, c => c.toUpperCase());
 }
