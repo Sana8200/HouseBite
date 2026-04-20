@@ -1,0 +1,290 @@
+/* ──────────────────────────────────────────
+   Members section
+   ────────────────────────────────────────── */
+
+.hh-members {
+    padding: var(--space-xl) var(--space-lg);
+    background: #cccabb;
+    border: 1px solid #bbb9ab;
+    border-radius: var(--radius-xl);
+    margin-top: var(--space-lg);
+}
+
+.hh-members-title {
+    margin: 0 0 var(--space-lg) 0;
+    font-size: var(--font-size-300);
+    font-weight: var(--font-weight-bold);
+    color: #3a3929;
+}
+
+/* ──────────────────────────────────────────
+   Member cards grid
+   ────────────────────────────────────────── */
+
+.hh-members-grid {
+    display: flex;
+    gap: var(--space-md);
+    flex-wrap: wrap;
+}
+
+.hh-member-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-sm);
+    width: 140px;
+    padding: var(--space-lg) var(--space-md);
+    background: #f4f3ee;
+    border-radius: var(--radius-xl);
+    border: none;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+    transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.hh-member-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+}
+
+/* ──────────────────────────────────────────
+   Avatar
+   ────────────────────────────────────────── */
+
+.hh-member-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: var(--radius-lg);
+    background: #dddcd6;
+    color: #5a5947;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--font-size-600);
+    font-weight: var(--font-weight-bold);
+    border: none;
+}
+
+.hh-member-name {
+    font-size: var(--font-size-200);
+    font-weight: var(--font-weight-semibold);
+    color: #3a3929;
+    text-align: center;
+    word-break: break-word;
+    line-height: 1.3;
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ──────────────────────────────────────────
+   Invite card
+   ────────────────────────────────────────── */
+
+.hh-invite-card {
+    cursor: pointer;
+    font-family: inherit;
+    background: transparent;
+    border: 2px dashed #b5b3a5;
+    box-shadow: none;
+    transition: background 0.15s, transform 0.15s, border-color 0.15s;
+}
+
+.hh-invite-card:hover {
+    background: #e8e7e0;
+    border-color: #8a8878;
+    transform: translateY(-3px);
+}
+
+.hh-invite-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: var(--radius-lg);
+    background: #e8e7e0;
+    border: 2px dashed #b5b3a5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #5a5947;
+    transition: color 0.15s, background 0.15s;
+}
+
+.hh-invite-card:hover .hh-invite-icon {
+    background: #dddcd6;
+    border-style: solid;
+    color: #3a3929;
+}
+
+.hh-invite-card .hh-member-name {
+    color: #6b6a58;
+    font-size: var(--font-size-100);
+}
+
+.hh-invite-card:hover .hh-member-name {
+    color: #3a3929;
+}
+
+/* ──────────────────────────────────────────
+   Invite modal
+   ────────────────────────────────────────── */
+
+.invite-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.invite-modal {
+    position: relative;
+    background: var(--color-surface);
+    border-radius: var(--radius-xl);
+    padding: var(--space-xl) var(--space-xl) var(--space-lg);
+    width: 100%;
+    max-width: 440px;
+    box-shadow: var(--shadow-lg);
+}
+
+.invite-close {
+    position: absolute;
+    top: 14px;
+    right: 16px;
+    background: none;
+    border: none;
+    font-size: 22px;
+    cursor: pointer;
+    color: var(--color-muted);
+    line-height: 1;
+    padding: 4px;
+    transition: color 0.15s;
+}
+
+.invite-close:hover {
+    color: var(--color-danger);
+}
+
+.invite-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: var(--space-sm);
+}
+
+.invite-header-icon {
+    color: var(--color-primary);
+    flex-shrink: 0;
+}
+
+.invite-header h3 {
+    margin: 0;
+    font-size: var(--font-size-400);
+    font-weight: var(--font-weight-bold);
+}
+
+.invite-desc {
+    font-size: var(--font-size-200);
+    color: var(--color-muted);
+    line-height: 1.5;
+    margin: 0 0 var(--space-lg) 0;
+}
+
+.invite-code-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    background: var(--color-bg-soft);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-sm) var(--space-md);
+}
+
+.invite-copy-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--color-text);
+    padding: 6px;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.15s, background 0.15s;
+}
+
+.invite-copy-btn:hover {
+    background: var(--color-surface);
+}
+
+.invite-copy-btn.is-copied {
+    color: var(--color-success);
+}
+
+.invite-code {
+    font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+    font-size: var(--font-size-300);
+    font-weight: var(--font-weight-semibold);
+    letter-spacing: 0.5px;
+    color: var(--color-text);
+    background: var(--color-surface);
+    padding: 8px 14px;
+    border-radius: var(--radius-md);
+    flex: 1;
+    user-select: all;
+}
+
+.invite-success {
+    margin: var(--space-sm) 0 0;
+    font-size: var(--font-size-200);
+    color: var(--color-success);
+    font-weight: var(--font-weight-medium);
+    text-align: center;
+}
+
+/* ──────────────────────────────────────────
+   Responsive
+   ────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+    .hh-members {
+        padding: var(--space-md);
+    }
+
+    .hh-members-grid {
+        gap: var(--space-sm);
+    }
+
+    .hh-member-card {
+        width: 110px;
+        padding: var(--space-sm);
+    }
+
+    .hh-member-avatar,
+    .hh-invite-icon {
+        width: 60px;
+        height: 60px;
+        font-size: var(--font-size-400);
+    }
+
+    .invite-modal {
+        margin: var(--space-md);
+        max-width: calc(100% - var(--space-xl));
+        padding: var(--space-lg);
+    }
+
+    .invite-code {
+        font-size: var(--font-size-200);
+    }
+}
+
+@media (max-width: 480px) {
+    .hh-members-grid {
+        justify-content: center;
+    }
+
+    .hh-member-card {
+        width: 100px;
+    }
+}
