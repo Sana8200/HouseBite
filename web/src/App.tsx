@@ -40,32 +40,20 @@ export function App() {
   // prevents redirect when reopening a tab. we need to wait until we know if we have a user signed in.
   if (!loaded) return <></>;
 
-  let routes;
-  if (user) {
-    routes = [
-      <Route key="sign-in" path="sign-in" element={<Navigate to="/household" />} />,
-      <Route key="household" path="household" element={<HouseHold />} />,
-      <Route key="dashboard" path="dashboard" element={<Dashboard />} />,
-      <Route key="recipes" path="recipes" element={<Recipes />} />,
-      <Route key="shopping-list" path="shoppinglist" element={<ShoppingList />} />,
-      <Route key="pantry" path="pantry" element={<Pantry />} />,
-      <Route key="receipts" path="receipts" element={<Receipts />} />,
-      <Route key="about" path="about" element={<About />} />,
-      <Route key="account" path="Account" element={<Account user={user} />} />,
-      <Route key="scan" path="scan" element={<Scan />} />
-    ];
-  } else {
-    routes = [
-      <Route key="sign-in" path="sign-in" element={<SignIn setUser={setUser} />} />,
-      <Route key="household" path="household" element={<Navigate to="/sign-in" />} />,
-      <Route key="dashboard" path="dashboard" element={<Navigate to="/sign-in" />} />,
-      <Route key="shopping-list" path="shoppinglist" element={<Navigate to="/sign-in" />} />,
-      <Route key="receipts" path="receipts" element={<Navigate to="/sign-in" />} />,
-      <Route key="about" path="about" element={<Navigate to="/sign-in" />} />,
-      <Route key="account" path="Account" element={<Navigate to="/sign-in" />} />,
-      <Route key="scan" path="scan" element={<Navigate to="/sign-in" />} />
-    ];
-  }
+
+  const routes = [
+    //     key                 path                                signed in                      not signed in
+    <Route key="sign-in"       path="sign-in"      element={user ? <Navigate to="/household" /> : <SignIn setUser={setUser} />} />,
+    <Route key="household"     path="household"    element={user ? <HouseHold />                : <Navigate to="/sign-in" />} />,
+    <Route key="dashboard"     path="dashboard"    element={user ? <Dashboard />                : <Navigate to="/sign-in" />} />,
+    <Route key="recipes"       path="recipes"      element={user ? <Recipes />                  : <Navigate to="/sign-in" />} />,
+    <Route key="shopping-list" path="shoppinglist" element={user ? <ShoppingList />             : <Navigate to="/sign-in" />} />,
+    <Route key="pantry"        path="pantry"       element={user ? <Pantry />                   : <Navigate to="/sign-in" />} />,
+    <Route key="receipts"      path="receipts"     element={user ? <Receipts />                 : <Navigate to="/sign-in" />} />,
+    <Route key="about"         path="about"        element={user ? <About />                    : <Navigate to="/sign-in" />} />,
+    <Route key="account"       path="Account"      element={user ? <Account user={user} />      : <Navigate to="/sign-in" />} />,
+    <Route key="scan"          path="scan"         element={user ? <Scan />                     : <Navigate to="/sign-in" />} />,
+  ];
 
   return (
     <BrowserRouter>
