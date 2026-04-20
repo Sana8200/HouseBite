@@ -1,3 +1,5 @@
+-- written by AI
+
 -- to get a specific user's monthly spending in a household
 CREATE OR REPLACE FUNCTION get_user_household_monthly_spending(
   p_household_id UUID,
