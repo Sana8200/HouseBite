@@ -7,14 +7,6 @@ export function getUsername(user: User): string {
         "";
 }
 
-export type UserAvatar = {
-    kind: "img";
-    url: string;
-} | {
-    kind: "initials";
-    initials: string;
-}
-
 export function getAvatar(user: User): string | undefined {
     return user.user_metadata?.avatar_url as string | undefined;
 }
