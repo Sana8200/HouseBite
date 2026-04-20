@@ -19,7 +19,9 @@ CREATE TABLE household (
 -- FAMILY MEMBER
 -- ─────────────────────────────────────────
 CREATE TABLE family_member (
-  id          uuid REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY
+  id            uuid REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
+  display_name  TEXT,
+  email         TEXT
 );
 
 -- ─────────────────────────────────────────
@@ -158,13 +160,26 @@ $$;
 CREATE POLICY "members see own households" ON household
   FOR ALL USING (id IN (SELECT my_households()));
 
--- Family member: can only see/edit own profile
-CREATE POLICY "own profile only" ON family_member
+-- Family member: can edit own profile
+CREATE POLICY "own profile" ON family_member
   FOR ALL USING (id = auth.uid());
 
--- Allocations: can see own memberships
+-- Family member: household members can see each other's profiles
+CREATE POLICY "household members can read" ON family_member
+  FOR SELECT USING (
+    id IN (
+      SELECT a.member_id FROM allocations a
+      WHERE a.household_id IN (SELECT my_households())
+    )
+  );
+
+-- Allocations: can modify own memberships
 CREATE POLICY "own allocations" ON allocations
   FOR ALL USING (member_id = auth.uid());
+
+-- Allocations: can see all members in your households
+CREATE POLICY "see household allocations" ON allocations
+  FOR SELECT USING (household_id IN (SELECT my_households()));
 
 -- Receipt: household members only
 CREATE POLICY "household members only" ON receipt
