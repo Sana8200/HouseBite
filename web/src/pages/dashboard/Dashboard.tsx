@@ -1,7 +1,7 @@
 import './Dashboard.css';
 import React, { useState, useRef, useEffect } from 'react';
 import { Paper, SimpleGrid, Text } from '@mantine/core';
-import { IconLayoutGrid, IconReceipt, IconShoppingCart } from '@tabler/icons-react';
+import { IconLayoutGrid, IconReceipt, IconShoppingCart, IconTrash } from '@tabler/icons-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../../supabase';
 import { searchRecipes } from "../../lib/searchRecipes"
@@ -72,11 +72,14 @@ const dashboardNavCards: DashboardNavCards[] = [
 // ----------------------------------------------------------------------------
 
 // Products in Danger Component with Filters
-const ProductsInDanger: React.FC<{ products: Product[] }> = ({ products }) => {
+const ProductsInDanger: React.FC<{ products: Product[]; 
+                                   onDelete: (id: string) => Promise<void>;}> 
+      = ({ products, onDelete }) => {
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [selectedHousehold, setSelectedHousehold] = useState<string>('all');
   const [selectedFilterType, setSelectedFilterType] = useState<FilterType>('all');
   const navigate = useNavigate();
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const getDaysUntilExpiry = (expiryDate: string | null): number | null => {
     if (!expiryDate) return null;
@@ -196,7 +199,7 @@ const ProductsInDanger: React.FC<{ products: Product[] }> = ({ products }) => {
                   <label htmlFor={`product-${product.id}`} className="checkbox-label">Select</label>
                 </div>
 
-                <div className="product-info">
+                  <div className="product-info">
                   <h3 className="product-name">{product.name}</h3>
                   {product.expiryDate && days !== null ? (
                     <p className="product-detail">
@@ -220,6 +223,35 @@ const ProductsInDanger: React.FC<{ products: Product[] }> = ({ products }) => {
                     <div className="danger-badge warning">Use soon (expires in {days} days)</div>
                   )}
                 </div>
+
+                {confirmDeleteId === product.id ? (
+                  <div className="product-actions">
+                    <span className="confirm-text">Are you sure?</span>
+                    <button
+                      className="btn-cancel-delete"
+                      onClick={() => setConfirmDeleteId(null)}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      className="btn-confirm-delete"
+                      onClick={() => {
+                        setConfirmDeleteId(null);
+                        void onDelete(product.id);
+                      }}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    className="btn-delete-icon"
+                    onClick={() => setConfirmDeleteId(product.id)}
+                    title="Delete product"
+                  >
+                    <IconTrash size={16} />
+                  </button>
+                )}
               </div>
             );
           })}
@@ -450,6 +482,19 @@ const Dashboard: React.FC = () => {
     void fetchProducts();
   };
 
+  const handleDelete = async (productId: string) => {
+    const { error } = await supabase
+      .from('product')
+      .delete()
+      .eq('id', productId);
+
+    if (error) {
+      setError('Could not delete product: ' + error.message);
+      return;
+    }
+    setProducts(prev => prev.filter(p => p.id !== productId));
+  };
+
   const [favouriteRecipes, setFavouriteRecipes] = useState<FavRecipe[]>([]);
 
   return (
@@ -502,7 +547,7 @@ const Dashboard: React.FC = () => {
       {loading ? (
         <p className="loading-text">Loading products...</p>
       ) : (
-        <ProductsInDanger products={products} />
+        <ProductsInDanger products={products} onDelete={handleDelete} />
       )}
 
       <FavouriteRecipes recipes={favouriteRecipes} />
