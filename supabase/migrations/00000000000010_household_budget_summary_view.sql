@@ -42,7 +42,7 @@ ORDER BY hb.household_id, ms.month DESC, ms.amount_spent DESC;
 -- give access to authenticated users
 GRANT SELECT ON household_monthly_budget_summary TO authenticated, anon;
 
--- Optional: Create a function to get budget summary for a specific household
+-- Function to get budget summary for a specific household (redefined without referencing monthly_spending as a table)
 CREATE OR REPLACE FUNCTION get_household_budget_summary(p_household_id UUID)
 RETURNS TABLE (
   month DATE,
@@ -53,6 +53,17 @@ RETURNS TABLE (
   household_monthly_budget NUMERIC,
   budget_used_percentage NUMERIC
 ) LANGUAGE sql SECURITY DEFINER AS $$
+  WITH monthly_spending AS (
+    SELECT 
+      r.household_id,
+      r.buyer_id,
+      DATE_TRUNC('month', r.purchase_at)::DATE AS month,
+      COALESCE(SUM(r.total), 0) AS amount_spent,
+      COUNT(r.id) AS receipt_count
+    FROM receipt r
+    WHERE r.household_id = p_household_id
+    GROUP BY r.household_id, r.buyer_id, DATE_TRUNC('month', r.purchase_at)
+  )
   SELECT 
     ms.month,
     ms.buyer_id,
@@ -66,7 +77,7 @@ RETURNS TABLE (
       ELSE NULL
     END AS budget_used_percentage
   FROM monthly_spending ms
-  JOIN household h ON h.id = ms.household_id
-  WHERE ms.household_id = p_household_id
+  CROSS JOIN household h
+  WHERE h.id = p_household_id
   ORDER BY ms.month DESC, ms.amount_spent DESC;
 $$;
