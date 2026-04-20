@@ -1,6 +1,5 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router";
 import './App.css'
-import { About } from "./pages/about/About";
 import { Landing } from "./pages/landing/Landing";
 import { Header } from "./components/Header";
 import { HouseHold } from "./pages/household/HouseHold";
@@ -50,7 +49,6 @@ export function App() {
     <Route key="shopping-list" path="shoppinglist" element={user ? <ShoppingList />             : <Navigate to="/sign-in" />} />,
     <Route key="pantry"        path="pantry"       element={user ? <Pantry />                   : <Navigate to="/sign-in" />} />,
     <Route key="receipts"      path="receipts"     element={user ? <Receipts />                 : <Navigate to="/sign-in" />} />,
-    <Route key="about"         path="about"        element={user ? <About />                    : <Navigate to="/sign-in" />} />,
     <Route key="account"       path="account"      element={user ? <Account user={user} />      : <Navigate to="/sign-in" />} />,
     <Route key="scan"          path="scan"         element={user ? <Scan />                     : <Navigate to="/sign-in" />} />,
   ];
