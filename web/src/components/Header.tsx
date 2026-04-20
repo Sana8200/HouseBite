@@ -47,7 +47,7 @@ export function Header(props: HeaderProps) {
     const authenticatedLinks = [
         { to: "/scan", label: "Scan" },
         { to: "/recipes", label: "Recipes" },
-        { to: "/Account", label: "Account" },
+        { to: "/account", label: "Account" },
     ];
 
     return (
