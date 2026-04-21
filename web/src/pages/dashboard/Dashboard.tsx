@@ -6,6 +6,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../../supabase';
 import { searchRecipes } from "../../lib/searchRecipes"
 import { HouseholdMembers } from "../../components/dashboard/HouseholdMembers"
+import { HouseholdBudgetSummary } from '../../components/budget_summary/HouseholdBudgetSummary';
 
 // Types
 interface Product {
@@ -280,6 +281,8 @@ const Dashboard: React.FC = () => {
   const [newExpirationDate, setNewExpirationDate] = useState('');
   const [newPrice, setNewPrice] = useState('');
 
+  const [userId, setUserId] = useState<string | null>(null);
+
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       const meta = data.user?.user_metadata;
@@ -382,40 +385,79 @@ const Dashboard: React.FC = () => {
     setCreating(true);
     setError(null);
 
-    const { data: product, error: productError } = await supabase
-      .from('product')
-      .insert({ name: newName.trim(), household_id: newHouseholdId })
-      .select()
-      .single();
+    try {
+      // get current user info
+      const { data: {user}} = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
 
-    if (productError) {
-      setError('Could not create product: ' + productError.message);
+      // Create receipt for this purchase
+      const price = newPrice ? parseFloat(newPrice) : null;
+      const purchaseDate = newExpirationDate || new Date().toISOString().split('T')[0];
+      
+      const { data: receipt, error: receiptError } = await supabase
+        .from('receipt')
+        .insert({
+          household_id: newHouseholdId,
+          store_name: 'Manual Entry', // Or allow store selection
+          total: price || 0,
+          purchase_at: purchaseDate,
+          buyer_id: user.id
+        })
+        .select()
+        .single();
+
+      if (receiptError) throw new Error('Could not create receipt: ' + receiptError.message);
+
+      // create product linked to the receipt
+      const { data: product, error: productError } = await supabase
+        .from('product')
+        .insert({ name: newName.trim(), household_id: newHouseholdId })
+        .select()
+        .single();
+
+      if (productError) {
+        setError('Could not create product: ' + productError.message);
+        setCreating(false);
+        return;
+      }
+
+      // create product specs
+
+      const { error: specsError } = await supabase
+        .from('product_specs')
+        .insert({
+          product_id: product.id,
+          quantity: parseInt(newQuantity) || 1,
+          size: newSize || null,
+          unit: newUnit || null,
+          expiration_date: newExpirationDate || null,
+          price: newPrice ? parseFloat(newPrice) : null,
+        });
+
+      if (specsError) {
+        setError('Could not save product specs: ' + specsError.message);
+        setCreating(false);
+        return;
+      }
+
+      // reset form
+      setNewName(''); 
+      setNewHouseholdId(''); 
+      setNewQuantity('1');
+      setNewSize(''); 
+      setNewUnit(''); 
+      setNewExpirationDate(''); 
+      setNewPrice('');
+      setShowCreateModal(false);
+      
+      // Refresh data
+      await fetchProducts();
+      
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not add product');
+    } finally {
       setCreating(false);
-      return;
     }
-
-    const { error: specsError } = await supabase
-      .from('product_specs')
-      .insert({
-        product_id: product.id,
-        quantity: parseInt(newQuantity) || 1,
-        size: newSize || null,
-        unit: newUnit || null,
-        expiration_date: newExpirationDate || null,
-        price: newPrice ? parseFloat(newPrice) : null,
-      });
-
-    if (specsError) {
-      setError('Could not save product specs: ' + specsError.message);
-      setCreating(false);
-      return;
-    }
-
-    setNewName(''); setNewHouseholdId(''); setNewQuantity('1');
-    setNewSize(''); setNewUnit(''); setNewExpirationDate(''); setNewPrice('');
-    setShowCreateModal(false);
-    setCreating(false);
-    void fetchProducts();
   };
 
   const handleDelete = async (productId: string) => {
@@ -504,6 +546,13 @@ const Dashboard: React.FC = () => {
         <HouseholdMembers
           householdId={selectedHouseholdId}
           inviteId={households.find(h => h.id === selectedHouseholdId)?.invite_id}
+        />
+      )}
+
+      {selectedHouseholdId && (
+        <HouseholdBudgetSummary 
+          householdId={selectedHouseholdId} 
+          userId={userId || undefined} // You'll need to get the current user ID
         />
       )}
 
