@@ -1,15 +1,14 @@
 import { useState, useRef, useEffect, type Dispatch, type SetStateAction } from "react";
-import Tesseract from "tesseract.js";
 import "./Scan.css";
-import { Alert, Box, Button, Center, Container, Grid, Loader, Paper, Stack, Text, Title } from "@mantine/core";
+import { Alert, Box, Button, Card, Center, Container, Flex, Grid, Loader, NumberInput, Paper, Stack, Text, TextInput, Title } from "@mantine/core";
 import { Dropzone, IMAGE_MIME_TYPE, type FileWithPath } from "@mantine/dropzone";
 import { IconReceipt } from "@tabler/icons-react";
+import { scanReceipt, type ReceiptData, type ReceiptItemData } from "../../api/scan";
 
-const IMG_SIZE = 1500;
+const IMG_SIZE = 2000;
 
 interface ReadyState {
     state: "ready";
-    camera: boolean;
 }
 
 interface ProcessingState {
@@ -20,7 +19,7 @@ interface ProcessingState {
 interface FinishedState {
     state: "finished";
     image: string;
-    data: string;
+    data: ReceiptData;
 }
 
 interface ErrorState {
@@ -31,7 +30,7 @@ interface ErrorState {
 type ScanState = ReadyState | ProcessingState | FinishedState | ErrorState;
 
 export function Scan() {
-    const [state, setState] = useState<ScanState>({state: "ready", camera: false});
+    const [state, setState] = useState<ScanState>({state: "ready"});
 
     return (
         <Container size="md" p="md">
@@ -51,7 +50,9 @@ interface ScanReadyProps {
 }
 
 function ScanReady(props: ScanReadyProps) {
-    const {state, setState} = props;
+    const {setState} = props;
+
+    const [camera, setCamera] = useState(false);
 
     const videoOutputRef = useRef<HTMLVideoElement>(null);
 
@@ -73,9 +74,9 @@ function ScanReady(props: ScanReadyProps) {
                 const videoOutput = videoOutputRef.current!;
                 videoOutput.srcObject = mediaStream;
                 await videoOutput.play();
-                setState(s => ({...s, camera: true}))
+                setCamera(true);
             } catch {
-                setState(s => ({...s, camera: false}))
+                setCamera(false);
             }
         }
 
@@ -113,12 +114,12 @@ function ScanReady(props: ScanReadyProps) {
 
     return (
         <>
-            <Center pos="relative" style={state.camera ? {} : {display: "none"}}>
+            <Center pos="relative" style={camera ? {} : {display: "none"}}>
                 <video className="scan-video" ref={videoOutputRef}>Video stream not available.</video>
                 <Button pos="absolute" bottom={20} size="lg" onClick={takePhoto}>Scan</Button>
             </Center>
 
-            {state.camera &&
+            {camera &&
                 <Center mt="md">
                     <Text size="lg">Or upload an image</Text>
                 </Center>
@@ -169,18 +170,26 @@ function ScanProcessing(props: ScanProcessingProps) {
             const image = canvas.toDataURL("image/jpeg");
 
             // Recognize
-            const result = await Tesseract.recognize(image, "swe", {});
-            setState({state: "finished", image, data: result.data.text});
+            // const result = await Tesseract.recognize(image, "swe", {});
+            // setState({state: "finished", image, data: result.data.text});
+
+            const result = await scanReceipt(image);
+
+            if (result.error) {
+                setState({state: "error", error: result.error as Error});
+            } else {
+                setState({state: "finished", image, data: result.data!});
+            }
         }
 
     }, [state.file, setState]);
 
     return (
         <>
-            <Loader size="lg" mt="md"/>
-            <Center>
+            <Stack align="center">
+                <Loader size="lg" mt="md"/>
                 <Text mt="md">Reading your receipt...</Text>
-            </Center>
+            </Stack>
         </>
     );
 }
@@ -195,20 +204,22 @@ function ScanFinished(props: ScanFinishedProps) {
     return (
         <>
             <Center>
-                <Button size="lg" onClick={() => setState({state: "ready", camera: false})}>New scan</Button>
+                <Button size="lg" onClick={() => setState({state: "ready"})}>New scan</Button>
             </Center>
 
             <Grid mt="md">
-                <Grid.Col span={{base: 12, md: 6}}>
+                <Grid.Col span={{base: 12, md: 5}}>
                     <Title order={4}>Your Receipt</Title>
                     <Box component="img" src={state.image} alt="Receipt" bdrs="md" mt="md"/>
                 </Grid.Col>
 
-                <Grid.Col span={{base: 12, md: 6}}>
-                    <Title order={4}>Extracted data</Title>
-                    <pre>
-                        {state.data}
-                    </pre>
+                <Grid.Col span={{base: 12, md: 7}}>
+                    <Title order={4}>Identified products</Title>
+                    <Stack gap="sm" mt="md">
+                        {state.data.items.map((p, i) => (
+                            <ProductCard key={i} item={p}/>
+                        ))}
+                    </Stack>
                 </Grid.Col>
             </Grid>
         </>
@@ -228,8 +239,42 @@ function ScanError(props: ScanErrorProps) {
                 {state.error.message}
             </Alert>
             <Center>
-                <Button size="lg" onClick={() => setState({state: "ready", camera: false})}>Retry</Button>
+                <Button size="lg" onClick={() => setState({state: "ready"})}>Retry</Button>
             </Center>
         </>
+    );
+}
+
+interface ProductCardProps {
+    item: ReceiptItemData;
+}
+
+function ProductCard(props: ProductCardProps) {
+    const { item } = props;
+
+    const [name, setName] = useState(item.name ?? "");
+    const [quantity, setQuantity] = useState<string | number>(item.quantity ?? 1);
+    const [size, setSize] = useState<string | number>(item.weight ?? "");
+    const [price, setPrice] = useState<string | number>(item.totalPrice ?? "");
+
+    const [added, setAdded] = useState(false);
+    const [adding, setAdding] = useState(false);
+
+    const disabled = added || adding;
+
+    return (
+        <Card shadow="none" withBorder>
+            <TextInput label="Name" disabled={disabled} value={name} onChange={e => setName(e.target.value)}/>
+            
+            <Flex gap="sm" mt="xs">
+                <NumberInput label="Quantity" disabled={disabled} value={quantity} onChange={setQuantity} flex={1} allowDecimal={false}/>
+                <NumberInput label="Size" disabled={disabled} value={size} onChange={setSize} flex={1} decimalScale={2} fixedDecimalScale/>
+                <NumberInput label="Price" disabled={disabled} value={price} onChange={setPrice} flex={1} decimalScale={2} fixedDecimalScale/>
+            </Flex>
+            
+            <Flex justify="end" mt="sm">
+                <Button disabled={disabled} loading={adding}>Add</Button>
+            </Flex>
+        </Card>
     );
 }
