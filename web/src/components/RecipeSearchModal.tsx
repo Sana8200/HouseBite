@@ -48,7 +48,7 @@ export function RecipeSearchModal({ opened, onClose, onProceed, householdId }: P
       .filter(Boolean);
 
     // All household restrictions via SECURITY DEFINER RPC
-    const { data: householdData } = await supabase.rpc("get_household_restrictions", {
+    const { data: householdData } = await supabase.rpc("get_household_distinct_restrictions", {
       p_household_id: householdId,
     });
 
