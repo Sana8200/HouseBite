@@ -5,6 +5,7 @@ import { Dropzone, IMAGE_MIME_TYPE, type FileWithPath } from "@mantine/dropzone"
 import { IconReceipt } from "@tabler/icons-react";
 import { scanReceipt, type ReceiptData, type ReceiptItemData } from "../../api/scan";
 import { getHouseholds, type Household } from "../../api/household";
+import { insertProductWithSpecs, type PantryUnit, type Product, type ProductSpecs } from "../../api/pantry";
 
 const IMG_SIZE = 2000;
 
@@ -37,7 +38,7 @@ interface EditReceiptData extends ReceiptData {
 interface EditReceiptItemData extends ReceiptItemData {
     key: string;
     enabled: boolean;
-    unit: string | null;
+    unit: PantryUnit | null;
     expirationDate: string | null;
 }
 
@@ -306,11 +307,41 @@ function ScanFinished(props: ScanFinishedProps) {
     const handleSave = async () => {
         setSaving(true);
         try {
-            // TODO save
+
+            const items: [Product, Omit<ProductSpecs, "product_id">][] = [];
+
+            for (const item of state.data.items) {
+                if (!item.name) continue;
+                if (!item.enabled) continue;
+                items.push([
+                    {
+                        household_id: selectedHousehold!,
+                        name: item.name,
+                        receipt_id: null, // TODO
+                    },
+                    {
+                        quantity: item.quantity ?? 1,
+                        price: item.totalPrice,
+                        size: item.weight?.toString() ?? null,
+                        expiration_date: item.expirationDate,
+                        unit: item.unit,
+                    }
+                ]);
+            }
+
+            await Promise.all(items.map(async (item) => {
+                const result = await insertProductWithSpecs(...item);
+                if (result.error) throw result.error;
+            }));
+
+            // setSaving(false);
+            setState({state: "ready"});
         } catch (error) {
             setState({state: "error", error: error as Error});
         }
     };
+
+    const disabled = saving || !selectedHousehold;
 
     return (
         <>
@@ -327,12 +358,14 @@ function ScanFinished(props: ScanFinishedProps) {
                 <Grid.Col span={{base: 12, md: 7}}>
                     <Title order={4}>Identified products</Title>
                     <Stack gap="sm" mt="md">
-                        {state.data.items.map((p, i) => (
-                            <ProductCard key={i} item={p} setItem={setItem}/>
+                        {state.data.items.map(p => (
+                            <ProductCard key={p.key} item={p} setItem={setItem}/>
                         ))}
 
                         <Card shadow="none" withBorder>
                             <Title order={4}>Save receipt and products</Title>
+
+                            <Text c="dimmed">Pre filled expiration dates are estimates.</Text>
 
                             <Select
                                 label="Unit"
@@ -341,6 +374,7 @@ function ScanFinished(props: ScanFinishedProps) {
                                 data={households.map((h) => ({ value: h.id, label: h.house_name }))}
                                 value={selectedHousehold}
                                 onChange={setSelectedHousehold}
+                                mt="xs"
                                 />
 
                             <TextInput label="Store name"
@@ -368,7 +402,7 @@ function ScanFinished(props: ScanFinishedProps) {
                             </Flex>
                             
                             <Flex justify="end" mt="md">
-                                <Button disabled={saving} loading={saving} onClick={() => void handleSave()}>Save selected</Button>
+                                <Button disabled={disabled} loading={saving} onClick={() => void handleSave()}>Save selected</Button>
                             </Flex>
                         </Card>
                     </Stack>
@@ -405,7 +439,6 @@ interface ProductCardProps {
 function ProductCard(props: ProductCardProps) {
     const { item, setItem } = props;   
     
-
     return (
         <Card shadow="none" withBorder pos="relative">
 
@@ -416,7 +449,8 @@ function ProductCard(props: ProductCardProps) {
                 />
 
             <Checkbox
-                checked={item.enabled}
+                checked={item.enabled && !!item.name}
+                disabled={!item.name}
                 onChange={e => setItem({...item, enabled: e.target.checked})}
                 pos="absolute" right={8} top={8} size="md"
                 />
