@@ -9,47 +9,45 @@ interface InviteModalProps {
 
 export function InviteModal({ inviteId, opened, onClose }: InviteModalProps) {
     return (
-        <Modal opened={opened} onClose={onClose} centered radius="lg" size="sm">
-            <Group gap="sm" mb="xs">
-                <IconUserPlus size={24} color="var(--color-primary-600)" />
-                <Title order={3} size="h4">Invite to household</Title>
-            </Group>
-
+        <Modal opened={opened} onClose={onClose} centered radius="lg" size="sm"
+            title={
+                <Group gap="sm">
+                    <IconUserPlus size={24} color="var(--color-primary-600)" />
+                    <Title order={3} size="h4">Invite to household</Title>
+                </Group>
+            }
+        >
             <Text size="sm" c="dimmed" mb="lg">
                 Share this code with the person you want to invite.
                 They can paste it on the <strong>Households</strong> page to join.
             </Text>
 
-            <Group
-                gap="sm"
-                p="sm"
-                style={{ background: "var(--color-surface-muted)", borderRadius: "var(--radius-md)" }}
-            >
-                <CopyButton value={inviteId}>
-                    {({ copied, copy }) => (
-                        <ActionIcon
-                            variant="subtle"
-                            color={copied ? "green" : "gray"}
-                            onClick={copy}
-                            title="Copy to clipboard"
+            <CopyButton value={inviteId} timeout={4000}>
+                {({ copied, copy }) => (
+                    <>
+                        <Group
+                            gap="sm" p="sm"
+                            style={{ background: "var(--color-surface-muted)", borderRadius: "var(--radius-md)" }}
                         >
-                            {copied ? <IconCheck size={18} /> : <IconCopy size={18} />}
-                        </ActionIcon>
-                    )}
-                </CopyButton>
-                <Code style={{ flex: 1, fontSize: "var(--font-size-300)", letterSpacing: 0.5 }}>
-                    {inviteId}
-                </Code>
-            </Group>
-
-            <CopyButton value={inviteId}>
-                {({ copied }) =>
-                    copied ? (
-                        <Text size="sm" c="green" ta="center" mt="sm" fw={500}>
-                            Now send this code to your friend!
-                        </Text>
-                    ) : null
-                }
+                            <ActionIcon
+                                variant="subtle"
+                                color={copied ? "green" : "gray"}
+                                onClick={copy}
+                                title="Copy to clipboard"
+                            >
+                                {copied ? <IconCheck size={18} /> : <IconCopy size={18} />}
+                            </ActionIcon>
+                            <Code style={{ flex: 1, fontSize: "var(--font-size-300)", letterSpacing: 0.5 }}>
+                                {inviteId}
+                            </Code>
+                        </Group>
+                        {copied && (
+                            <Text size="sm" c="green" ta="center" mt="sm" fw={500}>
+                                Copied! Send this code to your friend.
+                            </Text>
+                        )}
+                    </>
+                )}
             </CopyButton>
         </Modal>
     )
