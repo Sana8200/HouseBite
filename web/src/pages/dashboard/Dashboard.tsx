@@ -79,6 +79,24 @@ const dashboardNavCards: DashboardNavCards[] = [
   },
 ];
 
+const formatDateInputValue = (date: Date) => date.toISOString().slice(0, 10);
+
+const getExpirationDateBounds = () => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const minDate = new Date(today);
+  minDate.setFullYear(today.getFullYear() - 100);
+
+  const maxDate = new Date(today);
+  maxDate.setFullYear(today.getFullYear() + 100);
+
+  return {
+    min: formatDateInputValue(minDate),
+    max: formatDateInputValue(maxDate),
+  };
+};
+
 // ----------------------------------------------------------------------------
 
 // Products in Danger Component
@@ -296,6 +314,7 @@ const FavouriteRecipes: React.FC<FavouriteRecipesProps> = ({ recipes }) => {
 
 // Main Dashboard Component
 const Dashboard: React.FC = () => {
+  const expirationDateBounds = getExpirationDateBounds();
   const navigate = useNavigate();
   const location = useLocation();
   const locationState = (location.state as DashboardLocationState | null) ?? null;
@@ -414,6 +433,14 @@ const Dashboard: React.FC = () => {
   const handleCreate = async () => {
     if (!newName.trim() || !newHouseholdId) {
       setError('Name and household are required');
+      return;
+    }
+
+    if (
+      newExpirationDate
+      && (newExpirationDate < expirationDateBounds.min || newExpirationDate > expirationDateBounds.max)
+    ) {
+      setError(`Expiration date must be between ${expirationDateBounds.min} and ${expirationDateBounds.max}`);
       return;
     }
 
@@ -583,7 +610,13 @@ const Dashboard: React.FC = () => {
 
             <div className="modal-field">
               <label>Expiration Date</label>
-              <input type="date" value={newExpirationDate} onChange={e => setNewExpirationDate(e.target.value)} />
+              <input
+                type="date"
+                value={newExpirationDate}
+                min={expirationDateBounds.min}
+                max={expirationDateBounds.max}
+                onChange={e => setNewExpirationDate(e.target.value)}
+              />
             </div>
 
             <div className="modal-field">

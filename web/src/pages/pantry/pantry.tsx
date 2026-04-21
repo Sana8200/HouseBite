@@ -28,6 +28,24 @@ interface PantryLocationState {
   householdId?: string;
 }
 
+const formatDateInputValue = (date: Date) => date.toISOString().slice(0, 10);
+
+const getExpirationDateBounds = () => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const minDate = new Date(today);
+  minDate.setFullYear(today.getFullYear() - 100);
+
+  const maxDate = new Date(today);
+  maxDate.setFullYear(today.getFullYear() + 100);
+
+  return {
+    min: formatDateInputValue(minDate),
+    max: formatDateInputValue(maxDate),
+  };
+};
+
 /* Helper for getting the number of days remaining for expiring a product. */
 function getDaysUntilExpiry(expirationDate: string | null): number | null {
   if (!expirationDate) return null;
@@ -309,6 +327,7 @@ function PantryAllProductsList({
 
 /* Main pantry page component. */
 export function Pantry() {
+  const expirationDateBounds = getExpirationDateBounds();
   const location = useLocation();
   const navigate = useNavigate();
   const locationState = location.state as PantryLocationState | undefined;
@@ -394,6 +413,14 @@ export function Pantry() {
   const handleCreate = async () => {
     if (!newName.trim() || !newHouseholdId) {
       setError("Name and household are required");
+      return;
+    }
+
+    if (
+      newExpirationDate
+      && (newExpirationDate < expirationDateBounds.min || newExpirationDate > expirationDateBounds.max)
+    ) {
+      setError(`Expiration date must be between ${expirationDateBounds.min} and ${expirationDateBounds.max}`);
       return;
     }
 
@@ -703,6 +730,8 @@ export function Pantry() {
             label="Expiration Date"
             type="date"
             value={newExpirationDate}
+            min={expirationDateBounds.min}
+            max={expirationDateBounds.max}
             onChange={(e) => setNewExpirationDate(e.currentTarget.value)}
           />
           <NumberInput
