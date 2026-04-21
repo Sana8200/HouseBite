@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react"
-import { useLocation } from "react-router-dom"
+import { useLocation, useNavigate } from "react-router-dom"
 import { supabase } from "../../supabase"
 import "./recipes.css"
+import { Paper, Text, SimpleGrid, Stack } from "@mantine/core"
 
 export type DbRecipe = {
   id: string
@@ -82,6 +83,7 @@ export function RecipeCarousel({ children }: { children: React.ReactNode }) {
 
 export function Recipes() {
   const location = useLocation()
+  const navigate = useNavigate()
   const searchResults: SearchRecipe[] = location.state?.recipes ?? []
   const householdId: string = location.state?.householdId
   const openRecipeId: string | undefined = location.state?.openRecipeId
@@ -162,18 +164,49 @@ export function Recipes() {
       ) : favorites.length === 0 ? (
         <p>No favorites yet. Search for recipes and add some.</p>
       ) : (
-        <RecipeCarousel>
-          {favorites.map(r => (
-            <RecipeCard
-              key={r.id}
-              recipe={r}
-              isOpen={openId === `fav-${r.id}`}
-              onToggle={() => toggle(`fav-${r.id}`)}
-              onDelete={() => handleDelete(r.id)}
-            />
-          ))}
-        </RecipeCarousel>
-      )}
-    </div>
+        <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }}
+        style={{ alignItems: "start" }}>
+  {favorites.map(r => {
+  const isOpen = openId === `fav-${r.id}`
+
+  return (
+    <Paper
+      key={r.id}
+      p="md"
+      radius="md"
+      withBorder
+      shadow="sm"
+      style={{ cursor: "pointer" }}
+      onClick={() =>
+        setOpenId(prev => prev === `fav-${r.id}` ? null : `fav-${r.id}`)
+      }
+    >
+      <Stack gap="xs">
+        <Text fw={600}>{r.title}</Text>
+
+        <Text size="sm" c="dimmed">
+          Servings: {r.servings ?? "?"} · Prep: {r.prep_time ?? "?"} min
+        </Text>
+
+        {/* always visible preview */}
+        <Text size="xs" c="dimmed">
+          {r.description?.split("\n\n")[0] ?? ""}
+        </Text>
+
+        {isOpen && (
+          <div style={{ marginTop: 10 }}>
+            <Text fw={500} size="sm">Full Recipe</Text>
+
+            <Text size="xs" style={{ whiteSpace: "pre-wrap" }}>
+              {r.description}
+            </Text>
+          </div>
+        )}
+      </Stack>
+    </Paper>
   )
-}
+})}
+  </SimpleGrid>
+)}
+</div>
+)}
