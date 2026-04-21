@@ -1,11 +1,13 @@
 import './Dashboard.css';
 import React, { useState, useRef, useEffect } from 'react';
-import { ActionIcon, Badge, Button, Card, Checkbox, Group, Paper, SimpleGrid, Stack, Text, Title } from '@mantine/core';
-import { IconLayoutGrid, IconPlus, IconReceipt, IconShoppingCart, IconTrash } from '@tabler/icons-react';
+import {ActionIcon, Badge, Button, Card, Checkbox, Group, Paper, SimpleGrid, Stack, Text, Title } from '@mantine/core';
+import { IconLayoutGrid, IconReceiptEuro,IconPlus, IconShoppingCart, IconTrash,IconToolsKitchen2Off } from '@tabler/icons-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../../supabase';
 import { searchRecipes } from "../../lib/searchRecipes"
 import { HouseholdMembers } from "../../components/dashboard/HouseholdMembers"
+import { FoodRestrictionsModal } from "../../components/dashboard/FoodRestrictionsModal"
+
 
 // Types
 interface Product {
@@ -43,7 +45,8 @@ interface FavouriteRecipesProps {
 interface DashboardNavCards {
   title: string;
   description: string;
-  route: string;
+  route?: string;
+  action?: string;
   icon: React.ReactNode;
 }
 
@@ -53,19 +56,25 @@ const dashboardNavCards: DashboardNavCards[] = [
     title: 'Shopping List',
     description: 'Manage the household shopping list and keep track of what still needs to be bought.',
     route: '/shoppinglist',
-    icon: <IconShoppingCart size={24} stroke={1.8} />,
+    icon: <IconShoppingCart size={25} stroke={1.9} />,
   },
   {
     title: 'Pantry',
     description: 'Review pantry items, spot products that are running low and check what expires soon.',
     route: '/pantry',
-    icon: <IconLayoutGrid size={24} stroke={1.8} />,
+    icon: <IconLayoutGrid size={25} stroke={1.9} />,
   },
   {
     title: 'Receipts',
     description: 'Open recent receipts and review purchases already captured for the household.',
     route: '/receipts',
-    icon: <IconReceipt size={24} stroke={1.8} />,
+    icon: <IconReceiptEuro size={25} stroke={1.9} />,
+  },
+  {
+    title: 'Food Restrictions',
+    description: 'Manage allergies and dietary preferences of your household for better recipes and shopping.',
+    action: 'food-restrictions',
+    icon: <IconToolsKitchen2Off size={25} stroke={1.9} />,
   },
 ];
 
@@ -270,6 +279,7 @@ const Dashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showFoodRestrictions, setShowFoodRestrictions] = useState(false);
   const [creating, setCreating] = useState(false);
 
   const [newName, setNewName] = useState('');
@@ -455,17 +465,23 @@ const Dashboard: React.FC = () => {
       )}
 
       <SimpleGrid
-        cols={{ base: 1, md: 2, xl: 3 }}
+        cols={{ base: 2, sm: 4 }}
         spacing="lg"
         className="dashboard-nav"
         aria-label="Dashboard navigation"
       >
         {dashboardNavCards.map((card) => (
           <Paper
-            key={card.route}
+            key={card.route ?? card.action}
             component="button"
             className="dashboard-nav-card"
-            onClick={() => navigate(card.route)}
+            onClick={() => {
+              if (card.action === 'food-restrictions') {
+                setShowFoodRestrictions(true)
+              } else if (card.route) {
+                navigate(card.route)
+              }
+            }}
             radius="lg"
             withBorder
           >
@@ -508,6 +524,14 @@ const Dashboard: React.FC = () => {
       )}
 
       <FavouriteRecipes recipes={favouriteRecipes} />
+
+      {selectedHouseholdId && (
+        <FoodRestrictionsModal
+          householdId={selectedHouseholdId}
+          opened={showFoodRestrictions}
+          onClose={() => setShowFoodRestrictions(false)}
+        />
+      )}
 
       {showCreateModal && (
         <div className="modal-overlay" onClick={() => setShowCreateModal(false)}>

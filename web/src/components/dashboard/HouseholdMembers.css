@@ -1,69 +1,38 @@
-/* Match the custom warm olive look — Mantine handles layout */
-
+/* Warm olive background — layout handled by Mantine */
 .hh-members {
     background: #cccabb;
     border: 1px solid #bbb9ab;
 }
 
-/* Member cards */
-.hh-member-card {
-    background: #f4f3ee !important;
+/* Hover effects */
+.hh-card {
     transition: transform 0.15s, box-shadow 0.15s;
 }
 
-.hh-member-card:hover {
+.hh-card:hover {
     transform: translateY(-3px);
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1) !important;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
 }
 
-/* Override Mantine Avatar to match custom warm tones */
-.hh-member-card .mantine-Avatar-root {
-    --avatar-bg: #dddcd6;
-    --avatar-color: #5a5947;
+.hh-invite {
+    transition: transform 0.15s;
 }
 
-.hh-member-card .mantine-Avatar-root .mantine-Avatar-placeholder {
-    background: #dddcd6;
-    color: #5a5947;
-    font-size: 32px;
-    font-weight: 700;
+.hh-invite:hover {
+    transform: translateY(-3px);
 }
 
-/* Invite card — dashed border to differentiate from member cards */
-.hh-invite-card {
-    border-radius: var(--radius-lg);
-    width: 100%;
-}
-
-.hh-invite-inner {
-    background: transparent !important;
-    border: 2px dashed #b5b3a5;
-    height: 100%;
-    transition: background 0.15s, border-color 0.15s;
-}
-
-.hh-invite-card:hover .hh-invite-inner {
-    background: #e8e7e0 !important;
+.hh-invite:hover .mantine-Paper-root {
+    background: #e8e7e0;
     border-color: #8a8878;
 }
 
-/* Invite avatar icon — dashed circle */
-.hh-invite-inner .mantine-Avatar-root .mantine-Avatar-placeholder {
-    background: #e8e7e0;
-    color: #5a5947;
-    border: 2px dashed #b5b3a5;
-}
-
-.hh-invite-card:hover .mantine-Avatar-root .mantine-Avatar-placeholder {
+.hh-invite:hover .mantine-Avatar-placeholder {
     background: #dddcd6;
     border-style: solid;
     color: #3a3929;
 }
 
-.hh-invite-inner .mantine-Text-root {
-    color: #6b6a58;
-}
-
-.hh-invite-card:hover .mantine-Text-root {
+.hh-invite:hover .mantine-Text-root {
     color: #3a3929;
 }
