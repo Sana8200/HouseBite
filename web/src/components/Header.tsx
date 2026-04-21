@@ -115,10 +115,6 @@ export function Header(props: HeaderProps) {
                         ))}
                     </>
                 )}
-                
-                <NavLink to="/about" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>
-                    About
-                </NavLink>
 
                 {user && (
                     <a href="/" onClick={e => void(logout(e))} className="nav-link logout-link">
