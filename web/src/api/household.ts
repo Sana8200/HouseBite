@@ -28,6 +28,18 @@ export async function getHouseholds() {
 // Wrapper for a SECURITY DEFINER SQL function that finds a household
 // by invite_id, checks the caller isn't already a member, and creates
 // the allocation — all in a single atomic operation.
+export interface HouseholdMember {
+    id: string
+    display_name: string | null
+    email: string | null
+}
+
+export async function getHouseholdMembers(householdId: string) {
+    return supabase.rpc('get_household_members', {
+        p_household_id: householdId
+    })
+}
+
 export async function joinHousehold(inviteId: string) {
     return supabase.rpc('join_household', {
         p_invite_id: inviteId
