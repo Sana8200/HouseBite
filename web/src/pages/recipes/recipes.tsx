@@ -121,8 +121,9 @@ export function Recipes() {
 
   const handleSave = async (recipe: SearchRecipe, index: number) => {
     setSaving(index)
+    const { data: { user } } = await supabase.auth.getUser()
     const { error } = await supabase.functions.invoke("save-recipe", {
-      body: { recipe, household_id: householdId }
+      body: { recipe, member_id: user?.id }
     })
     setSaving(null)
     if (!error) {

@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
 Deno.serve(async (req) => {
   try {
-    const { recipe, household_id } = await req.json()
+    const { recipe, member_id } = await req.json()
     // recipe: { title, description, servings, prep_time }
 
     const supabase = createClient(
@@ -25,8 +25,8 @@ Deno.serve(async (req) => {
     }
 
     const { error: linkError } = await supabase
-      .from("household_recipes")
-      .insert({ household_id, recipe_id: inserted.id })
+      .from("member_recipes")
+      .insert({ member_id, recipe_id: inserted.id })
 
     if (linkError) {
       return new Response(JSON.stringify({ error: linkError.message }), {
