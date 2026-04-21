@@ -12,6 +12,7 @@ const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPAB
 const openai = new OpenAI({
     apiKey: Deno.env.get("OPENAI_API_KEY"),
 });
+const openaiModel = Deno.env.get("OPENAI_MODEL") || "gpt-5.4-nano";
 
 const Receipt = z.object({
     storeName: z.string().nullable(),
@@ -39,8 +40,7 @@ Deno.serve(async (req) => {
     const { image } = await req.json();
 
     const response = await openai.responses.parse({
-        model: "gpt-5.4-nano", // cheapest model, gives ok results.
-        // model: "gpt-5.4-mini", // slightly more expensive, gives a bit better results.
+        model: openaiModel,
         input: [
             {
                 role: "user",

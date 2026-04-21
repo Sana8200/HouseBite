@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect, type Dispatch, type SetStateAction } from "react";
 import "./Scan.css";
-import { Alert, Box, Button, Card, Center, Container, Flex, Grid, Loader, NumberInput, Paper, Stack, Text, TextInput, Title } from "@mantine/core";
+import { Alert, Box, Button, Card, Center, Checkbox, Container, Flex, Grid, Loader, NumberInput, Paper, Select, Stack, Text, TextInput, Title } from "@mantine/core";
 import { Dropzone, IMAGE_MIME_TYPE, type FileWithPath } from "@mantine/dropzone";
 import { IconReceipt } from "@tabler/icons-react";
 import { scanReceipt, type ReceiptData, type ReceiptItemData } from "../../api/scan";
+import { getHouseholds, type Household } from "../../api/household";
 
 const IMG_SIZE = 2000;
 
@@ -19,7 +20,7 @@ interface ProcessingState {
 interface FinishedState {
     state: "finished";
     image: string;
-    data: ReceiptData;
+    data: EditReceiptData;
 }
 
 interface ErrorState {
@@ -29,15 +30,40 @@ interface ErrorState {
 
 type ScanState = ReadyState | ProcessingState | FinishedState | ErrorState;
 
+interface EditReceiptData extends ReceiptData {
+    items: EditReceiptItemData[];
+}
+
+interface EditReceiptItemData extends ReceiptItemData {
+    key: string;
+    enabled: boolean;
+    unit: string | null;
+    expirationDate: string | null;
+}
+
 export function Scan() {
     const [state, setState] = useState<ScanState>({state: "ready"});
+
+    const [households, setHouseholds] = useState<Household[]>([]);
+
+    useEffect(() => {
+        void load();
+        async function load() {
+            const result = await getHouseholds();
+            if (result.error) {
+                setState({state: "error", error: result.error});
+            } else {
+                setHouseholds(result.data);
+            }
+        }
+    }, []);
 
     return (
         <Container size="md" p="md">
             <Paper shadow="md" p="md">
                 {state.state == "ready"      && <ScanReady      state={state} setState={setState} />}
                 {state.state == "processing" && <ScanProcessing state={state} setState={setState} />}
-                {state.state == "finished"   && <ScanFinished   state={state} setState={setState} />}
+                {state.state == "finished"   && <ScanFinished   state={state} setState={setState} households={households} />}
                 {state.state == "error"      && <ScanError      state={state} setState={setState} />}
             </Paper>
         </Container>
@@ -178,7 +204,28 @@ function ScanProcessing(props: ScanProcessingProps) {
             if (result.error) {
                 setState({state: "error", error: result.error as Error});
             } else {
-                setState({state: "finished", image, data: result.data!});
+                const data: EditReceiptData = {
+                    ...result.data!,
+                    items: result.data!.items.map(item => {
+
+                        let expirationDate: string | null = null;
+
+                        if (item.estimatedExpirationDays) {
+                            const ts = Date.now() + item.estimatedExpirationDays * 24 * 60 * 60 * 1000;
+                            expirationDate = new Date(ts).toISOString().split("T")[0];
+                        }
+
+                        return {
+                            ...item,
+                            enabled: true,
+                            key: self.crypto.randomUUID(),
+                            unit: typeof item.weight == "number" ? "kg" : null,
+                            expirationDate,
+                        };
+                    })
+                };
+
+                setState({state: "finished", image, data});
             }
         }
 
@@ -197,10 +244,74 @@ function ScanProcessing(props: ScanProcessingProps) {
 interface ScanFinishedProps {
     state: FinishedState;
     setState: Dispatch<SetStateAction<ScanState>>;
+    households: Household[];
 }
 
 function ScanFinished(props: ScanFinishedProps) {
-    const {state, setState} = props;
+    const {state, setState, households} = props;
+
+    const [saving, setSaving] = useState(false);
+
+    const [selectedHousehold, setSelectedHousehold] = useState<string | null>(null);
+
+    const setItem = (newItem: EditReceiptItemData) => setState(s => {
+        const oldState = s as FinishedState;
+
+        const data: EditReceiptData = {
+            ...oldState.data,
+            items: oldState.data.items.map(item => item.key == newItem.key ? newItem : item),
+        };
+
+        const newState = {
+            ...oldState,
+            data,
+        };
+
+        return newState;
+    });
+
+    const setStoreName = (newName: string) => setState(s => {
+        const oldState = s as FinishedState;
+        return {
+            ...oldState,
+            data: {
+                ...oldState.data,
+                storeName: newName,
+            }
+        }
+    });
+
+    const setPurchaseDate = (newPurchaseDate: string | null) => setState(s => {
+        const oldState = s as FinishedState;
+        return {
+            ...oldState,
+            data: {
+                ...oldState.data,
+                purchaseDate: newPurchaseDate,
+            }
+        }
+    });
+
+    const setTotalPrice = (newTotalPrice: number | null) => setState(s => {
+        const oldState = s as FinishedState;
+        return {
+            ...oldState,
+            data: {
+                ...oldState.data,
+                totalPrice: newTotalPrice,
+            }
+        }
+    });
+
+    const handleSave = async () => {
+        setSaving(true);
+        try {
+            // TODO save
+        } catch (error) {
+            setState({state: "error", error: error as Error});
+        }
+    };
+
     return (
         <>
             <Center>
@@ -210,15 +321,56 @@ function ScanFinished(props: ScanFinishedProps) {
             <Grid mt="md">
                 <Grid.Col span={{base: 12, md: 5}}>
                     <Title order={4}>Your Receipt</Title>
-                    <Box component="img" src={state.image} alt="Receipt" bdrs="md" mt="md"/>
+                    <Box component="img" src={state.image} alt="Receipt" bdrs="md" mt="md" pos="sticky" top={20} />
                 </Grid.Col>
 
                 <Grid.Col span={{base: 12, md: 7}}>
                     <Title order={4}>Identified products</Title>
                     <Stack gap="sm" mt="md">
                         {state.data.items.map((p, i) => (
-                            <ProductCard key={i} item={p}/>
+                            <ProductCard key={i} item={p} setItem={setItem}/>
                         ))}
+
+                        <Card shadow="none" withBorder>
+                            <Title order={4}>Save receipt and products</Title>
+
+                            <Select
+                                label="Unit"
+                                placeholder="Household"
+                                required
+                                data={households.map((h) => ({ value: h.id, label: h.house_name }))}
+                                value={selectedHousehold}
+                                onChange={setSelectedHousehold}
+                                />
+
+                            <TextInput label="Store name"
+                                value={state.data.storeName ?? ""}
+                                onChange={e => setStoreName(e.target.value)}
+                                mt="xs"
+                                />
+
+                            <Flex gap="sm" mt="xs">
+                                <TextInput
+                                    label="Purchase date"
+                                    type="date"
+                                    value={state.data.purchaseDate ?? ""}
+                                    onChange={(e) => setPurchaseDate(e.target.value || null)}
+                                    flex={1}
+                                    />
+
+                                <NumberInput label="Total price"
+                                    value={state.data.totalPrice ?? ""}
+                                    onChange={val => setTotalPrice(typeof val == "number" ? val : null)}
+                                    decimalScale={2}
+                                    fixedDecimalScale
+                                    flex={1}
+                                    />
+                            </Flex>
+                            
+                            <Flex justify="end" mt="md">
+                                <Button disabled={saving} loading={saving} onClick={() => void handleSave()}>Save selected</Button>
+                            </Flex>
+                        </Card>
                     </Stack>
                 </Grid.Col>
             </Grid>
@@ -246,35 +398,71 @@ function ScanError(props: ScanErrorProps) {
 }
 
 interface ProductCardProps {
-    item: ReceiptItemData;
+    item: EditReceiptItemData;
+    setItem: (item: EditReceiptItemData) => void;
 }
 
 function ProductCard(props: ProductCardProps) {
-    const { item } = props;
-
-    const [name, setName] = useState(item.name ?? "");
-    const [quantity, setQuantity] = useState<string | number>(item.quantity ?? 1);
-    const [size, setSize] = useState<string | number>(item.weight ?? "");
-    const [price, setPrice] = useState<string | number>(item.totalPrice ?? "");
-
-    const [added, setAdded] = useState(false);
-    const [adding, setAdding] = useState(false);
-
-    const disabled = added || adding;
+    const { item, setItem } = props;   
+    
 
     return (
-        <Card shadow="none" withBorder>
-            <TextInput label="Name" disabled={disabled} value={name} onChange={e => setName(e.target.value)}/>
+        <Card shadow="none" withBorder pos="relative">
+
+            <TextInput label="Name"
+                required
+                value={item.name ?? ""}
+                onChange={e => setItem({...item, name: e.target.value})}
+                />
+
+            <Checkbox
+                checked={item.enabled}
+                onChange={e => setItem({...item, enabled: e.target.checked})}
+                pos="absolute" right={8} top={8} size="md"
+                />
             
             <Flex gap="sm" mt="xs">
-                <NumberInput label="Quantity" disabled={disabled} value={quantity} onChange={setQuantity} flex={1} allowDecimal={false}/>
-                <NumberInput label="Size" disabled={disabled} value={size} onChange={setSize} flex={1} decimalScale={2} fixedDecimalScale/>
-                <NumberInput label="Price" disabled={disabled} value={price} onChange={setPrice} flex={1} decimalScale={2} fixedDecimalScale/>
+                <NumberInput label="Quantity"
+                    value={item.quantity ?? ""}
+                    onChange={val => setItem({...item, quantity: typeof val == "number" ? val : null})}
+                    allowDecimal={false}
+                    flex={1}
+                    />
+
+                <NumberInput label="Size"
+                    value={item.weight ?? ""}
+                    onChange={val => setItem({...item, weight: typeof val == "number" ? val : null})}
+                    decimalScale={2}
+                    fixedDecimalScale
+                    flex={1}
+                    />
+
+                <Select
+                    label="Unit"
+                    placeholder="No unit"
+                    clearable
+                    data={["gr", "ml", "kg", "L"]}
+                    value={item.unit}
+                    onChange={val => setItem({...item, unit: val})}
+                    flex={1}
+                    />
+
+                <NumberInput label="Size"
+                    value={item.totalPrice ?? ""}
+                    onChange={val => setItem({...item, totalPrice: typeof val == "number" ? val : null})}
+                    decimalScale={2}
+                    fixedDecimalScale
+                    flex={1}
+                    />
             </Flex>
+
+            <TextInput
+                label="Expiration date"
+                type="date"
+                value={item.expirationDate || ""}
+                onChange={(e) => setItem({...item, expirationDate: e.target.value})}
+                />
             
-            <Flex justify="end" mt="sm">
-                <Button disabled={disabled} loading={adding}>Add</Button>
-            </Flex>
         </Card>
     );
 }
