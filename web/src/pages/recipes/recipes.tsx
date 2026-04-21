@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react"
-import { useLocation, useNavigate } from "react-router-dom"
+import { useLocation} from "react-router-dom"
 import { supabase } from "../../supabase"
 import "./recipes.css"
-import { Paper, Text, SimpleGrid, Stack } from "@mantine/core"
+import { Paper, Text, SimpleGrid, Stack, ActionIcon, Button} from "@mantine/core"
+import { IconX } from "@tabler/icons-react"
 
 export type DbRecipe = {
   id: string
@@ -83,7 +84,6 @@ export function RecipeCarousel({ children }: { children: React.ReactNode }) {
 
 export function Recipes() {
   const location = useLocation()
-  const navigate = useNavigate()
   const searchResults: SearchRecipe[] = location.state?.recipes ?? []
   const householdId: string = location.state?.householdId
   const openRecipeId: string | undefined = location.state?.openRecipeId
@@ -92,6 +92,7 @@ export function Recipes() {
   const [saving, setSaving] = useState<number | null>(null)
   const [favorites, setFavorites] = useState<DbRecipe[]>([])
   const [loadingFavorites, setLoadingFavorites] = useState(true)
+  const [selectedRecipe, setSelectedRecipe] = useState<DbRecipe | null>(null)
 
   // tracks which card is open: "fav-{id}" or "search-{index}"
   const [openId, setOpenId] = useState<string | null>(
@@ -159,54 +160,89 @@ export function Recipes() {
       )}
 
       <h1>Favorites</h1>
-      {loadingFavorites ? (
-        <p>Loading...</p>
-      ) : favorites.length === 0 ? (
-        <p>No favorites yet. Search for recipes and add some.</p>
-      ) : (
-        <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }}
-        style={{ alignItems: "start" }}>
-  {favorites.map(r => {
-  const isOpen = openId === `fav-${r.id}`
+   {loadingFavorites ? (
+  <p>Loading...</p>
+) : favorites.length === 0 ? (
+  <p>No favorites yet. Search for recipes and add some.</p>
+) : (
+  <div style={{ display: "flex", gap: "20px", alignItems: "stretch" }}>
 
-  return (
-    <Paper
-      key={r.id}
-      p="md"
-      radius="md"
-      withBorder
-      shadow="sm"
-      style={{ cursor: "pointer" }}
-      onClick={() =>
-        setOpenId(prev => prev === `fav-${r.id}` ? null : `fav-${r.id}`)
-      }
-    >
-      <Stack gap="xs">
-        <Text fw={600}>{r.title}</Text>
+    {/* LEFT - GRID */}
+    <div style={{ flex: 1 }}>
+      <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }}>
+        {favorites.map(r => (
+          <Paper
+            key={r.id}
+            p="md"
+            radius="md"
+            withBorder
+            shadow="sm"
+            style={{ cursor: "pointer", position: "relative" }}
+            onClick={() => setSelectedRecipe(r)}
+          >
+            <Stack gap="xs">
+              <Text fw={600}>{r.title}</Text>
 
-        <Text size="sm" c="dimmed">
-          Servings: {r.servings ?? "?"} · Prep: {r.prep_time ?? "?"} min
-        </Text>
+              <Text size="sm" c="dimmed">
+                Servings: {r.servings ?? "?"} · Prep: {r.prep_time ?? "?"} min
+              </Text>
 
-        {/* always visible preview */}
-        <Text size="xs" c="dimmed">
-          {r.description?.split("\n\n")[0] ?? ""}
-        </Text>
+              <Text size="xs" c="dimmed">
+                {r.description?.split("\n\n")[0] ?? ""}
+              </Text>
+            </Stack>
 
-        {isOpen && (
-          <div style={{ marginTop: 10 }}>
-            <Text fw={500} size="sm">Full Recipe</Text>
+            <ActionIcon
+              variant="subtle"
+              color="red"
+              onClick={(e) => {
+                e.stopPropagation()
+                if (confirm("Remove from favorites?")) {
+                  handleDelete(r.id)
+                }
+              }}
+              style={{ position: "absolute", top: 8, right: 8 }}
+            >
+              <IconX size={16} />
+            </ActionIcon>
+          </Paper>
+        ))}
+      </SimpleGrid>
+    </div>
 
-            <Text size="xs" style={{ whiteSpace: "pre-wrap" }}>
-              {r.description}
+    {/* RIGHT - DETAIL PANEL (ONLY FAVORITES) */}
+    <div style={{ flex: 1 }}>
+      {selectedRecipe ? (
+        <Paper p="lg" radius="md" withBorder shadow="md">
+          <Stack>
+            
+            <Button
+            variant="subtle"
+            size="xs"
+            onClick={() => setSelectedRecipe(null)}
+          >
+            Close
+          </Button>
+          
+            <Text fw={700} size="lg">
+              {selectedRecipe.title}
             </Text>
-          </div>
-        )}
-      </Stack>
-    </Paper>
-  )
-})}
-  </SimpleGrid>
+
+            <Text size="sm" c="dimmed">
+              Servings: {selectedRecipe.servings ?? "?"} · Prep: {selectedRecipe.prep_time ?? "?"} min
+            </Text>
+
+            <Text size="sm" style={{ whiteSpace: "pre-wrap" }}>
+              {selectedRecipe.description}
+            </Text>
+          </Stack>
+        </Paper>
+      ) : (
+        <Text c="dimmed">Select a recipe to see details</Text>
+      )}
+    </div>
+
+  </div>
 )}
-</div>
+ </div>
 )}
