@@ -1,12 +1,7 @@
 import './Dashboard.css';
-import React, { useState, useRef, useEffect } from 'react';
-<<<<<<< HEAD
-import { Paper, SimpleGrid, Text, Stack} from '@mantine/core';
-import { IconLayoutGrid, IconReceipt, IconShoppingCart, IconTrash } from '@tabler/icons-react';
-=======
-import {ActionIcon, Badge, Button, Card, Checkbox, Group, Paper, SimpleGrid, Stack, Text, Title } from '@mantine/core';
-import { IconLayoutGrid, IconReceiptEuro,IconPlus, IconShoppingCart, IconTrash,IconToolsKitchen2Off } from '@tabler/icons-react';
->>>>>>> 16eb7c2ec7240f478257daca093aa9b407ead70d
+import React, { useState, useEffect } from 'react';
+import { Paper, SimpleGrid, Text, Stack, ActionIcon, Badge, Button, Card, Checkbox, Group, Title} from '@mantine/core';
+import { IconLayoutGrid, IconShoppingCart, IconTrash, IconReceiptEuro,IconPlus, IconToolsKitchen2Off } from '@tabler/icons-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../../supabase';
 import { searchRecipes } from "../../lib/searchRecipes"
