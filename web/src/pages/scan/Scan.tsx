@@ -389,7 +389,7 @@ function ScanFinished(props: ScanFinishedProps) {
                             <Text c="dimmed">Pre filled expiration dates are estimates.</Text>
 
                             <Select
-                                label="Unit"
+                                label="Household"
                                 placeholder="Household"
                                 required
                                 data={households.map((h) => ({ value: h.id, label: h.house_name }))}
@@ -504,7 +504,7 @@ function ProductCard(props: ProductCardProps) {
                     flex={1}
                     />
 
-                <NumberInput label="Size"
+                <NumberInput label="Price"
                     value={item.totalPrice ?? ""}
                     onChange={val => setItem({...item, totalPrice: typeof val == "number" ? val : null})}
                     decimalScale={2}
