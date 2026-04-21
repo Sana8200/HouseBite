@@ -1,16 +1,18 @@
-import { useState, useRef, useEffect, type Dispatch, type SetStateAction } from "react";
+import { useState, useRef, useEffect, type Dispatch, type SetStateAction, useCallback } from "react";
 import "./Scan.css";
 import { Alert, Box, Button, Card, Center, Checkbox, Container, Flex, Grid, Loader, NumberInput, Paper, Select, Stack, Text, TextInput, Title } from "@mantine/core";
 import { Dropzone, IMAGE_MIME_TYPE, type FileWithPath } from "@mantine/dropzone";
 import { IconReceipt } from "@tabler/icons-react";
 import { scanReceipt, type ReceiptData, type ReceiptItemData } from "../../api/scan";
 import { getHouseholds, type Household } from "../../api/household";
-import { insertProductWithSpecs, type PantryUnit, type Product, type ProductSpecs } from "../../api/pantry";
+import { insertProductWithSpecs, type PantryUnit, type Product, type ProductSpecs } from "../../api/product.ts";
+import { insertReceipt, type Receipt } from "../../api/receipt.ts";
 
 const IMG_SIZE = 2000;
 
 interface ReadyState {
     state: "ready";
+    message?: string;
 }
 
 interface ProcessingState {
@@ -77,7 +79,7 @@ interface ScanReadyProps {
 }
 
 function ScanReady(props: ScanReadyProps) {
-    const {setState} = props;
+    const {state, setState} = props;
 
     const [camera, setCamera] = useState(false);
 
@@ -141,6 +143,14 @@ function ScanReady(props: ScanReadyProps) {
 
     return (
         <>
+            {state.message &&
+                <Alert variant="light" color="green" mb="md">
+                    <Center>
+                        {state.message}
+                    </Center>
+                </Alert>
+            }
+
             <Center pos="relative" style={camera ? {} : {display: "none"}}>
                 <video className="scan-video" ref={videoOutputRef}>Video stream not available.</video>
                 <Button pos="absolute" bottom={20} size="lg" onClick={takePhoto}>Scan</Button>
@@ -255,7 +265,7 @@ function ScanFinished(props: ScanFinishedProps) {
 
     const [selectedHousehold, setSelectedHousehold] = useState<string | null>(null);
 
-    const setItem = (newItem: EditReceiptItemData) => setState(s => {
+    const setItem = useCallback((newItem: EditReceiptItemData) => setState(s => {
         const oldState = s as FinishedState;
 
         const data: EditReceiptData = {
@@ -269,7 +279,7 @@ function ScanFinished(props: ScanFinishedProps) {
         };
 
         return newState;
-    });
+    }), [setState]);
 
     const setStoreName = (newName: string) => setState(s => {
         const oldState = s as FinishedState;
@@ -305,19 +315,30 @@ function ScanFinished(props: ScanFinishedProps) {
     });
 
     const handleSave = async () => {
+        if (!selectedHousehold) return;
         setSaving(true);
         try {
 
             const items: [Product, Omit<ProductSpecs, "product_id">][] = [];
+
+            const receipt: Receipt = {
+                household_id: selectedHousehold,
+                store_name: state.data.storeName,
+                total: state.data.totalPrice ?? 0,
+                purchase_at: state.data.purchaseDate ?? new Date().toISOString().split("T")[0],
+            };
+
+            const receipt_res = await insertReceipt(receipt);
+            if (receipt_res.error) throw receipt_res.error;
 
             for (const item of state.data.items) {
                 if (!item.name) continue;
                 if (!item.enabled) continue;
                 items.push([
                     {
-                        household_id: selectedHousehold!,
+                        household_id: selectedHousehold,
                         name: item.name,
-                        receipt_id: null, // TODO
+                        receipt_id: receipt_res.data.id!,
                     },
                     {
                         quantity: item.quantity ?? 1,
@@ -335,7 +356,7 @@ function ScanFinished(props: ScanFinishedProps) {
             }));
 
             // setSaving(false);
-            setState({state: "ready"});
+            setState({state: "ready", message: "Products added"});
         } catch (error) {
             setState({state: "error", error: error as Error});
         }
@@ -422,7 +443,9 @@ function ScanError(props: ScanErrorProps) {
     return (
         <>
             <Alert variant="light" color="red" mt="md">
-                {state.error.message}
+                <Center>
+                    {state.error.message}
+                </Center>
             </Alert>
             <Center>
                 <Button size="lg" onClick={() => setState({state: "ready"})}>Retry</Button>
