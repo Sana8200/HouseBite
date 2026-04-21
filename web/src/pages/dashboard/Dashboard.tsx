@@ -290,6 +290,7 @@ const Dashboard: React.FC = () => {
       const username = meta?.username as string | undefined;
       const email = data.user?.email;
       setDisplayName(displayName ?? username ?? email?.split('@')[0] ?? null);
+      setUserId(data.user?.id ?? null);
     }).catch(() => {});
     void fetchHouseholds();
     void supabase
