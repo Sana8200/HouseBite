@@ -1,8 +1,9 @@
 import { ActionIcon, Badge, Button, Card, Checkbox, Group, Menu, Paper, SegmentedControl, SimpleGrid,
   Stack, Table, Text, TextInput, Title } from "@mantine/core";
 import { IconArrowLeft, IconGridDots, IconList, IconSearch, IconTrash } from "@tabler/icons-react";
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useMemo, useState } from "react";
+import { searchRecipes } from "../../lib/searchRecipes";
 
 type PantryViewMode = "grid" | "list";
 type ExpiryStatusFilter = "all" | "expired" | "critical" | "warning" | "fresh" | "no-date";
@@ -11,6 +12,7 @@ type ExpiryStatusFilter = "all" | "expired" | "critical" | "warning" | "fresh" |
 interface PantryProduct {
   id: string;
   name: string;
+  householdId: string;
   quantity: number;
   size: string | null;
   unit: string | null;
@@ -20,11 +22,16 @@ interface PantryProduct {
   boughtBy: string | null;
 }
 
+interface PantryLocationState {
+  householdId?: string;
+}
+
 /* Hardcoded values, to be REMOVED once functionality and data linked to DB is implemented. */
 const mockProducts: PantryProduct[] = [
   {
     id: "1",
     name: "Milk",
+    householdId: "mock-household-1",
     quantity: 2,
     size: "1",
     unit: "L",
@@ -36,6 +43,7 @@ const mockProducts: PantryProduct[] = [
   {
     id: "2",
     name: "Eggs",
+    householdId: "mock-household-1",
     quantity: 12,
     size: null,
     unit: null,
@@ -47,6 +55,7 @@ const mockProducts: PantryProduct[] = [
   {
     id: "3",
     name: "Spinach",
+    householdId: "mock-household-1",
     quantity: 1,
     size: "250",
     unit: "gr",
@@ -58,6 +67,7 @@ const mockProducts: PantryProduct[] = [
   {
     id: "4",
     name: "Rice",
+    householdId: "mock-household-1",
     quantity: 1,
     size: "1",
     unit: "kg",
@@ -69,6 +79,7 @@ const mockProducts: PantryProduct[] = [
   {
     id: "5",
     name: "Tomato Sauce",
+    householdId: "mock-household-1",
     quantity: 3,
     size: "500",
     unit: "ml",
@@ -80,6 +91,7 @@ const mockProducts: PantryProduct[] = [
   {
     id: "6",
     name: "Chicken Breast",
+    householdId: "mock-household-1",
     quantity: 2,
     size: "400",
     unit: "gr",
@@ -330,6 +342,10 @@ function PantryAllProductsList({
 
 /* Main pantry page component. */
 export function Pantry() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const locationState = location.state as PantryLocationState | undefined;
+  const householdId = locationState?.householdId;
   const [viewMode, setViewMode] = useState<PantryViewMode>("list");
   const [statusFilter, setStatusFilter] = useState<ExpiryStatusFilter>("all");
   const [searchValue, setSearchValue] = useState("");
@@ -341,6 +357,19 @@ export function Pantry() {
         ? current.filter((id) => id !== productId)
         : [...current, productId],
     );
+  };
+
+  const handleFindRecipes = async () => {
+    const selectedProductObjects = mockProducts.filter((product) =>
+      selectedProducts.includes(product.id),
+    );
+    const ingredientNames = selectedProductObjects.map((product) => product.name);
+    const selectedHouseholdId = selectedProductObjects[0]?.householdId ?? householdId;
+
+    if (!selectedHouseholdId || ingredientNames.length === 0) return;
+
+    const results = await searchRecipes(ingredientNames, selectedHouseholdId);
+    navigate("/recipes", { state: { recipes: results, householdId: selectedHouseholdId } });
   };
 
   /* Memoized list of products after applying search, filter and expiry ordering. */
@@ -455,6 +484,12 @@ export function Pantry() {
           rightSection={<IconSearch size={16} />}
           style={{ flex: "0 1 420px" }}
         />
+        <Button
+          disabled={selectedProducts.length === 0}
+          onClick={() => void handleFindRecipes()}
+        >
+          Find recipes
+        </Button>
         <SegmentedControl
           value={viewMode}
           onChange={(value) => setViewMode(value as PantryViewMode)}
