@@ -5,6 +5,7 @@ import { IconLayoutGrid, IconReceiptEuro,IconPlus, IconShoppingCart, IconTrash,I
 import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../../supabase';
 import { searchRecipes } from "../../lib/searchRecipes"
+import { RecipeSearchModal } from "../../components/RecipeSearchModal"
 import { HouseholdMembers } from "../../components/dashboard/HouseholdMembers"
 import { FoodRestrictionsModal } from "../../components/dashboard/FoodRestrictionsModal"
 
@@ -87,6 +88,8 @@ const ProductsInDanger: React.FC<{
 }> = ({ products, onDelete }) => {
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [showRecipeModal, setShowRecipeModal] = useState(false);
+  const [pendingSearch, setPendingSearch] = useState<{ ingredients: string[]; householdId: string } | null>(null);
   const navigate = useNavigate();
 
   const getDaysUntilExpiry = (expiryDate: string | null): number | null => {
@@ -112,13 +115,20 @@ const ProductsInDanger: React.FC<{
     return da - db;
   });
 
-  const handleFindRecipes = async () => {
+  const handleFindRecipes = () => {
     const selected = products.filter(p => selectedProducts.includes(p.id));
     const ingredientNames = selected.map(p => p.name);
     const householdId = selected[0]?.householdId;
     if (!householdId) return;
-    const results = await searchRecipes(ingredientNames, householdId);
-    navigate('/recipes', { state: { recipes: results, householdId } });
+    setPendingSearch({ ingredients: ingredientNames, householdId });
+    setShowRecipeModal(true);
+  };
+
+  // Receives exactly the diets and intolerances the user left checked in the modal.
+  const handleProceed = async (diets: string[], intolerances: string[]) => {
+    if (!pendingSearch) return;
+    const results = await searchRecipes(pendingSearch.ingredients, pendingSearch.householdId, diets, intolerances);
+    navigate('/recipes', { state: { recipes: results, householdId: pendingSearch.householdId } });
   };
 
   if (!products.length) {
@@ -205,10 +215,19 @@ const ProductsInDanger: React.FC<{
 
       {selectedProducts.length > 0 && (
         <Group justify="center">
-          <Button onClick={() => void handleFindRecipes()}>
+          <Button onClick={() => handleFindRecipes()}>
             Find Recipes ({selectedProducts.length} product{selectedProducts.length !== 1 ? 's' : ''} selected)
           </Button>
         </Group>
+      )}
+
+      {pendingSearch && (
+        <RecipeSearchModal
+          opened={showRecipeModal}
+          onClose={() => setShowRecipeModal(false)}
+          onProceed={handleProceed}
+          householdId={pendingSearch.householdId}
+        />
       )}
     </Stack>
   );

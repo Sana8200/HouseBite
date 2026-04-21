@@ -1,9 +1,10 @@
 import "@supabase/functions-js/edge-runtime.d.ts"
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
 Deno.serve(async (req) => {
   try {
-    const { ingredients, household_id } = await req.json()
+    // The client now sends the restrictions the user chose to keep active in the
+    // modal, so we trust those instead of re-querying the DB ourselves.
+    const { ingredients, household_id, diets = [], intolerances = [] } = await req.json()
 
     const proxyUrl = Deno.env.get("SPOONACULAR_PROXY_URL")
     const proxyKey = Deno.env.get("SPOONACULAR_PROXY_KEY")
@@ -20,38 +21,9 @@ Deno.serve(async (req) => {
       "X-RapidAPI-Host": "spoonacular-recipe-food-nutrition-v1.p.rapidapi.com",
     }
 
-    // ── Fetch household food restrictions from DB ─────────────────────────
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    )
-
-    const { data: allocations } = await supabase
-      .from("allocations")
-      .select("member_id")
-      .eq("household_id", household_id)
-
-    const memberIds = (allocations ?? []).map((a: any) => a.member_id)
-
-    let diets: string[] = []
-    let intolerances: string[] = []
-
-    if (memberIds.length > 0) {
-      const { data: memberRestrictions } = await supabase
-        .from("member_restriction")
-        .select("food_restriction(category, name)")
-        .in("member_id", memberIds)
-
-      for (const mr of memberRestrictions ?? []) {
-        const { category, name } = (mr as any).food_restriction
-        if (category === "diet" && !diets.includes(name)) diets.push(name)
-        if (category === "intolerance" && !intolerances.includes(name)) intolerances.push(name)
-      }
-    }
-
     // ── Step 1: complexSearch — diet/intolerance filtering + get IDs ──────
-    // complexSearch reliably applies diet and intolerance filters.
-    // We fetch 9 candidates so we have room to discard those without instructions.
+    // We ask Spoonacular for 9 candidates so we have some buffer to throw away
+    // ones that don't have proper step-by-step instructions.
     const params = new URLSearchParams({
       includeIngredients: ingredients,
       number: "9",
