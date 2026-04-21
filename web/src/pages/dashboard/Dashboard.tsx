@@ -1,7 +1,12 @@
 import './Dashboard.css';
 import React, { useState, useRef, useEffect } from 'react';
+<<<<<<< HEAD
+import { Paper, SimpleGrid, Text, Stack} from '@mantine/core';
+import { IconLayoutGrid, IconReceipt, IconShoppingCart, IconTrash } from '@tabler/icons-react';
+=======
 import {ActionIcon, Badge, Button, Card, Checkbox, Group, Paper, SimpleGrid, Stack, Text, Title } from '@mantine/core';
 import { IconLayoutGrid, IconReceiptEuro,IconPlus, IconShoppingCart, IconTrash,IconToolsKitchen2Off } from '@tabler/icons-react';
+>>>>>>> 16eb7c2ec7240f478257daca093aa9b407ead70d
 import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../../supabase';
 import { searchRecipes } from "../../lib/searchRecipes"
@@ -237,48 +242,57 @@ const ProductsInDanger: React.FC<{
 
 // Favourite Recipes Component with Carousel
 const FavouriteRecipes: React.FC<FavouriteRecipesProps> = ({ recipes }) => {
-  const carouselRef = useRef<HTMLDivElement>(null);
+ // const carouselRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
-  const scroll = (dir: number) => carouselRef.current?.scrollBy({ left: dir * 300, behavior: 'smooth' });
+ // const scroll = (dir: number) => carouselRef.current?.scrollBy({ left: dir * 300, behavior: 'smooth' });
 
   if (!recipes.length) {
     return (
-      <div className="favourite-recipes-empty">
-        <p>No favourite recipes yet. Start adding some</p>
-      </div>
+        <Text c="dimmed" ta="center" mt="md">
+        No favourite recipes yet. Start adding some
+      </Text>
     );
   }
 
   return (
-    <div className="favourite-recipes-container">
-      <div className="section-header">
-        <h2 className="section-title">Here are your favourite recipes</h2>
-      </div>
+    <div>
+      <Text fw={700} size="lg" mb="md">
+        Here are your favourite recipes
+      </Text>
 
-      <div className="carousel-wrapper">
-        <button onClick={() => scroll(-1)} className="carousel-arrow left-arrow" aria-label="Scroll left">‹</button>
-        <div className="recipes-carousel" ref={carouselRef}>
-          {recipes.map(recipe => {
-            const nutrition = recipe.description?.split('\n\n')[0] ?? ''
-            return (
-              <div
-                key={recipe.id}
-                className="recipe-card"
-                style={{ cursor: 'pointer' }}
-                onClick={() => navigate('/recipes', { state: { openRecipeId: recipe.id } })}
-              >
-                <div className="recipe-info">
-                  <h3 className="recipe-name">{recipe.title}</h3>
-                  <p className="recipe-time">Servings: {recipe.servings ?? '?'} · Prep: {recipe.prep_time ?? '?'} min</p>
-                  <p className="recipe-description">{nutrition}</p>
-                </div>
-              </div>
-            )
-          })}
-        </div>
-        <button onClick={() => scroll(1)} className="carousel-arrow right-arrow" aria-label="Scroll right">›</button>
-      </div>
+      <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }}>
+        {recipes.map((recipe) => {
+          const nutrition = recipe.description?.split("\n\n")[0] ?? "";
+
+          return (
+            <Paper
+              key={recipe.id}
+              p="md"
+              radius="md"
+              withBorder
+              shadow="sm"
+              style={{ cursor: "pointer" }}
+              onClick={() =>
+                navigate("/recipes", { state: { openRecipeId: recipe.id } })
+              }
+            >
+              <Stack gap="xs">
+                <Text fw={600}>{recipe.title}</Text>
+
+                <Text size="sm" c="dimmed">
+                  Servings: {recipe.servings ?? "?"} · Prep:{" "}
+                  {recipe.prep_time ?? "?"} min
+                </Text>
+
+                <Text size="xs" c="dimmed">
+                  {nutrition}
+                </Text>
+              </Stack>
+            </Paper>
+          );
+        })}
+      </SimpleGrid>
     </div>
   );
 };
