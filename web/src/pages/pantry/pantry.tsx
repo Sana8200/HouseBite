@@ -1,4 +1,4 @@
-import { ActionIcon, Badge, Button, Card, Group, Menu, Paper, SegmentedControl, SimpleGrid,
+import { ActionIcon, Badge, Button, Card, Checkbox, Group, Menu, Paper, SegmentedControl, SimpleGrid,
   Stack, Table, Text, TextInput, Title } from "@mantine/core";
 import { IconArrowLeft, IconGridDots, IconList, IconSearch, IconTrash } from "@tabler/icons-react";
 import { Link } from "react-router-dom";
@@ -191,7 +191,15 @@ function getExpiryLabel(daysUntilExpiry: number | null): string {
 }
 
 /* Component for rendering the pantry products in grid format. */
-function PantryGrid({ products }: { products: PantryProduct[] }) {
+function PantryGrid({
+  products,
+  selectedProducts,
+  onToggleProduct,
+}: {
+  products: PantryProduct[];
+  selectedProducts: string[];
+  onToggleProduct: (productId: string) => void;
+}) {
   if (!products.length) {
     return (
       <Paper withBorder p="xl">
@@ -215,6 +223,11 @@ function PantryGrid({ products }: { products: PantryProduct[] }) {
                     Pantry product
                   </Text>
                 </div>
+                <Checkbox
+                  aria-label={`Select ${product.name}`}
+                  checked={selectedProducts.includes(product.id)}
+                  onChange={() => onToggleProduct(product.id)}
+                />
               </Group>
 
               <Stack gap={4}>
@@ -242,7 +255,15 @@ function PantryGrid({ products }: { products: PantryProduct[] }) {
 }
 
 /* Component for rendering the pantry products in compact table format. */
-function PantryAllProductsList({ products }: { products: PantryProduct[] }) {
+function PantryAllProductsList({
+  products,
+  selectedProducts,
+  onToggleProduct,
+}: {
+  products: PantryProduct[];
+  selectedProducts: string[];
+  onToggleProduct: (productId: string) => void;
+}) {
   if (!products.length) {
     return (
       <Paper withBorder p="xl">
@@ -256,6 +277,13 @@ function PantryAllProductsList({ products }: { products: PantryProduct[] }) {
 
     return (
       <Table.Tr key={product.id}>
+        <Table.Td>
+          <Checkbox
+            aria-label={`Select ${product.name}`}
+            checked={selectedProducts.includes(product.id)}
+            onChange={() => onToggleProduct(product.id)}
+          />
+        </Table.Td>
         <Table.Td>{product.name}</Table.Td>
         <Table.Td>{formatExpiry(product.expirationDate)}</Table.Td>
         <Table.Td>{getExpiryLabel(daysUntilExpiry)}</Table.Td>
@@ -280,6 +308,7 @@ function PantryAllProductsList({ products }: { products: PantryProduct[] }) {
       <Table highlightOnHover stickyHeader>
         <Table.Thead>
           <Table.Tr>
+            <Table.Th>Select</Table.Th>
             <Table.Th>Product</Table.Th>
             <Table.Th>Expires</Table.Th>
             <Table.Th>Label</Table.Th>
@@ -304,6 +333,15 @@ export function Pantry() {
   const [viewMode, setViewMode] = useState<PantryViewMode>("list");
   const [statusFilter, setStatusFilter] = useState<ExpiryStatusFilter>("all");
   const [searchValue, setSearchValue] = useState("");
+  const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
+
+  const handleToggleProduct = (productId: string) => {
+    setSelectedProducts((current) =>
+      current.includes(productId)
+        ? current.filter((id) => id !== productId)
+        : [...current, productId],
+    );
+  };
 
   /* Memoized list of products after applying search, filter and expiry ordering. */
   const visibleProducts = useMemo(() => {
@@ -455,9 +493,17 @@ export function Pantry() {
           </Group>
 
           {viewMode === "grid" ? (
-            <PantryGrid products={visibleProducts} />
+            <PantryGrid
+              products={visibleProducts}
+              selectedProducts={selectedProducts}
+              onToggleProduct={handleToggleProduct}
+            />
           ) : (
-            <PantryAllProductsList products={visibleProducts} />
+            <PantryAllProductsList
+              products={visibleProducts}
+              selectedProducts={selectedProducts}
+              onToggleProduct={handleToggleProduct}
+            />
           )}
         </Stack>
       </Paper>
