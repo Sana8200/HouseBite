@@ -1,9 +1,10 @@
-import { ActionIcon, Badge, Button, Card, Checkbox, Group, Menu, Paper, SegmentedControl, SimpleGrid,
-  Stack, Table, Text, TextInput, Title } from "@mantine/core";
-import { IconArrowLeft, IconGridDots, IconList, IconSearch, IconTrash } from "@tabler/icons-react";
+import { ActionIcon, Badge, Button, Card, Checkbox, Group, Menu, Modal, NumberInput, Paper, SegmentedControl,
+  Select, SimpleGrid, Stack, Table, Text, TextInput, Title } from "@mantine/core";
+import { IconArrowLeft, IconGridDots, IconList, IconPlus, IconSearch, IconTrash } from "@tabler/icons-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { searchRecipes } from "../../lib/searchRecipes";
+import { supabase } from "../../supabase";
 
 type PantryViewMode = "grid" | "list";
 type ExpiryStatusFilter = "all" | "expired" | "critical" | "warning" | "fresh" | "no-date";
@@ -25,83 +26,6 @@ interface PantryProduct {
 interface PantryLocationState {
   householdId?: string;
 }
-
-/* Hardcoded values, to be REMOVED once functionality and data linked to DB is implemented. */
-const mockProducts: PantryProduct[] = [
-  {
-    id: "1",
-    name: "Milk",
-    householdId: "mock-household-1",
-    quantity: 2,
-    size: "1",
-    unit: "L",
-    expirationDate: "2026-04-21",
-    purchasedOn: "2026-04-18",
-    shopName: "ICA",
-    boughtBy: null,
-  },
-  {
-    id: "2",
-    name: "Eggs",
-    householdId: "mock-household-1",
-    quantity: 12,
-    size: null,
-    unit: null,
-    expirationDate: "2026-04-24",
-    purchasedOn: "2026-04-17",
-    shopName: "Lidl",
-    boughtBy: null,
-  },
-  {
-    id: "3",
-    name: "Spinach",
-    householdId: "mock-household-1",
-    quantity: 1,
-    size: "250",
-    unit: "gr",
-    expirationDate: "2026-04-20",
-    purchasedOn: "2026-04-15",
-    shopName: "Coop",
-    boughtBy: null,
-  },
-  {
-    id: "4",
-    name: "Rice",
-    householdId: "mock-household-1",
-    quantity: 1,
-    size: "1",
-    unit: "kg",
-    expirationDate: "2026-06-10",
-    purchasedOn: "2026-04-11",
-    shopName: "Willys",
-    boughtBy: null,
-  },
-  {
-    id: "5",
-    name: "Tomato Sauce",
-    householdId: "mock-household-1",
-    quantity: 3,
-    size: "500",
-    unit: "ml",
-    expirationDate: "2026-04-27",
-    purchasedOn: "2026-04-19",
-    shopName: "ICA",
-    boughtBy: null,
-  },
-  {
-    id: "6",
-    name: "Chicken Breast",
-    householdId: "mock-household-1",
-    quantity: 2,
-    size: "400",
-    unit: "gr",
-    expirationDate: "2026-04-18",
-    purchasedOn: "2026-04-16",
-    shopName: "Lidl",
-    boughtBy: null,
-  },
-];
-/* Data above to be REMOVED once functionality and data linked to DB is implemented. */
 
 /* Helper for getting the number of days remaining for expiring a product. */
 function getDaysUntilExpiry(expirationDate: string | null): number | null {
@@ -153,7 +77,6 @@ function renderExpiryBadge(daysUntilExpiry: number | null) {
   if (status === "warning") return <Badge color="yellow">Soon</Badge>;
   return <Badge color="green">Fresh</Badge>;
 }
-
 
 /* Helper for rendering the bottom status tag used in the grid view. */
 function renderGridStatusTag(daysUntilExpiry: number | null) {
@@ -207,10 +130,18 @@ function PantryGrid({
   products,
   selectedProducts,
   onToggleProduct,
+  confirmDeleteId,
+  onDeleteClick,
+  onDeleteConfirm,
+  onDeleteCancel,
 }: {
   products: PantryProduct[];
   selectedProducts: string[];
   onToggleProduct: (productId: string) => void;
+  confirmDeleteId: string | null;
+  onDeleteClick: (id: string) => void;
+  onDeleteConfirm: (id: string) => void;
+  onDeleteCancel: () => void;
 }) {
   if (!products.length) {
     return (
@@ -254,9 +185,23 @@ function PantryGrid({
 
               <Group justify="space-between" align="center">
                 {renderGridStatusTag(daysUntilExpiry)}
-                <ActionIcon variant="subtle" color="red" aria-label={`Delete ${product.name}`}>
-                  <IconTrash size={16} />
-                </ActionIcon>
+
+                {confirmDeleteId === product.id ? (
+                  <Group gap={6}>
+                    <Text size="xs" c="dimmed">Are you sure?</Text>
+                    <Button size="xs" variant="subtle" onClick={onDeleteCancel}>Cancel</Button>
+                    <Button size="xs" color="red" onClick={() => onDeleteConfirm(product.id)}>Delete</Button>
+                  </Group>
+                ) : (
+                  <ActionIcon
+                    variant="subtle"
+                    color="red"
+                    aria-label={`Delete ${product.name}`}
+                    onClick={() => onDeleteClick(product.id)}
+                  >
+                    <IconTrash size={16} />
+                  </ActionIcon>
+                )}
               </Group>
             </Stack>
           </Card>
@@ -271,10 +216,18 @@ function PantryAllProductsList({
   products,
   selectedProducts,
   onToggleProduct,
+  confirmDeleteId,
+  onDeleteClick,
+  onDeleteConfirm,
+  onDeleteCancel,
 }: {
   products: PantryProduct[];
   selectedProducts: string[];
   onToggleProduct: (productId: string) => void;
+  confirmDeleteId: string | null;
+  onDeleteClick: (id: string) => void;
+  onDeleteConfirm: (id: string) => void;
+  onDeleteCancel: () => void;
 }) {
   if (!products.length) {
     return (
@@ -307,9 +260,22 @@ function PantryAllProductsList({
         <Table.Td>{product.unit ?? "-"}</Table.Td>
         <Table.Td>{renderExpiryBadge(daysUntilExpiry)}</Table.Td>
         <Table.Td>
-          <ActionIcon variant="subtle" color="red" aria-label={`Delete ${product.name}`}>
-            <IconTrash size={16} />
-          </ActionIcon>
+          {confirmDeleteId === product.id ? (
+            <Group gap={6} wrap="nowrap">
+              <Text size="xs" c="dimmed">Sure?</Text>
+              <Button size="xs" variant="subtle" onClick={onDeleteCancel}>Cancel</Button>
+              <Button size="xs" color="red" onClick={() => onDeleteConfirm(product.id)}>Delete</Button>
+            </Group>
+          ) : (
+            <ActionIcon
+              variant="subtle"
+              color="red"
+              aria-label={`Delete ${product.name}`}
+              onClick={() => onDeleteClick(product.id)}
+            >
+              <IconTrash size={16} />
+            </ActionIcon>
+          )}
         </Table.Td>
       </Table.Tr>
     );
@@ -346,10 +312,139 @@ export function Pantry() {
   const navigate = useNavigate();
   const locationState = location.state as PantryLocationState | undefined;
   const householdId = locationState?.householdId;
+
+  const [products, setProducts] = useState<PantryProduct[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<PantryViewMode>("list");
   const [statusFilter, setStatusFilter] = useState<ExpiryStatusFilter>("all");
   const [searchValue, setSearchValue] = useState("");
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+
+  const [households, setHouseholds] = useState<{ id: string; house_name: string }[]>([]);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [newHouseholdId, setNewHouseholdId] = useState<string | null>(null);
+  const [newQuantity, setNewQuantity] = useState<number | string>(1);
+  const [newSize, setNewSize] = useState("");
+  const [newUnit, setNewUnit] = useState<string | null>(null);
+  const [newExpirationDate, setNewExpirationDate] = useState("");
+  const [newPrice, setNewPrice] = useState<number | string>("");
+
+  useEffect(() => {
+    void fetchProducts();
+    void fetchHouseholds();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [householdId]);
+
+  const fetchProducts = async () => {
+    setLoading(true);
+    let query = supabase
+      .from("product")
+      .select(`
+        id,
+        name,
+        household_id,
+        product_specs(quantity, size, unit, expiration_date)
+      `);
+
+    if (householdId) {
+      query = query.eq("household_id", householdId);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      setError("Could not load products");
+      setLoading(false);
+      return;
+    }
+
+    const mapped: PantryProduct[] = (data ?? []).map((p: any) => {
+      const specs = Array.isArray(p.product_specs) ? p.product_specs[0] : p.product_specs;
+      return {
+        id: p.id,
+        name: p.name,
+        householdId: p.household_id,
+        quantity: specs?.quantity ?? 1,
+        size: specs?.size ?? null,
+        unit: specs?.unit ?? null,
+        expirationDate: specs?.expiration_date ?? null,
+        purchasedOn: null,
+        shopName: null,
+        boughtBy: null,
+      };
+    });
+
+    setProducts(mapped);
+    setLoading(false);
+  };
+
+  const fetchHouseholds = async () => {
+    const { data } = await supabase.from("household").select("id, house_name");
+    setHouseholds(data ?? []);
+    if (householdId) setNewHouseholdId(householdId);
+  };
+
+  const handleCreate = async () => {
+    if (!newName.trim() || !newHouseholdId) {
+      setError("Name and household are required");
+      return;
+    }
+
+    setCreating(true);
+    setError(null);
+
+    const { data: product, error: productError } = await supabase
+      .from("product")
+      .insert({ name: newName.trim(), household_id: newHouseholdId })
+      .select()
+      .single();
+
+    if (productError) {
+      setError("Could not create product: " + productError.message);
+      setCreating(false);
+      return;
+    }
+
+    const { error: specsError } = await supabase.from("product_specs").insert({
+      product_id: product.id,
+      quantity: Number(newQuantity) || 1,
+      size: newSize || null,
+      unit: newUnit || null,
+      expiration_date: newExpirationDate || null,
+      price: newPrice !== "" ? Number(newPrice) : null,
+    });
+
+    if (specsError) {
+      setError("Could not save product specs: " + specsError.message);
+      setCreating(false);
+      return;
+    }
+
+    setNewName(""); setNewHouseholdId(householdId ?? null); setNewQuantity(1);
+    setNewSize(""); setNewUnit(null); setNewExpirationDate(""); setNewPrice("");
+    setShowCreateModal(false);
+    setCreating(false);
+    void fetchProducts();
+  };
+
+  const handleDelete = async (productId: string) => {
+    const { error } = await supabase
+      .from("product")
+      .delete()
+      .eq("id", productId);
+
+    if (error) {
+      setError("Could not delete product: " + error.message);
+      return;
+    }
+
+    setProducts((prev) => prev.filter((p) => p.id !== productId));
+    setSelectedProducts((prev) => prev.filter((id) => id !== productId));
+  };
 
   const handleToggleProduct = (productId: string) => {
     setSelectedProducts((current) =>
@@ -360,7 +455,7 @@ export function Pantry() {
   };
 
   const handleFindRecipes = async () => {
-    const selectedProductObjects = mockProducts.filter((product) =>
+    const selectedProductObjects = products.filter((product) =>
       selectedProducts.includes(product.id),
     );
     const ingredientNames = selectedProductObjects.map((product) => product.name);
@@ -375,7 +470,7 @@ export function Pantry() {
   /* Memoized list of products after applying search, filter and expiry ordering. */
   const visibleProducts = useMemo(() => {
     const normalizedSearch = searchValue.trim().toLowerCase();
-    return [...mockProducts]
+    return [...products]
       .filter((product) => {
         const daysUntilExpiry = getDaysUntilExpiry(product.expirationDate);
         const productStatus = getExpiryStatus(daysUntilExpiry);
@@ -402,7 +497,7 @@ export function Pantry() {
         const rightValue = rightDays === null ? Number.POSITIVE_INFINITY : rightDays;
         return leftValue - rightValue;
       });
-  }, [searchValue, statusFilter]);
+  }, [products, searchValue, statusFilter]);
 
   /* Helper label used to display the currently selected filter in the UI. */
   const selectedFilterLabel = useMemo(() => {
@@ -446,7 +541,16 @@ export function Pantry() {
           <Title order={1}>Pantry</Title>
           <Text c="dimmed">Manage your pantry items</Text>
         </div>
+        <Button leftSection={<IconPlus size={16} />} onClick={() => setShowCreateModal(true)}>
+          Add Product
+        </Button>
       </Group>
+
+      {error && (
+        <Paper withBorder p="md" bg="red.0">
+          <Text c="red">{error}</Text>
+        </Paper>
+      )}
 
       <Group justify="space-between" align="center" wrap="nowrap">
         <div style={{ flex: 1 }} />
@@ -522,26 +626,102 @@ export function Pantry() {
             <div>
               <Text fw={600}>All pantry products</Text>
               <Text size="sm" c="dimmed">
-                {visibleProducts.length} product{visibleProducts.length === 1 ? "" : "s"} · Filter: {selectedFilterLabel}
+                {loading
+                  ? "Loading..."
+                  : `${visibleProducts.length} product${visibleProducts.length === 1 ? "" : "s"} · Filter: ${selectedFilterLabel}`}
               </Text>
             </div>
           </Group>
 
-          {viewMode === "grid" ? (
+          {loading ? (
+            <Text c="dimmed">Loading products...</Text>
+          ) : viewMode === "grid" ? (
             <PantryGrid
               products={visibleProducts}
               selectedProducts={selectedProducts}
               onToggleProduct={handleToggleProduct}
+              confirmDeleteId={confirmDeleteId}
+              onDeleteClick={setConfirmDeleteId}
+              onDeleteConfirm={(id) => { setConfirmDeleteId(null); void handleDelete(id); }}
+              onDeleteCancel={() => setConfirmDeleteId(null)}
             />
           ) : (
             <PantryAllProductsList
               products={visibleProducts}
               selectedProducts={selectedProducts}
               onToggleProduct={handleToggleProduct}
+              confirmDeleteId={confirmDeleteId}
+              onDeleteClick={setConfirmDeleteId}
+              onDeleteConfirm={(id) => { setConfirmDeleteId(null); void handleDelete(id); }}
+              onDeleteCancel={() => setConfirmDeleteId(null)}
             />
           )}
         </Stack>
       </Paper>
+      <Modal
+        opened={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        title="Add Product"
+        centered
+      >
+        <Stack gap="sm">
+          <TextInput
+            label="Name"
+            placeholder="e.g. Fresh Milk"
+            required
+            value={newName}
+            onChange={(e) => setNewName(e.currentTarget.value)}
+          />
+          <Select
+            label="Household"
+            placeholder="Select a household"
+            required
+            data={households.map((h) => ({ value: h.id, label: h.house_name }))}
+            value={newHouseholdId}
+            onChange={setNewHouseholdId}
+          />
+          <TextInput
+            label="Expiration Date"
+            type="date"
+            value={newExpirationDate}
+            onChange={(e) => setNewExpirationDate(e.currentTarget.value)}
+          />
+          <NumberInput
+            label="Quantity"
+            min={1}
+            value={newQuantity}
+            onChange={setNewQuantity}
+          />
+          <TextInput
+            label="Size"
+            placeholder="e.g. 500"
+            value={newSize}
+            onChange={(e) => setNewSize(e.currentTarget.value)}
+          />
+          <Select
+            label="Unit"
+            placeholder="No unit"
+            clearable
+            data={["gr", "ml", "kg", "L"]}
+            value={newUnit}
+            onChange={setNewUnit}
+          />
+          <NumberInput
+            label="Price"
+            placeholder="e.g. 4.99"
+            min={0}
+            decimalScale={2}
+            value={newPrice}
+            onChange={setNewPrice}
+          />
+          <Group justify="flex-end" mt="sm">
+            <Button variant="subtle" onClick={() => setShowCreateModal(false)}>Cancel</Button>
+            <Button onClick={() => void handleCreate()} loading={creating}>
+              Add Product
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
     </Stack>
   );
 }

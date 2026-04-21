@@ -1,7 +1,7 @@
 import './Dashboard.css';
 import React, { useState, useRef, useEffect } from 'react';
-import { Paper, SimpleGrid, Text } from '@mantine/core';
-import { IconLayoutGrid, IconReceipt, IconShoppingCart, IconTrash } from '@tabler/icons-react';
+import { ActionIcon, Badge, Button, Card, Checkbox, Group, Paper, SimpleGrid, Stack, Text, Title } from '@mantine/core';
+import { IconLayoutGrid, IconPlus, IconReceipt, IconShoppingCart, IconTrash } from '@tabler/icons-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../../supabase';
 import { searchRecipes } from "../../lib/searchRecipes"
@@ -45,8 +45,6 @@ interface DashboardNavCards {
   icon: React.ReactNode;
 }
 
-// Filter types
-type FilterType = 'all' | 'expired' | 'critical' | 'warning' | 'normal';
 
 const dashboardNavCards: DashboardNavCards[] = [
   {
@@ -71,15 +69,14 @@ const dashboardNavCards: DashboardNavCards[] = [
 
 // ----------------------------------------------------------------------------
 
-// Products in Danger Component with Filters
-const ProductsInDanger: React.FC<{ products: Product[]; 
-                                   onDelete: (id: string) => Promise<void>;}> 
-      = ({ products, onDelete }) => {
+// Products in Danger Component
+const ProductsInDanger: React.FC<{
+  products: Product[];
+  onDelete: (id: string) => Promise<void>;
+}> = ({ products, onDelete }) => {
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
-  const [selectedHousehold, setSelectedHousehold] = useState<string>('all');
-  const [selectedFilterType, setSelectedFilterType] = useState<FilterType>('all');
-  const navigate = useNavigate();
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   const getDaysUntilExpiry = (expiryDate: string | null): number | null => {
     if (!expiryDate) return null;
@@ -90,182 +87,119 @@ const ProductsInDanger: React.FC<{ products: Product[];
     return Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
   };
 
-  const getPriorityLevel = (days: number | null): 'expired' | 'critical' | 'warning' | 'normal' => {
-    if (days === null) return 'normal';
-    if (days < 0) return 'expired';
-    if (days < 3) return 'critical';
-    if (days < 7) return 'warning';
-    return 'normal';
+  const getExpiryBadge = (days: number | null) => {
+    if (days === null) return <Badge variant="light">No date</Badge>;
+    if (days < 0) return <Badge color="red">Expired {Math.abs(days)}d ago</Badge>;
+    if (days === 0) return <Badge color="orange">Expires today</Badge>;
+    if (days < 3) return <Badge color="orange">Expires in {days}d</Badge>;
+    return <Badge color="yellow">Expires in {days}d</Badge>;
   };
 
-  const households = ['all', ...new Set(products.map(p => p.householdName))];
-
-  const filteredProducts = products.filter(product => {
-    const days = getDaysUntilExpiry(product.expiryDate);
-    const priority = getPriorityLevel(days);
-    if (selectedHousehold !== 'all' && product.householdName !== selectedHousehold) return false;
-    if (selectedFilterType !== 'all' && priority !== selectedFilterType) return false;
-    return true;
-  });
-
-  const sortedProducts = [...filteredProducts].sort((a, b) => {
+  const sortedProducts = [...products].sort((a, b) => {
     const da = getDaysUntilExpiry(a.expiryDate) ?? Infinity;
     const db = getDaysUntilExpiry(b.expiryDate) ?? Infinity;
     return da - db;
   });
 
-  const handleCheckboxChange = (productId: string) => {
-    setSelectedProducts(prev =>
-      prev.includes(productId) ? prev.filter(id => id !== productId) : [...prev, productId]
-    );
-  };
-
   const handleFindRecipes = async () => {
-    const selectedProductObjects = products.filter(p => selectedProducts.includes(p.id))
-    const ingredientNames = selectedProductObjects.map(p => p.name)
-    const householdId = selectedProductObjects[0]?.householdId
-    if (!householdId) return
-    const results = await searchRecipes(ingredientNames, householdId)
-    navigate('/recipes', { state: { recipes: results, householdId } })
-  };
-
-  const clearFilters = () => {
-    setSelectedHousehold('all');
-    setSelectedFilterType('all');
-    setSelectedProducts([]);
+    const selected = products.filter(p => selectedProducts.includes(p.id));
+    const ingredientNames = selected.map(p => p.name);
+    const householdId = selected[0]?.householdId;
+    if (!householdId) return;
+    const results = await searchRecipes(ingredientNames, householdId);
+    navigate('/recipes', { state: { recipes: results, householdId } });
   };
 
   if (!products.length) {
     return (
-      <div className="products-in-danger-empty">
-        <p>No products in danger of expiring</p>
-      </div>
+      <Paper withBorder p="xl" radius="md">
+        <Text c="dimmed">No products expiring soon.</Text>
+      </Paper>
     );
   }
 
   return (
-    <div className="products-in-danger-container">
-      <h2 className="section-title">These products will expire soon</h2>
+    <Stack gap="md">
+      <Title order={2} size="h3">Expiring soon</Title>
 
-      <div className="filter-section">
-
-        <div className="filter-group">
-          <label htmlFor="status-filter">Status:</label>
-          <select
-            id="status-filter"
-            value={selectedFilterType}
-            onChange={e => { setSelectedFilterType(e.target.value as FilterType); setSelectedProducts([]); }}
-            className="filter-select"
-          >
-            <option value="all">All Products</option>
-            <option value="expired">Expired Only</option>
-            <option value="critical">Critical (expires in less than 3 days)</option>
-            <option value="warning">Warning (expires in 3-7 days)</option>
-            <option value="normal">Normal (expires in more than 7 days)</option>
-          </select>
-        </div>
-
-        {(selectedHousehold !== 'all' || selectedFilterType !== 'all') && (
-          <button onClick={clearFilters} className="clear-filters-button">Clear Filters</button>
-        )}
-      </div>
-
-      <div className="results-count">
-        Showing {sortedProducts.length} product{sortedProducts.length !== 1 ? 's' : ''}
-        {selectedHousehold !== 'all' && ` from ${selectedHousehold}`}
-        {selectedFilterType !== 'all' && ` (${selectedFilterType})`}
-      </div>
-
-      {sortedProducts.length === 0 ? (
-        <div className="no-results">
-          <p>No products match the selected filters.</p>
-          <button onClick={clearFilters} className="clear-filters-link">Clear filters to see all products</button>
-        </div>
-      ) : (
-        <div className="products-grid">
-          {sortedProducts.map(product => {
-            const days = getDaysUntilExpiry(product.expiryDate);
-            const priority = getPriorityLevel(days ?? null);
-            return (
-              <div key={product.id} className={`product-card priority-${priority}`}>
-                <div className="checkbox-container">
-                  <input
-                    type="checkbox"
-                    id={`product-${product.id}`}
-                    checked={selectedProducts.includes(product.id)}
-                    onChange={() => handleCheckboxChange(product.id)}
-                    className="product-checkbox"
-                  />
-                  <label htmlFor={`product-${product.id}`} className="checkbox-label">Select</label>
-                </div>
-
-                  <div className="product-info">
-                  <h3 className="product-name">{product.name}</h3>
-                  {product.expiryDate && days !== null ? (
-                    <p className="product-detail">
-                      Expires: {new Date(product.expiryDate).toLocaleDateString()}
-                      {' '}<span className="days-left">
-                        {days < 0
-                          ? `(Expired ${Math.abs(days)} days ago)`
-                          : `(Expires in ${days} days)`}
-                      </span>
-                    </p>
-                  ) : (
-                    <p className="product-detail">No expiration date</p>
-                  )}
-                  <p className="product-detail">Quantity: {product.quantity}</p>
-                  <p className="product-detail">From household: {product.householdName}</p>
-                  {priority === 'expired' && <div className="expired-badge">Expired</div>}
-                  {priority === 'critical' && days !== null && (
-                    <div className="danger-badge critical">Use within {days} days</div>
-                  )}
-                  {priority === 'warning' && days !== null && (
-                    <div className="danger-badge warning">Use soon (expires in {days} days)</div>
-                  )}
-                </div>
-
-                {confirmDeleteId === product.id ? (
-                  <div className="product-actions">
-                    <span className="confirm-text">Are you sure?</span>
-                    <button
-                      className="btn-cancel-delete"
-                      onClick={() => setConfirmDeleteId(null)}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      className="btn-confirm-delete"
-                      onClick={() => {
-                        setConfirmDeleteId(null);
-                        void onDelete(product.id);
-                      }}
-                    >
-                      Delete
-                    </button>
+      <SimpleGrid cols={{ base: 1, md: 2, xl: 3 }}>
+        {sortedProducts.map(product => {
+          const days = getDaysUntilExpiry(product.expiryDate);
+          return (
+            <Card key={product.id} withBorder shadow="sm" radius="md" padding="lg">
+              <Stack gap="md">
+                <Group justify="space-between" align="flex-start">
+                  <div>
+                    <Text fw={600}>{product.name}</Text>
+                    <Text size="sm" c="dimmed">{product.householdName}</Text>
                   </div>
-                ) : (
-                  <button
-                    className="btn-delete-icon"
-                    onClick={() => setConfirmDeleteId(product.id)}
-                    title="Delete product"
-                  >
-                    <IconTrash size={16} />
-                  </button>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
+                  <Checkbox
+                    aria-label={`Select ${product.name}`}
+                    checked={selectedProducts.includes(product.id)}
+                    onChange={() =>
+                      setSelectedProducts(prev =>
+                        prev.includes(product.id)
+                          ? prev.filter(id => id !== product.id)
+                          : [...prev, product.id]
+                      )
+                    }
+                  />
+                </Group>
+
+                <Stack gap={4}>
+                  <Text size="sm">Quantity: {product.quantity}</Text>
+                  <Text size="sm">
+                    Expires:{' '}
+                    <Text span fw={600}>
+                      {product.expiryDate
+                        ? new Date(product.expiryDate).toLocaleDateString()
+                        : 'No date'}
+                    </Text>
+                  </Text>
+                </Stack>
+
+                <Group justify="space-between" align="center">
+                  {getExpiryBadge(days)}
+
+                  {confirmDeleteId === product.id ? (
+                    <Group gap={6}>
+                      <Text size="xs" c="dimmed">Are you sure?</Text>
+                      <Button size="xs" variant="subtle" onClick={() => setConfirmDeleteId(null)}>
+                        Cancel
+                      </Button>
+                      <Button
+                        size="xs"
+                        color="red"
+                        onClick={() => { setConfirmDeleteId(null); void onDelete(product.id); }}
+                      >
+                        Delete
+                      </Button>
+                    </Group>
+                  ) : (
+                    <ActionIcon
+                      variant="subtle"
+                      color="red"
+                      aria-label={`Delete ${product.name}`}
+                      onClick={() => setConfirmDeleteId(product.id)}
+                    >
+                      <IconTrash size={16} />
+                    </ActionIcon>
+                  )}
+                </Group>
+              </Stack>
+            </Card>
+          );
+        })}
+      </SimpleGrid>
 
       {selectedProducts.length > 0 && (
-        <div className="find-recipes-container">
-          <button onClick={handleFindRecipes} className="find-recipes-button">
+        <Group justify="center">
+          <Button onClick={() => void handleFindRecipes()}>
             Find Recipes ({selectedProducts.length} product{selectedProducts.length !== 1 ? 's' : ''} selected)
-          </button>
-        </div>
+          </Button>
+        </Group>
       )}
-    </div>
+    </Stack>
   );
 };
 
@@ -506,7 +440,9 @@ const Dashboard: React.FC = () => {
             Viewing household: {selectedHouseholdName ?? 'Choose a household'}
           </p>
         </div>
-        <button className="btn btn-primary" onClick={() => setShowCreateModal(true)}>+ Add Product</button>
+        <Button leftSection={<IconPlus size={16} />} onClick={() => setShowCreateModal(true)}>
+          Add Product
+        </Button>
       </div>
 
       {error && (
@@ -547,7 +483,19 @@ const Dashboard: React.FC = () => {
       {loading ? (
         <p className="loading-text">Loading products...</p>
       ) : (
-        <ProductsInDanger products={products} onDelete={handleDelete} />
+        //filter the products array in Dashboard before passing it to ProductsInDanger, keeping only products expiring in 2? days
+        <ProductsInDanger
+          products={products.filter(p => {
+            if (!p.expiryDate) return false;
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const expiry = new Date(p.expiryDate);
+            expiry.setHours(0, 0, 0, 0);
+            const days = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+            return days < 3;
+          })}
+          onDelete={handleDelete}
+        />
       )}
 
       <FavouriteRecipes recipes={favouriteRecipes} />
