@@ -1,418 +1,525 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
-import Tesseract from 'tesseract.js';
-import './Scan.css';
-import { supabase } from '../../supabase';
-import { Button, Center, Container, Paper, Space, Text } from '@mantine/core';
+import { useState, useRef, useEffect, type Dispatch, type SetStateAction, useCallback } from "react";
+import "./Scan.css";
+import { Alert, Box, Button, Card, Center, Checkbox, Container, Flex, Grid, Loader, NumberInput, Paper, Select, Stack, Text, TextInput, Title } from "@mantine/core";
+import { Dropzone, IMAGE_MIME_TYPE, type FileWithPath } from "@mantine/dropzone";
+import { IconReceipt } from "@tabler/icons-react";
+import { scanReceipt, type ReceiptData, type ReceiptItemData } from "../../api/scan";
+import { getHouseholds, type Household } from "../../api/household";
+import { insertProductWithSpecs, type PantryUnit, type Product, type ProductSpecs } from "../../api/product.ts";
+import { insertReceipt, type Receipt } from "../../api/receipt.ts";
 
-interface ExtractedData {
-  merchant: string;
-  date: string;
-  total: number;
-  items: Array<{name: string; price: number}>;
+const IMG_SIZE = 2000;
+
+interface ReadyState {
+    state: "ready";
+    message?: string;
 }
 
-export const Scan: React.FC = () => {
-  const [image, setImage] = useState<string | null>(null);
-  const [extractedData, setExtractedData] = useState<ExtractedData | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [ocrProgress, setOcrProgress] = useState(0);
-  const [error, setError] = useState<string | null>(null);
-  const [isDragActive, setIsDragActive] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+interface ProcessingState {
+    state: "processing";
+    file: Blob;
+}
 
-  const [didCapture, setDidCapture] = useState(false);
-  const [hasCamera, setHasCamera] = useState(false);
+interface FinishedState {
+    state: "finished";
+    image: string;
+    data: EditReceiptData;
+}
 
-  const handleFile = useCallback(async (file: Blob) => {
-    if (!file) return;
+interface ErrorState {
+    state: "error";
+    error: Error;
+}
 
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      setError('Please upload an image file');
-      return;
-    }
+type ScanState = ReadyState | ProcessingState | FinishedState | ErrorState;
 
-    // Validate file size (max 10MB)
-    if (file.size > 10 * 1024 * 1024) {
-      setError('File size must be less than 10MB');
-      return;
-    }
+interface EditReceiptData extends ReceiptData {
+    items: EditReceiptItemData[];
+}
 
-    setError(null);
-    setImage(null);
-    setExtractedData(null);
-    setIsProcessing(true);
-    setOcrProgress(0);
-    
-    // Create preview
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      setImage(e.target?.result as string);
-    };
-    reader.readAsDataURL(file);
-    
-    try {
-      const extractedText = await extractTextFromImage(file);
-      console.log('Extracted text:', extractedText); // For debugging
-      
-      const data = parseReceiptText(extractedText);
-      setExtractedData(data);
-      
-      if (supabase) {
-        await saveToDatabase(file, data);
-      }
-      
-    } catch (err) {
-      console.error('Error:', err);
-      setError('Sorry, something went wrong. Please try again with a clearer image.');
-    } finally {
-      setIsProcessing(false);
-    }
-  }, []);
+interface EditReceiptItemData extends ReceiptItemData {
+    key: string;
+    enabled: boolean;
+    unit: PantryUnit | null;
+    expirationDate: string | null;
+}
 
-  const videoOutputRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+export function Scan() {
+    const [state, setState] = useState<ScanState>({state: "ready"});
 
-  useEffect(() => {
-    let cancel = false;
-    let mediaStream: MediaStream | null = null;
-    void(load());
-    async function load() {
-      try {
-        mediaStream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            facingMode: "environment"
-          }
-        });
-        if (cancel) stop();
-        const videoOutput = videoOutputRef.current!;
-        videoOutput.srcObject = mediaStream;
-        await videoOutput.play();
-        setHasCamera(true);
-      } catch {
-        setHasCamera(false);
-      }
-    }
-    function stop() {
-      cancel = true;
-      if (!mediaStream) return;
-      mediaStream.getTracks().forEach(s => s.stop());
-    }
-    return stop;
-  }, []);
+    const [households, setHouseholds] = useState<Household[]>([]);
 
-  const takePhoto = () => {
-    const videoOutput = videoOutputRef.current!;
-    const canvas = canvasRef.current!;
-
-    const context = canvas.getContext("2d")!;
-
-    canvas.width = videoOutput.videoWidth;
-    canvas.height = videoOutput.videoHeight;
-
-    context.drawImage(videoOutput, 0, 0, canvas.width, canvas.height);
-
-    canvas.toBlob(blob => {
-      setDidCapture(true);
-      void(handleFile(blob!));
-    });
-  };
-
-  const extractTextFromImage = async (file: Blob): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      Tesseract.recognize(
-        file,
-        'eng',
-        {
-          logger: (m) => {
-            if (m.status === 'recognizing text') {
-              setOcrProgress(Math.floor(m.progress * 100));
+    useEffect(() => {
+        void load();
+        async function load() {
+            const result = await getHouseholds();
+            if (result.error) {
+                setState({state: "error", error: result.error});
+            } else {
+                setHouseholds(result.data);
             }
-          }
         }
-      ).then(({ data: { text } }) => {
-        resolve(text);
-      }).catch(reject);
-    });
-  };
+    }, []);
 
-  const parseReceiptText = (text: string): ExtractedData => {
-    const lines = text.split('\n');
-    
-    // Extract merchant (look for common store patterns or first non-empty line)
-    let merchant = "Unknown Store";
-    const storePatterns = [
-      /walmart/i, /target/i, /costco/i, /kroger/i, /aldi/i, /trader\s+joe/i,
-      /whole\s+foods/i, /cvs/i, /walgreens/i, /rite\s+aid/i, /home\s+depot/i,
-      /lowes/i, /best\s+buy/i, /amazon/i, /ebay/i
-    ];
-    
-    for (let i = 0; i < Math.min(10, lines.length); i++) {
-      const line = lines[i].trim();
-      if (line && line.length > 2 && line.length < 60) {
-        // Check if it matches a known store pattern
-        for (const pattern of storePatterns) {
-          if (pattern.test(line)) {
-            merchant = line;
-            break;
-          }
-        }
-        // If no pattern matched but it's a short line, use as merchant
-        if (merchant === "Unknown Store" && line.length < 40 && !line.match(/[0-9]/)) {
-          merchant = line;
-        }
-      }
-    }
-    
-    // Extract date
-    const datePatterns = [
-      /* eslint-disable no-useless-escape */
-      /\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}/,
-      /\d{4}[\/\-]\d{1,2}[\/\-]\d{1,2}/,
-      /(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{1,2},?\s+\d{4}/i,
-      /\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{4}/i
-      /* eslint-enable no-useless-escape */
-    ];
-    
-    let date = "Date not found";
-    for (const pattern of datePatterns) {
-      const match = text.match(pattern);
-      if (match) {
-        date = match[0];
-        break;
-      }
-    }
-    
-    // Extract total
-    const totalPatterns = [
-      /TOTAL\s*:?\s*\$?\s*(\d+\.\d{2})/i,
-      /AMOUNT\s*:?\s*\$?\s*(\d+\.\d{2})/i,
-      /BALANCE\s*:?\s*\$?\s*(\d+\.\d{2})/i,
-      /TOTAL\s+DUE\s*:?\s*\$?\s*(\d+\.\d{2})/i,
-      /AMOUNT\s+DUE\s*:?\s*\$?\s*(\d+\.\d{2})/i,
-      /\$\s*(\d+\.\d{2})\s*$/m
-    ];
-    
-    let total = 0;
-    for (const pattern of totalPatterns) {
-      const match = text.match(pattern);
-      if (match) {
-        total = parseFloat(match[1]);
-        break;
-      }
-    }
-    
-    // Extract items (simplified - look for lines with $ amounts)
-    const items: Array<{name: string; price: number}> = [];
-    for (const line of lines) {
-      // Skip lines that are likely headers or totals
-      const skipTerms = ['total', 'subtotal', 'tax', 'balance', 'amount', 'change', 'cash', 'card', 'thank', 'visit', 'store', 'phone', 'www'];
-      const shouldSkip = skipTerms.some(term => line.toLowerCase().includes(term));
-      
-      if (!shouldSkip) {
-        const priceMatch = line.match(/\$\s*(\d+\.\d{2})/);
-        if (priceMatch) {
-          const price = parseFloat(priceMatch[1]);
-          const name = line.replace(priceMatch[0], '').trim();
-          if (name && price > 0 && name.length > 1 && price < total) {
-            items.push({ name, price });
-          }
-        }
-      }
-    }
-    
-    // Limit to reasonable number of items
-    const uniqueItems = items.slice(0, 20);
-    
-    return { merchant, date, total, items: uniqueItems };
-  };
-
-  const saveToDatabase = async (file: Blob | File, data: ExtractedData) => {
-    if (!supabase) return;
-    
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        console.log('User not logged in - skipping database save');
-        return;
-      }
-
-      const fileExt = file instanceof File ? file.name.split('.').pop() : "png";
-      const fileName = `${user.id}/${Date.now()}-receipt.${fileExt}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('receipts')
-        .upload(fileName, file);
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('receipts')
-        .getPublicUrl(fileName);
-
-      const { error: insertError } = await supabase
-        .from('receipts')
-        .insert({
-          user_id: user.id,
-          image_url: publicUrl,
-          merchant: data.merchant,
-          date: data.date,
-          total: data.total,
-          items: data.items
-        });
-        
-      if (insertError) throw insertError;
-      
-      console.log('Receipt saved to database!');
-    } catch (err) {
-      console.error('Failed to save to database:', err);
-    }
-  };
-
-  const onFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    setDidCapture(true);
-    void(handleFile(file));
-  };
-
-  const onDragOver = (event: React.DragEvent) => {
-    event.preventDefault();
-    setIsDragActive(true);
-  };
-
-  const onDragLeave = (event: React.DragEvent) => {
-    event.preventDefault();
-    setIsDragActive(false);
-  };
-
-  const onDrop = (event: React.DragEvent) => {
-    event.preventDefault();
-    setIsDragActive(false);
-    const file = event.dataTransfer.files?.[0];
-    if (file && file.type.startsWith('image/')) {
-      void(handleFile(file));
-    } else {
-      setError('Please drop a valid image file');
-    }
-  };
-
-  return (
-    <Container size="md" p="md">
-      <Paper shadow="md" p="md">
-        <canvas ref={canvasRef} style={{display: "none"}}></canvas>
-
-        <Center className="scan-video-container" style={hasCamera && !didCapture ? {} : {display: "none"}}>
-          <video className="scan-video" ref={videoOutputRef}>Video stream not available.</video>
-          <Button className="scan-btn" size="lg" onClick={takePhoto}>Scan</Button>
-        </Center>
-
-        <Center style={hasCamera && didCapture ? {} : {display: "none"}}>
-          <Button size="lg" onClick={() => setDidCapture(false)}>New scan</Button>
-        </Center>
-
-        {!didCapture &&
-          <>
-            {hasCamera &&
-              <>
-                <Space h="md"/>
-                <Center>
-                  <Text size="lg">Or upload an image</Text>
-                </Center>
-              </>
-            }
-            
-            <Space h="md"/>
-            <div
-              className={`scan-dropzone ${isDragActive ? 'scan-dropzone-active' : ''}`}
-              onDragOver={onDragOver}
-              onDragLeave={onDragLeave}
-              onDrop={onDrop}
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/jpeg,image/png,image/jpg"
-                onChange={onFileSelect}
-                className="scan-file-input"
-              />
-              {isDragActive ? (
-                <p className="scan-dropzone-text">Drop your receipt here...</p>
-              ) : (
-                <div className="scan-dropzone-content">
-                  <p className="scan-dropzone-icon">camera icon</p>
-                  <p className="scan-dropzone-text">Drag and drop a receipt image, or click to select</p>
-                  <p className="scan-dropzone-hint">
-                    Supports JPEG, PNG (max 10MB)
-                  </p>
-                </div>
-              )}
-            </div>
-          </>
-        }
-
-        {error && (
-          <div className="scan-error-message">
-            ❌ {error}
-          </div>
-        )}
-
-        {isProcessing && (
-          <div className="scan-progress-container">
-            <div className="scan-progress-bar-wrapper">
-              <div
-                className="scan-progress-bar"
-                style={{ width: `${ocrProgress}%` }}
-              >
-                {ocrProgress > 0 && `${ocrProgress}%`}
-              </div>
-            </div>
-            <p className="scan-progress-text">
-              {ocrProgress < 100 ? 'Reading your receipt...' : 'Processing complete!'}
-            </p>
-          </div>
-        )}
-        {image && !isProcessing && extractedData && (
-          <div className="scan-results-container">
-            <div className="scan-image-section">
-              <h3 className="scan-section-title">Your Receipt</h3>
-              <img src={image} alt="Receipt" className="scan-receipt-image" />
-            </div>
-            <div className="scan-data-section">
-              <h3 className="scan-section-title">Extracted Information</h3>
-              <div className="scan-data-card">
-                <p><strong>Store:</strong> {extractedData.merchant}</p>
-                <p><strong>Date:</strong> {extractedData.date}</p>
-                <p><strong>Total:</strong> ${extractedData.total.toFixed(2)}</p>
-        
-                <p><strong>🛒 Items ({extractedData.items.length}):</strong></p>
-                {extractedData.items.length > 0 ? (
-                  <ul className="scan-items-list">
-                    {extractedData.items.map((item, index) => (
-                      <li key={index} className="scan-item-row">
-                        {item.name} - <strong>${item.price.toFixed(2)}</strong>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="scan-no-items-message">No items detected. Try a clearer receipt image.</p>
-                )}
-        
-                <button
-                  className="scan-copy-button"
-                  onClick={() => {
-                    void(navigator.clipboard.writeText(JSON.stringify(extractedData, null, 2)));
-                    alert('Data copied to clipboard!');
-                  }}
-                >
-                  Copy Data
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-      </Paper>
-    </Container>
-  );
+    return (
+        <Container size="md" p="md">
+            <Paper shadow="md" p="md">
+                {state.state == "ready"      && <ScanReady      state={state} setState={setState} />}
+                {state.state == "processing" && <ScanProcessing state={state} setState={setState} />}
+                {state.state == "finished"   && <ScanFinished   state={state} setState={setState} households={households} />}
+                {state.state == "error"      && <ScanError      state={state} setState={setState} />}
+            </Paper>
+        </Container>
+    );
 };
+
+interface ScanReadyProps {
+    state: ReadyState;
+    setState: Dispatch<SetStateAction<ScanState>>;
+}
+
+function ScanReady(props: ScanReadyProps) {
+    const {state, setState} = props;
+
+    const [camera, setCamera] = useState(false);
+
+    const videoOutputRef = useRef<HTMLVideoElement>(null);
+
+    // Setup the camera
+    useEffect(() => {
+        let cancel = false;
+        let mediaStream: MediaStream | null = null;
+
+        void(load());
+
+        async function load() {
+            try {
+                mediaStream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        facingMode: "environment"
+                    }
+                });
+                if (cancel) stop();
+                const videoOutput = videoOutputRef.current!;
+                videoOutput.srcObject = mediaStream;
+                await videoOutput.play();
+                setCamera(true);
+            } catch {
+                setCamera(false);
+            }
+        }
+
+        function stop() {
+            cancel = true;
+            if (!mediaStream) return;
+            mediaStream.getTracks().forEach(s => s.stop());
+        }
+
+        return stop;
+    }, [setState]);
+
+    const takePhoto = () => {
+        const videoOutput = videoOutputRef.current!;
+
+        const canvas = document.createElement("canvas");
+
+        const context = canvas.getContext("2d")!;
+
+        canvas.width = videoOutput.videoWidth;
+        canvas.height = videoOutput.videoHeight;
+
+        context.drawImage(videoOutput, 0, 0, canvas.width, canvas.height);
+
+        canvas.toBlob(file => {
+            if (file) setState({state: "processing", file});
+        });
+    };
+
+    const onDrop = (files: FileWithPath[]) => {
+        const file = files[0];
+        if (!file) return;
+        setState({state: "processing", file});
+    };
+
+    return (
+        <>
+            {state.message &&
+                <Alert variant="light" color="green" mb="md">
+                    <Center>
+                        {state.message}
+                    </Center>
+                </Alert>
+            }
+
+            <Center pos="relative" style={camera ? {} : {display: "none"}}>
+                <video className="scan-video" ref={videoOutputRef}>Video stream not available.</video>
+                <Button pos="absolute" bottom={20} size="lg" onClick={takePhoto}>Scan</Button>
+            </Center>
+
+            {camera &&
+                <Center mt="md">
+                    <Text size="lg">Or upload an image</Text>
+                </Center>
+            }
+
+            <Dropzone
+                onDrop={onDrop}
+                accept={IMAGE_MIME_TYPE}
+                mt="md">
+
+                <Stack align="center" p="md">
+                    <IconReceipt size={54}/>
+                    <Text>Drag and drop a receipt image, or click to select</Text>
+                </Stack>
+
+            </Dropzone>
+        </>
+    );
+}
+
+interface ScanProcessingProps {
+    state: ProcessingState;
+    setState: Dispatch<SetStateAction<ScanState>>;
+}
+
+function ScanProcessing(props: ScanProcessingProps) {
+    const {state, setState} = props;
+
+    useEffect(() => {
+        void process();
+
+        async function process() {
+            // Resize image
+            const bitmap = await window.createImageBitmap(state.file);
+            const canvas = document.createElement("canvas");
+            const aspectRatio = bitmap.width / bitmap.height;
+
+            if (aspectRatio >= 1) { // landscape
+                canvas.width = IMG_SIZE;
+                canvas.height = IMG_SIZE / aspectRatio;
+            } else { // portrait
+                canvas.width = IMG_SIZE * aspectRatio;
+                canvas.height = IMG_SIZE;
+            }
+
+            const ctx = canvas.getContext("2d")!;
+            ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+            const image = canvas.toDataURL("image/jpeg");
+
+            // Recognize
+            // const result = await Tesseract.recognize(image, "swe", {});
+            // setState({state: "finished", image, data: result.data.text});
+
+            const result = await scanReceipt(image);
+
+            if (result.error) {
+                setState({state: "error", error: result.error as Error});
+            } else {
+                const data: EditReceiptData = {
+                    ...result.data!,
+                    items: result.data!.items.map(item => {
+
+                        let expirationDate: string | null = null;
+
+                        if (item.estimatedExpirationDays) {
+                            const ts = Date.now() + item.estimatedExpirationDays * 24 * 60 * 60 * 1000;
+                            expirationDate = new Date(ts).toISOString().split("T")[0];
+                        }
+
+                        return {
+                            ...item,
+                            enabled: true,
+                            key: self.crypto.randomUUID(),
+                            unit: typeof item.weight == "number" ? "kg" : null,
+                            expirationDate,
+                        };
+                    })
+                };
+
+                setState({state: "finished", image, data});
+            }
+        }
+
+    }, [state.file, setState]);
+
+    return (
+        <>
+            <Stack align="center">
+                <Loader size="lg" mt="md"/>
+                <Text mt="md">Reading your receipt...</Text>
+            </Stack>
+        </>
+    );
+}
+
+interface ScanFinishedProps {
+    state: FinishedState;
+    setState: Dispatch<SetStateAction<ScanState>>;
+    households: Household[];
+}
+
+function ScanFinished(props: ScanFinishedProps) {
+    const {state, setState, households} = props;
+
+    const [saving, setSaving] = useState(false);
+
+    const [selectedHousehold, setSelectedHousehold] = useState<string | null>(null);
+
+    const setItem = useCallback((newItem: EditReceiptItemData) => setState(s => {
+        const oldState = s as FinishedState;
+
+        const data: EditReceiptData = {
+            ...oldState.data,
+            items: oldState.data.items.map(item => item.key == newItem.key ? newItem : item),
+        };
+
+        const newState = {
+            ...oldState,
+            data,
+        };
+
+        return newState;
+    }), [setState]);
+
+    const setStoreName = (newName: string) => setState(s => {
+        const oldState = s as FinishedState;
+        return {
+            ...oldState,
+            data: {
+                ...oldState.data,
+                storeName: newName,
+            }
+        }
+    });
+
+    const setPurchaseDate = (newPurchaseDate: string | null) => setState(s => {
+        const oldState = s as FinishedState;
+        return {
+            ...oldState,
+            data: {
+                ...oldState.data,
+                purchaseDate: newPurchaseDate,
+            }
+        }
+    });
+
+    const setTotalPrice = (newTotalPrice: number | null) => setState(s => {
+        const oldState = s as FinishedState;
+        return {
+            ...oldState,
+            data: {
+                ...oldState.data,
+                totalPrice: newTotalPrice,
+            }
+        }
+    });
+
+    const handleSave = async () => {
+        if (!selectedHousehold) return;
+        setSaving(true);
+        try {
+
+            const items: [Product, Omit<ProductSpecs, "product_id">][] = [];
+
+            const receipt: Receipt = {
+                household_id: selectedHousehold,
+                store_name: state.data.storeName,
+                total: state.data.totalPrice ?? 0,
+                purchase_at: state.data.purchaseDate ?? new Date().toISOString().split("T")[0],
+            };
+
+            const receipt_res = await insertReceipt(receipt);
+            if (receipt_res.error) throw receipt_res.error;
+
+            for (const item of state.data.items) {
+                if (!item.name) continue;
+                if (!item.enabled) continue;
+                items.push([
+                    {
+                        household_id: selectedHousehold,
+                        name: item.name,
+                        receipt_id: receipt_res.data.id!,
+                    },
+                    {
+                        quantity: item.quantity ?? 1,
+                        price: item.totalPrice,
+                        size: item.weight?.toString() ?? null,
+                        expiration_date: item.expirationDate,
+                        unit: item.unit,
+                    }
+                ]);
+            }
+
+            await Promise.all(items.map(async (item) => {
+                const result = await insertProductWithSpecs(...item);
+                if (result.error) throw result.error;
+            }));
+
+            // setSaving(false);
+            setState({state: "ready", message: "Products added"});
+        } catch (error) {
+            setState({state: "error", error: error as Error});
+        }
+    };
+
+    const disabled = saving || !selectedHousehold;
+
+    return (
+        <>
+            <Center>
+                <Button size="lg" onClick={() => setState({state: "ready"})}>New scan</Button>
+            </Center>
+
+            <Grid mt="md">
+                <Grid.Col span={{base: 12, md: 5}}>
+                    <Title order={4}>Your Receipt</Title>
+                    <Box component="img" src={state.image} alt="Receipt" bdrs="md" mt="md" pos="sticky" top={20} />
+                </Grid.Col>
+
+                <Grid.Col span={{base: 12, md: 7}}>
+                    <Title order={4}>Identified products</Title>
+                    <Stack gap="sm" mt="md">
+                        {state.data.items.map(p => (
+                            <ProductCard key={p.key} item={p} setItem={setItem}/>
+                        ))}
+
+                        <Card shadow="none" withBorder>
+                            <Title order={4}>Save receipt and products</Title>
+
+                            <Text c="dimmed">Pre filled expiration dates are estimates.</Text>
+
+                            <Select
+                                label="Household"
+                                placeholder="Household"
+                                required
+                                data={households.map((h) => ({ value: h.id, label: h.house_name }))}
+                                value={selectedHousehold}
+                                onChange={setSelectedHousehold}
+                                mt="xs"
+                                />
+
+                            <TextInput label="Store name"
+                                value={state.data.storeName ?? ""}
+                                onChange={e => setStoreName(e.target.value)}
+                                mt="xs"
+                                />
+
+                            <Flex gap="sm" mt="xs">
+                                <TextInput
+                                    label="Purchase date"
+                                    type="date"
+                                    value={state.data.purchaseDate ?? ""}
+                                    onChange={(e) => setPurchaseDate(e.target.value || null)}
+                                    flex={1}
+                                    />
+
+                                <NumberInput label="Total price"
+                                    value={state.data.totalPrice ?? ""}
+                                    onChange={val => setTotalPrice(typeof val == "number" ? val : null)}
+                                    decimalScale={2}
+                                    fixedDecimalScale
+                                    flex={1}
+                                    />
+                            </Flex>
+                            
+                            <Flex justify="end" mt="md">
+                                <Button disabled={disabled} loading={saving} onClick={() => void handleSave()}>Save selected</Button>
+                            </Flex>
+                        </Card>
+                    </Stack>
+                </Grid.Col>
+            </Grid>
+        </>
+    );
+}
+
+interface ScanErrorProps {
+    state: ErrorState;
+    setState: Dispatch<SetStateAction<ScanState>>;
+}
+
+function ScanError(props: ScanErrorProps) {
+    const {state, setState} = props;
+    return (
+        <>
+            <Alert variant="light" color="red" mt="md">
+                <Center>
+                    {state.error.message}
+                </Center>
+            </Alert>
+            <Center>
+                <Button size="lg" onClick={() => setState({state: "ready"})}>Retry</Button>
+            </Center>
+        </>
+    );
+}
+
+interface ProductCardProps {
+    item: EditReceiptItemData;
+    setItem: (item: EditReceiptItemData) => void;
+}
+
+function ProductCard(props: ProductCardProps) {
+    const { item, setItem } = props;   
+    
+    return (
+        <Card shadow="none" withBorder pos="relative">
+
+            <TextInput label="Name"
+                required
+                value={item.name ?? ""}
+                onChange={e => setItem({...item, name: e.target.value})}
+                />
+
+            <Checkbox
+                checked={item.enabled && !!item.name}
+                disabled={!item.name}
+                onChange={e => setItem({...item, enabled: e.target.checked})}
+                pos="absolute" right={8} top={8} size="md"
+                />
+            
+            <Flex gap="sm" mt="xs">
+                <NumberInput label="Quantity"
+                    value={item.quantity ?? ""}
+                    onChange={val => setItem({...item, quantity: typeof val == "number" ? val : null})}
+                    allowDecimal={false}
+                    flex={1}
+                    />
+
+                <NumberInput label="Size"
+                    value={item.weight ?? ""}
+                    onChange={val => setItem({...item, weight: typeof val == "number" ? val : null})}
+                    decimalScale={2}
+                    fixedDecimalScale
+                    flex={1}
+                    />
+
+                <Select
+                    label="Unit"
+                    placeholder="No unit"
+                    clearable
+                    data={["gr", "ml", "kg", "L"]}
+                    value={item.unit}
+                    onChange={val => setItem({...item, unit: val})}
+                    flex={1}
+                    />
+
+                <NumberInput label="Price"
+                    value={item.totalPrice ?? ""}
+                    onChange={val => setItem({...item, totalPrice: typeof val == "number" ? val : null})}
+                    decimalScale={2}
+                    fixedDecimalScale
+                    flex={1}
+                    />
+            </Flex>
+
+            <TextInput
+                label="Expiration date"
+                type="date"
+                value={item.expirationDate || ""}
+                onChange={(e) => setItem({...item, expirationDate: e.target.value})}
+                />
+            
+        </Card>
+    );
+}
