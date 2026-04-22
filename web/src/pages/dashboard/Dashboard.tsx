@@ -68,7 +68,7 @@ const dashboardNavCards: DashboardNavCards[] = [
     title: 'Receipts',
     description: 'Open recent receipts and review purchases already captured for the household.',
     route: '/receipts',
-    icon: <IconReceipt size={24} stroke={1.8} />,
+    icon: <IconReceiptEuro size={24} stroke={1.8} />,
   },
 ];
 
@@ -501,167 +501,176 @@ const Dashboard: React.FC = () => {
   const [favouriteRecipes, setFavouriteRecipes] = useState<FavRecipe[]>([]);
 
   return (
-    <Container size="lg" py="xl">
-      <Stack gap="xl">
+  <Container size="lg" py="xl">
+    <Stack gap="xl">
+      {/* Header */}
+      <Group justify="space-between" align="flex-start" wrap="wrap" gap="sm">
+        <div>
+          <Title order={1}>Hello {displayName ?? 'there'}, welcome back</Title>
+          <Text c="dimmed" mt={4}>
+            Viewing household: {selectedHouseholdName ?? 'Choose a household'}
+          </Text>
+        </div>
+        <Button leftSection={<IconPlus size={16} />} onClick={() => setShowCreateModal(true)}>
+          Add Product
+        </Button>
+      </Group>
 
-        {/* Header */}
-        <Group justify="space-between" align="flex-start" wrap="wrap" gap="sm">
-          <div>
-            <Title order={1}>Hello {displayName ?? 'there'}, welcome back</Title>
-            <Text c="dimmed" mt={4}>
-              Viewing household: {selectedHouseholdName ?? 'Choose a household'}
+      {error && (
+        <Alert color="red" withCloseButton onClose={() => setError(null)}>
+          {error}
+        </Alert>
+      )}
+
+      {/* Nav cards */}
+      <SimpleGrid
+        cols={{ base: 2, sm: 4 }}
+        spacing="lg"
+        className="dashboard-nav"
+        aria-label="Dashboard navigation"
+      >
+        {dashboardNavCards.map((card) => (
+          <Paper
+            key={card.route}
+            component="button"
+            className="dashboard-nav-card"
+            onClick={() => {
+              void navigate(card.route, {
+                state: { householdId: selectedHouseholdId, householdName: selectedHouseholdName }
+              })
+            }}
+            radius="lg"
+            withBorder
+          >
+            <span className="dashboard-nav-card__icon" aria-hidden="true">
+              {card.icon}
+            </span>
+            <Text component="h2" className="dashboard-nav-card__title">
+              {card.title}
             </Text>
-          </div>
-          <Button leftSection={<IconPlus size={16} />} onClick={() => setShowCreateModal(true)}>
-            Add Product
-          </Button>
-        </Group>
+            <Text className="dashboard-nav-card__description">
+              {card.description}
+            </Text>
+          </Paper>
+        ))}
+      </SimpleGrid>
 
-        {error && (
-          <Alert color="red" withCloseButton onClose={() => setError(null)}>
-            {error}
-          </Alert>
-        )}
-
-        {/* Nav cards */}
-        <SimpleGrid
-          cols={{ base: 2, sm: 4 }}
-          spacing="lg"
-          className="dashboard-nav"
-          aria-label="Dashboard navigation"
-        >
-          {dashboardNavCards.map((card) => (
-            <Paper
-              key={card.route ?? card.action}
-              component="button"
-              className="dashboard-nav-card"
-              onClick={() => {
-                if (card.action === 'food-restrictions') {
-                  setShowFoodRestrictions(true)
-                } else if (card.route) {
-                  void navigate(card.route, {
-                    state: { householdId: selectedHouseholdId, householdName: selectedHouseholdName }
-                  })
-                }
-              }}
-              radius="lg"
-              withBorder
-            >
-              <span className="dashboard-nav-card__icon" aria-hidden="true">
-                {card.icon}
-              </span>
-              <Text component="h2" className="dashboard-nav-card__title">
-                {card.title}
-              </Text>
-              <Text className="dashboard-nav-card__description">
-                {card.description}
-              </Text>
-            </Paper>
-          ))}
-        </SimpleGrid>
-
-        {/* Expiring products */}
-        {loading ? (
-          <Group justify="center" py="xl"><Loader /></Group>
-        ) : (
-          <ProductsInDanger
-            products={products.filter(p => {
-              if (!p.expiryDate) return false;
-              const today = new Date();
-              today.setHours(0, 0, 0, 0);
-              const expiry = new Date(p.expiryDate);
-              expiry.setHours(0, 0, 0, 0);
-              const days = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-              return days < 3;
-            })}
-            onDelete={handleDelete}
-          />
-        )}
-
-        {/* Household members */}
-        {selectedHouseholdId && (
-          <HouseholdMembers
-            householdId={selectedHouseholdId}
-            inviteId={households.find(h => h.id === selectedHouseholdId)?.invite_id}
-          />
-        )}
-
-        {/* Favourite recipes */}
-        <FavouriteRecipes recipes={favouriteRecipes} />
-
-      </Stack>
-
-      {selectedHouseholdId && (
-        <HouseholdBudgetSummary 
-          householdId={selectedHouseholdId} 
-          userId={userId || undefined} // You'll need to get the current user ID
+      {/* Expiring products */}
+      {loading ? (
+        <Group justify="center" py="xl"><Loader /></Group>
+      ) : (
+        <ProductsInDanger
+          products={products.filter(p => {
+            if (!p.expiryDate) return false;
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const expiry = new Date(p.expiryDate);
+            expiry.setHours(0, 0, 0, 0);
+            const days = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+            return days < 3;
+          })}
+          onDelete={handleDelete}
         />
       )}
 
+      {/* Household members */}
+      {selectedHouseholdId && (
+        <HouseholdMembers
+          householdId={selectedHouseholdId}
+          inviteId={households.find(h => h.id === selectedHouseholdId)?.invite_id}
+        />
+      )}
+
+      {/* Favourite recipes */}
       <FavouriteRecipes recipes={favouriteRecipes} />
 
-      {showCreateModal && (
-        <div className="modal-overlay" onClick={() => setShowCreateModal(false)}>
-          <div className="modal" onClick={e => e.stopPropagation()}>
-            <h2>Add Product</h2>
-
-            <div className="modal-field">
-              <label>Name *</label>
-              <input type="text" value={newName} onChange={e => setNewName(e.target.value)} placeholder="e.g. Fresh Milk" />
-            </div>
-
-            <div className="modal-field">
-              <label>Household *</label>
-              <select value={newHouseholdId} onChange={e => setNewHouseholdId(e.target.value)}>
-                <option value="">Select a household</option>
-                {households.map(h => (
-                  <option key={h.id} value={h.id}>{h.house_name}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="modal-field">
-              <label>Expiration Date</label>
-              <input type="date" value={newExpirationDate} onChange={e => setNewExpirationDate(e.target.value)} />
-            </div>
-
-            <div className="modal-field">
-              <label>Quantity</label>
-              <input type="number" min="1" value={newQuantity} onChange={e => setNewQuantity(e.target.value)} />
-            </div>
-
-            <div className="modal-field">
-              <label>Size</label>
-              <input type="text" value={newSize} onChange={e => setNewSize(e.target.value)} placeholder="e.g. 500" />
-            </div>
-
-            <div className="modal-field">
-              <label>Unit</label>
-              <select value={newUnit} onChange={e => setNewUnit(e.target.value)}>
-                <option value="">No unit</option>
-                <option value="gr">gr</option>
-                <option value="ml">ml</option>
-                <option value="kg">kg</option>
-                <option value="L">L</option>
-              </select>
-            </div>
-
-            <div className="modal-field">
-              <label>Price</label>
-              <input type="number" step="0.01" min="0" value={newPrice} onChange={e => setNewPrice(e.target.value)} placeholder="e.g. 4.99" />
-            </div>
-
-            <div className="modal-actions">
-              <button className="btn btn-secondary" onClick={() => setShowCreateModal(false)}>Cancel</button>
-              <button className="btn btn-primary" onClick={() => void handleCreate()} disabled={creating}>
-                {creating ? 'Adding...' : 'Add Product'}
-              </button>
-            </div>
-          </div>
-        </div>
+      {/* Budget Summary */}
+      {selectedHouseholdId && (
+        <HouseholdBudgetSummary 
+          householdId={selectedHouseholdId} 
+          userId={userId || undefined}
+        />
       )}
-    </div>
-  );
+    </Stack>
+
+    {/* Add Product Modal - Using Mantine Modal instead of custom div */}
+    <Modal 
+      opened={showCreateModal} 
+      onClose={() => setShowCreateModal(false)}
+      centered 
+      radius="lg" 
+      title={<Title order={3}>Add Product</Title>}
+    >
+      <Stack gap="md">
+        <TextInput 
+          label="Name" 
+          required 
+          placeholder="e.g. Fresh Milk"
+          value={newName} 
+          onChange={e => setNewName(e.target.value)} 
+        />
+        
+        <Select 
+          label="Household" 
+          required 
+          placeholder="Select a household"
+          value={newHouseholdId} 
+          onChange={v => setNewHouseholdId(v ?? "")}
+          data={households.map(h => ({ value: h.id, label: h.house_name }))} 
+        />
+        
+        <TextInput 
+          label="Expiration Date" 
+          type="date"
+          value={newExpirationDate}
+          onChange={e => setNewExpirationDate(e.target.value)} 
+        />
+        
+        <NumberInput 
+          label="Quantity" 
+          min={1} 
+          value={newQuantity ? parseInt(newQuantity) : 1}
+          onChange={v => setNewQuantity(String(v))} 
+        />
+        
+        <TextInput 
+          label="Size" 
+          placeholder="e.g. 500"
+          value={newSize} 
+          onChange={e => setNewSize(e.target.value)} 
+        />
+        
+        <Select 
+          label="Unit" 
+          placeholder="No unit" 
+          clearable
+          value={newUnit || null} 
+          onChange={v => setNewUnit(v ?? "")}
+          data={[
+            { value: "gr", label: "gr" },
+            { value: "ml", label: "ml" },
+            { value: "kg", label: "kg" },
+            { value: "L", label: "L" },
+          ]} 
+        />
+        
+        <NumberInput 
+          label="Price" 
+          placeholder="e.g. 4.99" 
+          min={0} 
+          decimalScale={2}
+          value={newPrice ? parseFloat(newPrice) : ""} 
+          onChange={v => setNewPrice(String(v))} 
+        />
+        
+        <Group justify="flex-end" gap="sm">
+          <Button variant="default" onClick={() => setShowCreateModal(false)}>Cancel</Button>
+          <Button onClick={() => void handleCreate()} loading={creating}>Add Product</Button>
+        </Group>
+      </Stack>
+    </Modal>
+  </Container>
+);
 };
 
 export default Dashboard;
