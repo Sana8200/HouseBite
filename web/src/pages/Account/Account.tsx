@@ -309,10 +309,10 @@ export function Account(props: AccountProps) {
                             </Group>
                         </Card>
                         <Space h="md"/>
-                        <RestrictionCategory label="Intolerance's" items={intolerances}
+                        <RestrictionCategory label="Intolerances" items={intolerances}
                             togglingId={togglingId} toggleRestriction={id => void toggleRestriction(id)} userRestrictions={userRestrictions}/>
                         <Space h="md"/>
-                        <RestrictionCategory label="Diets's" items={diets}
+                        <RestrictionCategory label="Diets" items={diets}
                             togglingId={togglingId} toggleRestriction={id => void toggleRestriction(id)} userRestrictions={userRestrictions}/>
                     </Card>
                 </Grid.Col>

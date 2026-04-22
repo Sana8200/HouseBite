@@ -51,6 +51,13 @@ export function HouseHold() {
 
     const handleCreate = async () => {
         if (!newName.trim()) { setCreateError("Household name is required"); return }
+        
+        // Check household limit
+        if (households.length >= 5) {
+            setCreateError("You have reached the maximum of 5 households. Please leave a household first before creating a new one.")
+            return
+        }
+        
         const budget = typeof newBudget === "number" ? newBudget : newBudget ? parseFloat(newBudget) : null
         if (budget !== null && budget < 0) { setCreateError("Budget cannot be negative"); return }
 
@@ -71,6 +78,13 @@ export function HouseHold() {
 
     const handleJoin = async () => {
         if (!inviteId.trim()) { setJoinError("Invite code is required"); return }
+        
+        // Check household limit
+        if (households.length >= 5) {
+            setJoinError("You have reached the maximum of 5 households. Please leave a household first before joining a new one.")
+            return
+        }
+        
         setJoining(true)
         setJoinError(null)
         const { error } = await joinHousehold(inviteId.trim())
@@ -129,16 +143,24 @@ export function HouseHold() {
 
                 <Group gap="md">
                     <Button size="lg" leftSection={<IconPlus size={20} />}
-                        onClick={() => { setCreateError(null); setShowCreateModal(true) }}>
+                        onClick={() => { setCreateError(null); setShowCreateModal(true) }}
+                        disabled={households.length >= 5}>
                         Create Household
                     </Button>
                     <Button size="lg" variant="default" leftSection={<IconUserPlus size={20} />}
-                        onClick={() => { setJoinError(null); setShowJoinModal(true) }}>
+                        onClick={() => { setJoinError(null); setShowJoinModal(true) }}
+                        disabled={households.length >= 5}>
                         Join Household
                     </Button>
                 </Group>
 
-                <Title order={2} size="h3">Your Households</Title>
+                {households.length >= 5 && (
+                    <Alert color="yellow" withCloseButton title="Household Limit Reached">
+                        You are part of the maximum number of households (5). To create or join another household, please leave one first.
+                    </Alert>
+                )}
+
+                <Title order={2} size="h3">Your Households ({households.length}/5)</Title>
 
                 {loading ? (
                     <Group justify="center" py="xl"><Loader /></Group>

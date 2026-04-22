@@ -1,5 +1,5 @@
 import './Dashboard.css';
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect} from 'react';
 import { ActionIcon, Alert, Badge, Button, Card, Checkbox, Container, Group, Loader, Modal, NumberInput, Paper, Select, SimpleGrid, Stack, Text, TextInput, Title } from '@mantine/core';
 import { IconLayoutGrid, IconReceiptEuro, IconPlus, IconShoppingCart, IconTrash, IconToolsKitchen2Off, IconChefHat, IconUsers, IconClock } from '@tabler/icons-react';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -8,7 +8,12 @@ import { searchRecipes } from "../../lib/searchRecipes"
 import { RecipeSearchModal } from "../../components/RecipeSearchModal"
 import { HouseholdMembers } from "../../components/dashboard/HouseholdMembers"
 import { FoodRestrictionsModal } from "../../components/dashboard/FoodRestrictionsModal"
+<<<<<<< HEAD
+import { useDisplayName } from "../../hooks/useDisplayName";
+
+=======
 import { HouseholdBudgetSummary } from '../../components/budget_summary/HouseholdBudgetSummary';
+>>>>>>> origin/main
 
 // Types
 interface Product {
@@ -102,8 +107,7 @@ const getExpirationDateBounds = () => {
 // Products in Danger Component
 const ProductsInDanger: React.FC<{
   products: Product[];
-  onDelete: (id: string) => Promise<void>;
-}> = ({ products, onDelete }) => {
+  onDelete: (id: string) => Promise<void>;}> = ({ products, onDelete }) => {
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [showRecipeModal, setShowRecipeModal] = useState(false);
@@ -328,7 +332,6 @@ const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const locationState = (location.state as DashboardLocationState | null) ?? null;
-  const [displayName, setDisplayName] = useState<string | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [households, setHouseholds] = useState<Household[]>([]);
   const [selectedHouseholdId, setSelectedHouseholdId] = useState<string | null>(locationState?.householdId ?? null);
@@ -346,25 +349,7 @@ const Dashboard: React.FC = () => {
   const [newUnit, setNewUnit] = useState('');
   const [newExpirationDate, setNewExpirationDate] = useState('');
   const [newPrice, setNewPrice] = useState('');
-
-  const [userId, setUserId] = useState<string | null>(null);
-
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      const meta = data.user?.user_metadata;
-      const displayName = meta?.display_name as string | undefined;
-      const username = meta?.username as string | undefined;
-      const email = data.user?.email;
-      setDisplayName(displayName ?? username ?? email?.split('@')[0] ?? null);
-      setUserId(data.user?.id ?? null);
-    }).catch(() => {});
-    void fetchHouseholds();
-    void supabase
-      .from('recipe')
-      .select('id, title, description, servings, prep_time')
-      .order('created_at', { ascending: false })
-      .then(({ data }) => setFavouriteRecipes(data ?? []));
-  }, []);
+  const displayName = useDisplayName();
 
   useEffect(() => {
     if (!households.length) return;

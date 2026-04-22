@@ -9,10 +9,11 @@ type AuthTab = "signIn" | "signUp";
 
 export interface SignInProps {
   setUser: (user: User) => void;
+  defaultTab?: AuthTab;
 }
 
-export function SignIn({ setUser }: SignInProps) {
-  const [activeTab, setActiveTab] = useState<AuthTab>("signIn");
+export function SignIn({ setUser, defaultTab = "signIn" }: SignInProps) {
+  const [activeTab, setActiveTab] = useState<AuthTab>(defaultTab);
 
   return (
     <Container p="md" size="xs">

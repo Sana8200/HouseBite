@@ -355,6 +355,11 @@ export function Pantry() {
   const [newExpirationDate, setNewExpirationDate] = useState("");
   const [newPrice, setNewPrice] = useState<number | string>("");
 
+  const currentHouseholdName = useMemo(() => {
+    if (!householdId || households.length === 0) return null;
+    return households.find(h => h.id === householdId)?.house_name;
+  }, [householdId, households]);
+
   useEffect(() => {
     void fetchProducts();
     void fetchHouseholds();
@@ -611,7 +616,7 @@ export function Pantry() {
 
       <Group justify="space-between" align="flex-start">
         <div>
-          <Title order={1}>Pantry</Title>
+          <Title order={1}>Pantry {currentHouseholdName && `- ${currentHouseholdName}`}</Title>
           <Text c="dimmed">Manage your pantry items</Text>
         </div>
         <Button leftSection={<IconPlus size={16} />} onClick={() => setShowCreateModal(true)}>
