@@ -17,7 +17,7 @@ interface ReadyState {
 
 interface ProcessingState {
     state: "processing";
-    file: Blob;
+    bitmap: Promise<ImageBitmap>;
 }
 
 interface FinishedState {
@@ -38,7 +38,7 @@ interface EditReceiptData extends ReceiptData {
 }
 
 interface EditReceiptItemData extends ReceiptItemData {
-    key: string;
+    key: number;
     enabled: boolean;
     unit: PantryUnit | null;
     expirationDate: string | null;
@@ -131,14 +131,14 @@ function ScanReady(props: ScanReadyProps) {
         context.drawImage(videoOutput, 0, 0, canvas.width, canvas.height);
 
         canvas.toBlob(file => {
-            if (file) setState({state: "processing", file});
+            if (file) setState({state: "processing", bitmap: window.createImageBitmap(file)});
         });
     };
 
     const onDrop = (files: FileWithPath[]) => {
         const file = files[0];
         if (!file) return;
-        setState({state: "processing", file});
+        setState({state: "processing", bitmap: window.createImageBitmap(file)});
     };
 
     return (
@@ -186,12 +186,16 @@ function ScanProcessing(props: ScanProcessingProps) {
     const {state, setState} = props;
 
     useEffect(() => {
+        let cancel = false;
         void process();
 
         async function process() {
             try {
                 // Resize image
-                const bitmap = await window.createImageBitmap(state.file);
+                const bitmap = await state.bitmap;
+
+                if (cancel) return;
+                
                 const canvas = document.createElement("canvas");
                 const aspectRatio = bitmap.width / bitmap.height;
 
@@ -209,12 +213,14 @@ function ScanProcessing(props: ScanProcessingProps) {
 
                 const result = await scanReceipt(image);
 
+                if (cancel) return;
+
                 if (result.error) {
                     setState({state: "error", error: result.error as Error});
                 } else {
                     const data: EditReceiptData = {
                         ...result.data!,
-                        items: result.data!.items.map(item => {
+                        items: result.data!.items.map((item, i) => {
 
                             let expirationDate: string | null = null;
 
@@ -226,7 +232,7 @@ function ScanProcessing(props: ScanProcessingProps) {
                             return {
                                 ...item,
                                 enabled: true,
-                                key: self.crypto.randomUUID(),
+                                key: i,
                                 unit: typeof item.weight == "number" ? "kg" : null,
                                 expirationDate,
                             };
@@ -240,7 +246,10 @@ function ScanProcessing(props: ScanProcessingProps) {
             }
         }
 
-    }, [state.file, setState]);
+        return () => {
+            cancel = true;
+        };
+    }, [state.bitmap, setState]);
 
     return (
         <>
@@ -280,6 +289,30 @@ function ScanFinished(props: ScanFinishedProps) {
 
         return newState;
     }), [setState]);
+
+    const addItem = () => setState(s => {
+        const oldState = s as FinishedState;
+        return {
+            ...oldState,
+            data: {
+                ...oldState.data,
+                items: [
+                    ...oldState.data.items,
+                    {
+                        enabled: false,
+                        name: null,
+                        estimatedExpirationDays: null,
+                        expirationDate: null,
+                        quantity: null,
+                        totalPrice: null,
+                        unit: null,
+                        weight: null,
+                        key: oldState.data.items.length,
+                    }
+                ]
+            }
+        }
+    });
 
     const setStoreName = (newName: string) => setState(s => {
         const oldState = s as FinishedState;
@@ -372,22 +405,28 @@ function ScanFinished(props: ScanFinishedProps) {
 
             <Grid mt="md">
                 <Grid.Col span={{base: 12, md: 5}}>
-                    <Title order={4}>Your Receipt</Title>
+                    <Title order={4}>1. Your Receipt</Title>
                     <Box component="img" src={state.image} alt="Receipt" bdrs="md" mt="md" pos="sticky" top={20} />
                 </Grid.Col>
 
                 <Grid.Col span={{base: 12, md: 7}}>
-                    <Title order={4}>Identified products</Title>
+                    <Title order={4}>2. Identified products</Title>
+                    <Text c="dimmed">Pre filled expiration dates are estimates.</Text>
+
                     <Stack gap="sm" mt="md">
                         {state.data.items.map(p => (
                             <ProductCard key={p.key} item={p} setItem={setItem}/>
                         ))}
 
+                        <Center>
+                            <Button variant="subtle" onClick={addItem}>
+                                Add missing product
+                            </Button>
+                        </Center>
+                        
+                        <Title order={4}>3. Save receipt and selected products</Title>
+
                         <Card shadow="none" withBorder>
-                            <Title order={4}>Save receipt and products</Title>
-
-                            <Text c="dimmed">Pre filled expiration dates are estimates.</Text>
-
                             <Select
                                 label="Household"
                                 placeholder="Household"
@@ -423,7 +462,7 @@ function ScanFinished(props: ScanFinishedProps) {
                             </Flex>
                             
                             <Flex justify="end" mt="md">
-                                <Button disabled={disabled} loading={saving} onClick={() => void handleSave()}>Save selected</Button>
+                                <Button disabled={disabled} loading={saving} onClick={() => void handleSave()}>Save</Button>
                             </Flex>
                         </Card>
                     </Stack>
@@ -503,23 +542,25 @@ function ProductCard(props: ProductCardProps) {
                     onChange={val => setItem({...item, unit: val})}
                     flex={1}
                     />
+            </Flex>
 
+            <Flex gap="sm" mt="xs">
+                <TextInput
+                    label="Expiration date"
+                    type="date"
+                    value={item.expirationDate || ""}
+                    onChange={(e) => setItem({...item, expirationDate: e.target.value})}
+                    flex={3}
+                    />
+                
                 <NumberInput label="Price"
                     value={item.totalPrice ?? ""}
                     onChange={val => setItem({...item, totalPrice: typeof val == "number" ? val : null})}
                     decimalScale={2}
                     fixedDecimalScale
-                    flex={1}
+                    flex={2}
                     />
             </Flex>
-
-            <TextInput
-                label="Expiration date"
-                type="date"
-                value={item.expirationDate || ""}
-                onChange={(e) => setItem({...item, expirationDate: e.target.value})}
-                />
-            
         </Card>
     );
 }
