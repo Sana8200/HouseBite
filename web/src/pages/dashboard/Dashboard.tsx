@@ -1,7 +1,7 @@
 import './Dashboard.css';
 import React, { useState, useRef, useEffect } from 'react';
-import { ActionIcon, Alert, Badge, Button, Card, Checkbox, Group, Loader, Modal, NumberInput, Paper, Select, SimpleGrid, Stack, Text, TextInput, Title } from '@mantine/core';
-import { IconLayoutGrid, IconReceiptEuro,IconPlus, IconShoppingCart, IconTrash,IconToolsKitchen2Off } from '@tabler/icons-react';
+import { ActionIcon, Alert, Badge, Button, Card, Checkbox, Container, Group, Loader, Modal, NumberInput, Paper, Select, SimpleGrid, Stack, Text, TextInput, Title } from '@mantine/core';
+import { IconLayoutGrid, IconReceiptEuro, IconPlus, IconShoppingCart, IconTrash, IconToolsKitchen2Off, IconChefHat, IconUsers, IconClock } from '@tabler/icons-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../../supabase';
 import { searchRecipes } from "../../lib/searchRecipes"
@@ -255,58 +255,68 @@ const ProductsInDanger: React.FC<{
 
 // Favourite Recipes Component with Carousel
 const FavouriteRecipes: React.FC<FavouriteRecipesProps> = ({ recipes }) => {
- // const carouselRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
-
- // const scroll = (dir: number) => carouselRef.current?.scrollBy({ left: dir * 300, behavior: 'smooth' });
 
   if (!recipes.length) {
     return (
-        <Text c="dimmed" ta="center" mt="md">
-        No favourite recipes yet. Start adding some
-      </Text>
+      <Paper withBorder p="xl" radius="md">
+        <Stack align="center" gap="xs">
+          <IconChefHat size={32} color="var(--color-text-muted)" />
+          <Text c="dimmed" ta="center">No favourite recipes yet. Start adding some!</Text>
+        </Stack>
+      </Paper>
     );
   }
 
   return (
-    <div>
-      <Text fw={700} size="lg" mb="md">
-        Here are your favourite recipes
-      </Text>
+    <Stack gap="md">
+      <Group justify="space-between" align="center">
+        <Title order={2} size="h3">Your favourite recipes</Title>
+        <Button variant="subtle" size="sm"
+          onClick={() => void navigate("/recipes")}
+          rightSection={<span>→</span>}>
+          View all
+        </Button>
+      </Group>
 
-      <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }}>
-        {recipes.map((recipe) => {
+      <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="md">
+        {recipes.slice(0, 6).map((recipe) => {
           const nutrition = recipe.description?.split("\n\n")[0] ?? "";
 
           return (
-            <Paper
+            <Card
               key={recipe.id}
-              p="md"
-              radius="md"
               withBorder
               shadow="sm"
-              style={{ cursor: "pointer" }}
-              onClick={() =>
-                navigate("/recipes", { state: { openRecipeId: recipe.id } })
-              }
+              radius="md"
+              padding="lg"
+              style={{ transition: "transform 0.15s, box-shadow 0.15s" }}
+              onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "var(--shadow-md)"; }}
+              onMouseLeave={e => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = ""; }}
             >
-              <Stack gap="xs">
-                <Text fw={600}>{recipe.title}</Text>
+              <Stack gap="sm">
+                <Text fw={700} size="md" lineClamp={2}>{recipe.title}</Text>
 
-                <Text size="sm" c="dimmed">
-                  Servings: {recipe.servings ?? "?"} · Prep:{" "}
-                  {recipe.prep_time ?? "?"} min
-                </Text>
+                <Group gap="lg">
+                  <Group gap={4}>
+                    <IconUsers size={14} color="var(--color-text-muted)" />
+                    <Text size="xs" c="dimmed">{recipe.servings ?? "?"} servings</Text>
+                  </Group>
+                  <Group gap={4}>
+                    <IconClock size={14} color="var(--color-text-muted)" />
+                    <Text size="xs" c="dimmed">{recipe.prep_time ?? "?"} min</Text>
+                  </Group>
+                </Group>
 
-                <Text size="xs" c="dimmed">
-                  {nutrition}
-                </Text>
+                {nutrition && (
+                  <Text size="xs" c="dimmed" lineClamp={2}>{nutrition}</Text>
+                )}
               </Stack>
-            </Paper>
+            </Card>
           );
         })}
       </SimpleGrid>
-    </div>
+    </Stack>
   );
 };
 
@@ -480,7 +490,7 @@ const Dashboard: React.FC = () => {
     setNewSize(''); setNewUnit(''); setNewExpirationDate(''); setNewPrice('');
     setShowCreateModal(false);
     setCreating(false);
-    void fetchProducts();
+    void fetchProducts(selectedHouseholdId);
   };
 
   const handleDelete = async (productId: string) => {
@@ -499,87 +509,95 @@ const Dashboard: React.FC = () => {
   const [favouriteRecipes, setFavouriteRecipes] = useState<FavRecipe[]>([]);
 
   return (
-    <div className="page dashboard">
-      <Group justify="space-between" align="flex-start" mb="lg" wrap="wrap" gap="sm">
-        <div>
-          <Title order={1}>Hello {displayName ?? 'there'}, welcome back</Title>
-          <Text c="dimmed" mt={4}>
-            Viewing household: {selectedHouseholdName ?? 'Choose a household'}
-          </Text>
-        </div>
-        <Button leftSection={<IconPlus size={16} />} onClick={() => setShowCreateModal(true)}>
-          Add Product
-        </Button>
-      </Group>
+    <Container size="lg" py="xl">
+      <Stack gap="xl">
 
-      {error && (
-        <Alert color="red" withCloseButton onClose={() => setError(null)} mb="md">
-          {error}
-        </Alert>
-      )}
-
-      <SimpleGrid
-        cols={{ base: 2, sm: 4 }}
-        spacing="lg"
-        className="dashboard-nav"
-        aria-label="Dashboard navigation"
-      >
-        {dashboardNavCards.map((card) => (
-          <Paper
-            key={card.route ?? card.action}
-            component="button"
-            className="dashboard-nav-card"
-            onClick={() => {
-              if (card.action === 'food-restrictions') {
-                setShowFoodRestrictions(true)
-              } else if (card.route) {
-                void navigate(card.route, {
-                  state: { householdId: selectedHouseholdId, householdName: selectedHouseholdName }
-                })
-              }
-            }}
-            radius="lg"
-            withBorder
-          >
-            <span className="dashboard-nav-card__icon" aria-hidden="true">
-              {card.icon}
-            </span>
-            <Text component="h2" className="dashboard-nav-card__title">
-              {card.title}
+        {/* Header */}
+        <Group justify="space-between" align="flex-start" wrap="wrap" gap="sm">
+          <div>
+            <Title order={1}>Hello {displayName ?? 'there'}, welcome back</Title>
+            <Text c="dimmed" mt={4}>
+              Viewing household: {selectedHouseholdName ?? 'Choose a household'}
             </Text>
-            <Text className="dashboard-nav-card__description">
-              {card.description}
-            </Text>
-          </Paper>
-        ))}
-      </SimpleGrid>
+          </div>
+          <Button leftSection={<IconPlus size={16} />} onClick={() => setShowCreateModal(true)}>
+            Add Product
+          </Button>
+        </Group>
 
-      {loading ? (
-        <Group justify="center" py="xl"><Loader /></Group>
-      ) : (
-        //filter the products array in Dashboard before passing it to ProductsInDanger, keeping only products expiring in 2? days
-        <ProductsInDanger
-          products={products.filter(p => {
-            if (!p.expiryDate) return false;
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            const expiry = new Date(p.expiryDate);
-            expiry.setHours(0, 0, 0, 0);
-            const days = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-            return days < 3;
-          })}
-          onDelete={handleDelete}
-        />
-      )}
+        {error && (
+          <Alert color="red" withCloseButton onClose={() => setError(null)}>
+            {error}
+          </Alert>
+        )}
 
-      {selectedHouseholdId && (
-        <HouseholdMembers
-          householdId={selectedHouseholdId}
-          inviteId={households.find(h => h.id === selectedHouseholdId)?.invite_id}
-        />
-      )}
+        {/* Nav cards */}
+        <SimpleGrid
+          cols={{ base: 2, sm: 4 }}
+          spacing="lg"
+          className="dashboard-nav"
+          aria-label="Dashboard navigation"
+        >
+          {dashboardNavCards.map((card) => (
+            <Paper
+              key={card.route ?? card.action}
+              component="button"
+              className="dashboard-nav-card"
+              onClick={() => {
+                if (card.action === 'food-restrictions') {
+                  setShowFoodRestrictions(true)
+                } else if (card.route) {
+                  void navigate(card.route, {
+                    state: { householdId: selectedHouseholdId, householdName: selectedHouseholdName }
+                  })
+                }
+              }}
+              radius="lg"
+              withBorder
+            >
+              <span className="dashboard-nav-card__icon" aria-hidden="true">
+                {card.icon}
+              </span>
+              <Text component="h2" className="dashboard-nav-card__title">
+                {card.title}
+              </Text>
+              <Text className="dashboard-nav-card__description">
+                {card.description}
+              </Text>
+            </Paper>
+          ))}
+        </SimpleGrid>
 
-      <FavouriteRecipes recipes={favouriteRecipes} />
+        {/* Expiring products */}
+        {loading ? (
+          <Group justify="center" py="xl"><Loader /></Group>
+        ) : (
+          <ProductsInDanger
+            products={products.filter(p => {
+              if (!p.expiryDate) return false;
+              const today = new Date();
+              today.setHours(0, 0, 0, 0);
+              const expiry = new Date(p.expiryDate);
+              expiry.setHours(0, 0, 0, 0);
+              const days = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+              return days < 3;
+            })}
+            onDelete={handleDelete}
+          />
+        )}
+
+        {/* Household members */}
+        {selectedHouseholdId && (
+          <HouseholdMembers
+            householdId={selectedHouseholdId}
+            inviteId={households.find(h => h.id === selectedHouseholdId)?.invite_id}
+          />
+        )}
+
+        {/* Favourite recipes */}
+        <FavouriteRecipes recipes={favouriteRecipes} />
+
+      </Stack>
 
       {selectedHouseholdId && (
         <FoodRestrictionsModal
@@ -622,7 +640,7 @@ const Dashboard: React.FC = () => {
           </Group>
         </Stack>
       </Modal>
-    </div>
+    </Container>
   );
 };
 
