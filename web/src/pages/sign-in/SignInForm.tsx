@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { signIn } from "../../api/auth";
 import type { User } from "@supabase/supabase-js";
-import { Button, PasswordInput, Stack, Text, TextInput } from "@mantine/core";
+import { Alert, Button, Center, PasswordInput, Stack, Text, TextInput } from "@mantine/core";
 
 export interface SignInProps {
     setUser: (user: User) => void,
@@ -33,9 +33,11 @@ export function SignInForm(props: SignInProps) {
             <Stack gap="md">
 
                 { error &&
-                    <Text>
-                        {error.message}
-                    </Text>
+                    <Alert variant="light" color="red">
+                        <Center>
+                            <Text>{error.message}</Text>
+                        </Center>
+                    </Alert>
                 }
 
                 <TextInput
