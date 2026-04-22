@@ -1,7 +1,21 @@
 import "@supabase/functions-js/edge-runtime.d.ts"
 
+import { corsHeaders } from "@supabase/supabase-js/cors";
+import { createClient } from "@supabase/supabase-js";
+
+const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!);
+
 Deno.serve(async (req) => {
   try {
+    if (req.method === "OPTIONS") {
+      return new Response(null, { headers: corsHeaders });
+    }
+
+    // Require authenticated user.
+    const token = req.headers.get("Authorization")!.replace("Bearer ", "");
+    const claim = await supabase.auth.getClaims(token);
+    if (claim.error) throw claim.error;
+
     // The client now sends the restrictions the user chose to keep active in the
     // modal, so we trust those instead of re-querying the DB ourselves.
     const { ingredients, household_id, diets = [], intolerances = [] } = await req.json()
@@ -11,7 +25,7 @@ Deno.serve(async (req) => {
     if (!proxyUrl || !proxyKey) {
       return new Response(JSON.stringify({ error: "Missing proxy credentials" }), {
         status: 500,
-        headers: { "Content-Type": "application/json" },
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       })
     }
 
@@ -41,7 +55,7 @@ Deno.serve(async (req) => {
     if (candidates.length === 0) {
       return new Response(JSON.stringify({ error: "No matching recipes found" }), {
         status: 404,
-        headers: { "Content-Type": "application/json" },
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       })
     }
 
@@ -63,7 +77,7 @@ Deno.serve(async (req) => {
     if (validRecipes.length === 0) {
       return new Response(JSON.stringify({ error: "No recipes with instructions found" }), {
         status: 404,
-        headers: { "Content-Type": "application/json" },
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       })
     }
 
@@ -88,14 +102,14 @@ Deno.serve(async (req) => {
     })
 
     return new Response(JSON.stringify(cleaned), {
-      headers: { "Content-Type": "application/json" },
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     })
 
   } catch (err) {
     console.error("Unhandled error:", err)
     return new Response(JSON.stringify({ error: String(err) }), {
       status: 500,
-      headers: { "Content-Type": "application/json" },
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     })
   }
 })

@@ -189,54 +189,54 @@ function ScanProcessing(props: ScanProcessingProps) {
         void process();
 
         async function process() {
-            // Resize image
-            const bitmap = await window.createImageBitmap(state.file);
-            const canvas = document.createElement("canvas");
-            const aspectRatio = bitmap.width / bitmap.height;
+            try {
+                // Resize image
+                const bitmap = await window.createImageBitmap(state.file);
+                const canvas = document.createElement("canvas");
+                const aspectRatio = bitmap.width / bitmap.height;
 
-            if (aspectRatio >= 1) { // landscape
-                canvas.width = IMG_SIZE;
-                canvas.height = IMG_SIZE / aspectRatio;
-            } else { // portrait
-                canvas.width = IMG_SIZE * aspectRatio;
-                canvas.height = IMG_SIZE;
-            }
+                if (aspectRatio >= 1) { // landscape
+                    canvas.width = IMG_SIZE;
+                    canvas.height = IMG_SIZE / aspectRatio;
+                } else { // portrait
+                    canvas.width = IMG_SIZE * aspectRatio;
+                    canvas.height = IMG_SIZE;
+                }
 
-            const ctx = canvas.getContext("2d")!;
-            ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-            const image = canvas.toDataURL("image/jpeg");
+                const ctx = canvas.getContext("2d")!;
+                ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+                const image = canvas.toDataURL("image/jpeg");
 
-            // Recognize
-            // const result = await Tesseract.recognize(image, "swe", {});
-            // setState({state: "finished", image, data: result.data.text});
+                const result = await scanReceipt(image);
 
-            const result = await scanReceipt(image);
+                if (result.error) {
+                    setState({state: "error", error: result.error as Error});
+                } else {
+                    const data: EditReceiptData = {
+                        ...result.data!,
+                        items: result.data!.items.map(item => {
 
-            if (result.error) {
-                setState({state: "error", error: result.error as Error});
-            } else {
-                const data: EditReceiptData = {
-                    ...result.data!,
-                    items: result.data!.items.map(item => {
+                            let expirationDate: string | null = null;
 
-                        let expirationDate: string | null = null;
+                            if (item.estimatedExpirationDays) {
+                                const ts = Date.now() + item.estimatedExpirationDays * 24 * 60 * 60 * 1000;
+                                expirationDate = new Date(ts).toISOString().split("T")[0];
+                            }
 
-                        if (item.estimatedExpirationDays) {
-                            const ts = Date.now() + item.estimatedExpirationDays * 24 * 60 * 60 * 1000;
-                            expirationDate = new Date(ts).toISOString().split("T")[0];
-                        }
+                            return {
+                                ...item,
+                                enabled: true,
+                                key: self.crypto.randomUUID(),
+                                unit: typeof item.weight == "number" ? "kg" : null,
+                                expirationDate,
+                            };
+                        })
+                    };
 
-                        return {
-                            ...item,
-                            enabled: true,
-                            key: self.crypto.randomUUID(),
-                            unit: typeof item.weight == "number" ? "kg" : null,
-                            expirationDate,
-                        };
-                    })
-                };
-
-                setState({state: "finished", image, data});
+                    setState({state: "finished", image, data});
+                }
+            } catch (error) {
+                setState({state: "error", error: error as Error});
             }
         }
 

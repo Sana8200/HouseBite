@@ -1,7 +1,9 @@
 import './Dashboard.css';
+
 import React, { useState, useRef, useEffect } from 'react';
-import { ActionIcon, Badge, Button, Card, Checkbox, Group, Paper, SimpleGrid, Stack, Text, Title } from '@mantine/core';
-import { IconLayoutGrid, IconPlus, IconReceipt, IconShoppingCart, IconTrash } from '@tabler/icons-react';
+import { ActionIcon, Alert, Badge, Button, Card, Checkbox, Container, Group, Loader, Modal, NumberInput, Paper, Select, SimpleGrid, Stack, Text, TextInput, Title } from '@mantine/core';
+import { IconLayoutGrid, IconReceiptEuro, IconPlus, IconShoppingCart, IconTrash, IconToolsKitchen2Off, IconChefHat, IconUsers, IconClock } from '@tabler/icons-react';
+
 import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../../supabase';
 import { searchRecipes } from "../../lib/searchRecipes"
@@ -210,49 +212,71 @@ const ProductsInDanger: React.FC<{
 
 // Favourite Recipes Component with Carousel
 const FavouriteRecipes: React.FC<FavouriteRecipesProps> = ({ recipes }) => {
+
   const carouselRef = useRef<HTMLDivElement>(null);
+ // const carouselRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
-
   const scroll = (dir: number) => carouselRef.current?.scrollBy({ left: dir * 300, behavior: 'smooth' });
-
   if (!recipes.length) {
     return (
-      <div className="favourite-recipes-empty">
-        <p>No favourite recipes yet. Start adding some</p>
-      </div>
+      <Paper withBorder p="xl" radius="md">
+        <Stack align="center" gap="xs">
+          <IconChefHat size={32} color="var(--color-text-muted)" />
+          <Text c="dimmed" ta="center">No favourite recipes yet. Start adding some!</Text>
+        </Stack>
+      </Paper>
     );
   }
 
   return (
-    <div className="favourite-recipes-container">
-      <div className="section-header">
-        <h2 className="section-title">Here are your favourite recipes</h2>
-      </div>
+    <Stack gap="md">
+      <Group justify="space-between" align="center">
+        <Title order={2} size="h3">Your favourite recipes</Title>
+        <Button variant="subtle" size="sm"
+          onClick={() => void navigate("/recipes")}
+          rightSection={<span>→</span>}>
+          View all
+        </Button>
+      </Group>
 
-      <div className="carousel-wrapper">
-        <button onClick={() => scroll(-1)} className="carousel-arrow left-arrow" aria-label="Scroll left">‹</button>
-        <div className="recipes-carousel" ref={carouselRef}>
-          {recipes.map(recipe => {
-            const nutrition = recipe.description?.split('\n\n')[0] ?? ''
-            return (
-              <div
-                key={recipe.id}
-                className="recipe-card"
-                style={{ cursor: 'pointer' }}
-                onClick={() => navigate('/recipes', { state: { openRecipeId: recipe.id } })}
-              >
-                <div className="recipe-info">
-                  <h3 className="recipe-name">{recipe.title}</h3>
-                  <p className="recipe-time">Servings: {recipe.servings ?? '?'} · Prep: {recipe.prep_time ?? '?'} min</p>
-                  <p className="recipe-description">{nutrition}</p>
-                </div>
-              </div>
-            )
-          })}
-        </div>
-        <button onClick={() => scroll(1)} className="carousel-arrow right-arrow" aria-label="Scroll right">›</button>
-      </div>
-    </div>
+      <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="md">
+        {recipes.slice(0, 6).map((recipe) => {
+          const nutrition = recipe.description?.split("\n\n")[0] ?? "";
+
+          return (
+            <Card
+              key={recipe.id}
+              withBorder
+              shadow="sm"
+              radius="md"
+              padding="lg"
+              style={{ transition: "transform 0.15s, box-shadow 0.15s" }}
+              onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "var(--shadow-md)"; }}
+              onMouseLeave={e => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = ""; }}
+            >
+              <Stack gap="sm">
+                <Text fw={700} size="md" lineClamp={2}>{recipe.title}</Text>
+
+                <Group gap="lg">
+                  <Group gap={4}>
+                    <IconUsers size={14} color="var(--color-text-muted)" />
+                    <Text size="xs" c="dimmed">{recipe.servings ?? "?"} servings</Text>
+                  </Group>
+                  <Group gap={4}>
+                    <IconClock size={14} color="var(--color-text-muted)" />
+                    <Text size="xs" c="dimmed">{recipe.prep_time ?? "?"} min</Text>
+                  </Group>
+                </Group>
+
+                {nutrition && (
+                  <Text size="xs" c="dimmed" lineClamp={2}>{nutrition}</Text>
+                )}
+              </Stack>
+            </Card>
+          );
+        })}
+      </SimpleGrid>
+    </Stack>
   );
 };
 
@@ -477,78 +501,95 @@ const Dashboard: React.FC = () => {
   const [favouriteRecipes, setFavouriteRecipes] = useState<FavRecipe[]>([]);
 
   return (
-    <div className="page dashboard">
-      <div className="section-header">
-        <div>
-          <h1>Hello {displayName ?? 'there'}, welcome back</h1>
-          <p className="dashboard-subtitle">
-            Viewing household: {selectedHouseholdName ?? 'Choose a household'}
-          </p>
-        </div>
-        <Button leftSection={<IconPlus size={16} />} onClick={() => setShowCreateModal(true)}>
-          Add Product
-        </Button>
-      </div>
+    <Container size="lg" py="xl">
+      <Stack gap="xl">
 
-      {error && (
-        <div className="error-banner">
-          {error}
-          <button className="error-dismiss" onClick={() => setError(null)}>×</button>
-        </div>
-      )}
-
-      <SimpleGrid
-        cols={{ base: 1, md: 2, xl: 3 }}
-        spacing="lg"
-        className="dashboard-nav"
-        aria-label="Dashboard navigation"
-      >
-        {dashboardNavCards.map((card) => (
-          <Paper
-            key={card.route}
-            component="button"
-            className="dashboard-nav-card"
-            onClick={() => navigate(card.route)}
-            radius="lg"
-            withBorder
-          >
-            <span className="dashboard-nav-card__icon" aria-hidden="true">
-              {card.icon}
-            </span>
-            <Text component="h2" className="dashboard-nav-card__title">
-              {card.title}
+        {/* Header */}
+        <Group justify="space-between" align="flex-start" wrap="wrap" gap="sm">
+          <div>
+            <Title order={1}>Hello {displayName ?? 'there'}, welcome back</Title>
+            <Text c="dimmed" mt={4}>
+              Viewing household: {selectedHouseholdName ?? 'Choose a household'}
             </Text>
-            <Text className="dashboard-nav-card__description">
-              {card.description}
-            </Text>
-          </Paper>
-        ))}
-      </SimpleGrid>
+          </div>
+          <Button leftSection={<IconPlus size={16} />} onClick={() => setShowCreateModal(true)}>
+            Add Product
+          </Button>
+        </Group>
 
-      {loading ? (
-        <p className="loading-text">Loading products...</p>
-      ) : (
-        //filter the products array in Dashboard before passing it to ProductsInDanger, keeping only products expiring in 2? days
-        <ProductsInDanger
-          products={products.filter(p => {
-            if (!p.expiryDate) return false;
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            const expiry = new Date(p.expiryDate);
-            expiry.setHours(0, 0, 0, 0);
-            const days = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-            return days < 3;
-          })}
-          onDelete={handleDelete}
-        />
-      )}
+        {error && (
+          <Alert color="red" withCloseButton onClose={() => setError(null)}>
+            {error}
+          </Alert>
+        )}
 
-      {selectedHouseholdId && (
-        <HouseholdMembers
-          householdId={selectedHouseholdId}
-          inviteId={households.find(h => h.id === selectedHouseholdId)?.invite_id}
-        />
-      )}
+        {/* Nav cards */}
+        <SimpleGrid
+          cols={{ base: 2, sm: 4 }}
+          spacing="lg"
+          className="dashboard-nav"
+          aria-label="Dashboard navigation"
+        >
+          {dashboardNavCards.map((card) => (
+            <Paper
+              key={card.route ?? card.action}
+              component="button"
+              className="dashboard-nav-card"
+              onClick={() => {
+                if (card.action === 'food-restrictions') {
+                  setShowFoodRestrictions(true)
+                } else if (card.route) {
+                  void navigate(card.route, {
+                    state: { householdId: selectedHouseholdId, householdName: selectedHouseholdName }
+                  })
+                }
+              }}
+              radius="lg"
+              withBorder
+            >
+              <span className="dashboard-nav-card__icon" aria-hidden="true">
+                {card.icon}
+              </span>
+              <Text component="h2" className="dashboard-nav-card__title">
+                {card.title}
+              </Text>
+              <Text className="dashboard-nav-card__description">
+                {card.description}
+              </Text>
+            </Paper>
+          ))}
+        </SimpleGrid>
+
+        {/* Expiring products */}
+        {loading ? (
+          <Group justify="center" py="xl"><Loader /></Group>
+        ) : (
+          <ProductsInDanger
+            products={products.filter(p => {
+              if (!p.expiryDate) return false;
+              const today = new Date();
+              today.setHours(0, 0, 0, 0);
+              const expiry = new Date(p.expiryDate);
+              expiry.setHours(0, 0, 0, 0);
+              const days = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+              return days < 3;
+            })}
+            onDelete={handleDelete}
+          />
+        )}
+
+        {/* Household members */}
+        {selectedHouseholdId && (
+          <HouseholdMembers
+            householdId={selectedHouseholdId}
+            inviteId={households.find(h => h.id === selectedHouseholdId)?.invite_id}
+          />
+        )}
+
+        {/* Favourite recipes */}
+        <FavouriteRecipes recipes={favouriteRecipes} />
+
+      </Stack>
 
       {selectedHouseholdId && (
         <HouseholdBudgetSummary 
