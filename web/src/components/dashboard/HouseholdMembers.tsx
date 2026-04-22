@@ -41,7 +41,7 @@ export function HouseholdMembers({ householdId, inviteId }: HouseholdMembersProp
     if (members.length === 0) return null
 
     return (
-        <Paper className="hh-members" radius="xl" p="xl" mt="lg">
+        <Paper className="hh-members" radius="xl" p="xl">
             <Title order={3} size="h5" mb="md" c="#3a3929">
                 Members
             </Title>
