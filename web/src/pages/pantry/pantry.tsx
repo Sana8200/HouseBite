@@ -303,6 +303,7 @@ export function Pantry({ user }: PantryProps) {
   const [households, setHouseholds] = useState<{ id: string; house_name: string }[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [modalError, setModalError] = useState<string | null>(null);
   const [newName, setNewName] = useState("");
   const [newHouseholdId, setNewHouseholdId] = useState<string | null>(null);
   const [newQuantity, setNewQuantity] = useState<number | string>(1);
@@ -378,7 +379,7 @@ export function Pantry({ user }: PantryProps) {
 
   const handleCreate = async () => {
     if (!newName.trim() || !newHouseholdId) {
-      setError("Name and household are required");
+      setModalError("Name and household are required");
       return;
     }
 
@@ -386,12 +387,12 @@ export function Pantry({ user }: PantryProps) {
       newExpirationDate
       && (newExpirationDate < expirationDateBounds.min || newExpirationDate > expirationDateBounds.max)
     ) {
-      setError(`Expiration date must be between ${expirationDateBounds.min} and ${expirationDateBounds.max}`);
+      setModalError(`Expiration date must be between ${expirationDateBounds.min} and ${expirationDateBounds.max}`);
       return;
     }
 
     setCreating(true);
-    setError(null);
+    setModalError(null);
 
     try {
 
@@ -454,7 +455,7 @@ export function Pantry({ user }: PantryProps) {
       await fetchProducts();
 
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not add product');
+      setModalError(err instanceof Error ? err.message : 'Could not add product');
     } finally {
       setCreating(false);
     }
@@ -577,7 +578,7 @@ export function Pantry({ user }: PantryProps) {
           <Title order={1}>Pantry {currentHouseholdName && `- ${currentHouseholdName}`}</Title>
           <Text c="dimmed">Manage your pantry items</Text>
         </div>
-        <Button leftSection={<IconPlus size={16} />} onClick={() => setShowCreateModal(true)}>
+        <Button leftSection={<IconPlus size={16} />} onClick={() => { setModalError(null); setShowCreateModal(true); }}>
           Add Product
         </Button>
       </Group>
@@ -706,11 +707,16 @@ export function Pantry({ user }: PantryProps) {
 
       <Modal
         opened={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
+        onClose={() => { setShowCreateModal(false); setModalError(null); }}
         title="Add Product"
         centered
       >
         <Stack gap="sm">
+          {modalError && (
+            <Paper withBorder p="xs" bg="red.0">
+              <Text c="red" size="sm">{modalError}</Text>
+            </Paper>
+          )}
           <TextInput
             label="Name"
             placeholder="e.g. Fresh Milk"
@@ -763,7 +769,7 @@ export function Pantry({ user }: PantryProps) {
             onChange={setNewPrice}
           />
           <Group justify="flex-end" mt="sm">
-            <Button variant="subtle" onClick={() => setShowCreateModal(false)}>Cancel</Button>
+            <Button variant="subtle" onClick={() => { setShowCreateModal(false); setModalError(null); }}>Cancel</Button>
             <Button onClick={() => void handleCreate()} loading={creating}>
               Add Product
             </Button>

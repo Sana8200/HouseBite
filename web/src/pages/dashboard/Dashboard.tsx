@@ -315,6 +315,12 @@ export default function Dashboard(props: DashboardProps) {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showFoodRestrictions, setShowFoodRestrictions] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [modalError, setModalError] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    void supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? null));
+  }, []);
 
   const [newName, setNewName] = useState('');
   const [newHouseholdId, setNewHouseholdId] = useState('');
@@ -416,7 +422,7 @@ export default function Dashboard(props: DashboardProps) {
 
   const handleCreate = async () => {
     if (!newName.trim() || !newHouseholdId) {
-      setError('Name and household are required');
+      setModalError('Name and household are required');
       return;
     }
 
@@ -424,12 +430,12 @@ export default function Dashboard(props: DashboardProps) {
       newExpirationDate
       && (newExpirationDate < expirationDateBounds.min || newExpirationDate > expirationDateBounds.max)
     ) {
-      setError(`Expiration date must be between ${expirationDateBounds.min} and ${expirationDateBounds.max}`);
+      setModalError(`Expiration date must be between ${expirationDateBounds.min} and ${expirationDateBounds.max}`);
       return;
     }
 
     setCreating(true);
-    setError(null);
+    setModalError(null);
 
     try {
       // Create receipt for this purchase
@@ -458,7 +464,7 @@ export default function Dashboard(props: DashboardProps) {
         .single();
 
       if (productError) {
-        setError('Could not create product: ' + productError.message);
+        setModalError('Could not create product: ' + productError.message);
         setCreating(false);
         return;
       }
@@ -475,7 +481,7 @@ export default function Dashboard(props: DashboardProps) {
         });
 
       if (specsError) {
-        setError('Could not save product specs: ' + specsError.message);
+        setModalError('Could not save product specs: ' + specsError.message);
         setCreating(false);
         return;
       }
@@ -488,7 +494,7 @@ export default function Dashboard(props: DashboardProps) {
       await fetchProducts(selectedHouseholdId);
 
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not add product');
+      setModalError(err instanceof Error ? err.message : 'Could not add product');
     } finally {
       setCreating(false);
     }
@@ -529,7 +535,7 @@ export default function Dashboard(props: DashboardProps) {
               Viewing household: {selectedHouseholdName ?? 'Choose a household'}
             </Text>
           </div>
-          <Button leftSection={<IconPlus size={16} />} onClick={() => setShowCreateModal(true)}>
+          <Button leftSection={<IconPlus size={16} />} onClick={() => { setModalError(null); setShowCreateModal(true); }}>
             Add Product
           </Button>
         </Group>
@@ -614,15 +620,20 @@ export default function Dashboard(props: DashboardProps) {
 
       {/* Budget Summary */}
       {selectedHouseholdId && (
-        <HouseholdBudgetSummary 
-          householdId={selectedHouseholdId} 
+        <HouseholdBudgetSummary
+          householdId={selectedHouseholdId}
           userId={user.id || undefined}
         />
       )}
 
-      <Modal opened={showCreateModal} onClose={() => setShowCreateModal(false)}
+      <Modal opened={showCreateModal} onClose={() => { setShowCreateModal(false); setModalError(null); }}
         centered radius="lg" title={<Title order={3}>Add Product</Title>}>
         <Stack gap="md">
+          {modalError && (
+            <Alert color="red" withCloseButton onClose={() => setModalError(null)}>
+              {modalError}
+            </Alert>
+          )}
           <TextInput label="Name" required placeholder="e.g. Fresh Milk"
             value={newName} onChange={e => setNewName(e.target.value)} />
           <Select label="Household" required placeholder="Select a household"
@@ -648,7 +659,7 @@ export default function Dashboard(props: DashboardProps) {
           <NumberInput label="Price" placeholder="e.g. 4.99" min={0} decimalScale={2}
             value={newPrice ? parseFloat(newPrice) : ""} onChange={v => setNewPrice(String(v))} />
           <Group justify="flex-end" gap="sm">
-            <Button variant="default" onClick={() => setShowCreateModal(false)}>Cancel</Button>
+            <Button variant="default" onClick={() => { setShowCreateModal(false); setModalError(null); }}>Cancel</Button>
             <Button onClick={() => void handleCreate()} loading={creating}>Add Product</Button>
           </Group>
         </Stack>
