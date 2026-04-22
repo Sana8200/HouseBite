@@ -28,36 +28,7 @@ interface PantryLocationState {
   householdId?: string;
 }
 
-const formatDateInputValue = (date: Date) => date.toISOString().slice(0, 10);
-
-const getExpirationDateBounds = () => {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const minDate = new Date(today);
-  minDate.setFullYear(today.getFullYear() - 100);
-
-  const maxDate = new Date(today);
-  maxDate.setFullYear(today.getFullYear() + 100);
-
-  return {
-    min: formatDateInputValue(minDate),
-    max: formatDateInputValue(maxDate),
-  };
-};
-
-/* Helper for getting the number of days remaining for expiring a product. */
-function getDaysUntilExpiry(expirationDate: string | null): number | null {
-  if (!expirationDate) return null;
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const expiry = new Date(expirationDate);
-  expiry.setHours(0, 0, 0, 0);
-
-  return Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-}
+import { getExpirationDateBounds, getDaysUntilExpiry } from "../../utils/date";
 
 /* Helper for formatting the expiration date. */
 function formatExpiry(expirationDate: string | null): string {
