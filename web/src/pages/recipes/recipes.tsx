@@ -120,6 +120,10 @@ export function Recipes() {
   }
 
   const handleSave = async (recipe: SearchRecipe, index: number) => {
+    if (favorites.some(f => f.title === recipe.title)) {
+      setSaved(prev => new Set(prev).add(index))
+      return
+    }
     setSaving(index)
     const { data: { user } } = await supabase.auth.getUser()
     const { error } = await supabase.functions.invoke("save-recipe", {
@@ -148,10 +152,10 @@ export function Recipes() {
                 action={
                   <button
                     className="recipe-card-save"
-                    disabled={saved.has(i) || saving === i}
+                    disabled={saved.has(i) || saving === i || favorites.some(f => f.title === r.title)}
                     onClick={() => handleSave(r, i)}
                   >
-                    {saved.has(i) ? "Added to favorites" : saving === i ? "Saving..." : "Add to favorites"}
+                    {saved.has(i) || favorites.some(f => f.title === r.title) ? "Already in favorites" : saving === i ? "Saving..." : "Add to favorites"}
                   </button>
                 }
               />
