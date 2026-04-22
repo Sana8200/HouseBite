@@ -58,7 +58,7 @@ export function RecipeCard({
             )}
             {onDelete && (
               <button className="recipe-card-delete" onClick={onDelete}>
-                Remove from favorites
+                Remove from favourites
               </button>
             )}
           </div>
@@ -90,8 +90,8 @@ export function Recipes() {
 
   const [saved, setSaved] = useState<Set<number>>(new Set())
   const [saving, setSaving] = useState<number | null>(null)
-  const [favorites, setFavorites] = useState<DbRecipe[]>([])
-  const [loadingFavorites, setLoadingFavorites] = useState(true)
+  const [favourites, setFavourites] = useState<DbRecipe[]>([])
+  const [loadingFavourites, setLoadingFavourites] = useState(true)
   const [selectedRecipe, setSelectedRecipe] = useState<DbRecipe | null>(null)
 
   // tracks which card is open: "fav-{id}" or "search-{index}"
@@ -101,26 +101,26 @@ export function Recipes() {
 
   const toggle = (key: string) => setOpenId(prev => prev === key ? null : key)
 
-  const fetchFavorites = () =>
+  const fetchFavourites = () =>
     supabase
       .from("recipe")
       .select("id, title, description, servings, prep_time")
       .order("created_at", { ascending: false })
       .then(({ data }) => {
-        setFavorites(data ?? [])
-        setLoadingFavorites(false)
+        setFavourites(data ?? [])
+        setLoadingFavourites(false)
       })
 
-  useEffect(() => { void fetchFavorites() }, [])
+  useEffect(() => { void fetchFavourites() }, [])
 
   const handleDelete = async (id: string) => {
     await supabase.from("recipe").delete().eq("id", id)
-    setFavorites(prev => prev.filter(r => r.id !== id))
+    setFavourites(prev => prev.filter(r => r.id !== id))
     setOpenId(null)
   }
 
   const handleSave = async (recipe: SearchRecipe, index: number) => {
-    if (favorites.some(f => f.title === recipe.title)) {
+    if (favourites.some(f => f.title === recipe.title)) {
       setSaved(prev => new Set(prev).add(index))
       return
     }
@@ -132,7 +132,7 @@ export function Recipes() {
     setSaving(null)
     if (!error) {
       setSaved(prev => new Set(prev).add(index))
-      void fetchFavorites()
+      void fetchFavourites()
     }
   }
 
@@ -141,7 +141,7 @@ export function Recipes() {
       {searchResults.length > 0 && (
         <>
           <h1>Search Results</h1>
-          <p>Click a recipe to see instructions. Add it to favorites to save it.</p>
+          <p>Click a recipe to see instructions. Add it to favourites to save it.</p>
           <RecipeCarousel>
             {searchResults.map((r, i) => (
               <RecipeCard
@@ -152,10 +152,10 @@ export function Recipes() {
                 action={
                   <button
                     className="recipe-card-save"
-                    disabled={saved.has(i) || saving === i || favorites.some(f => f.title === r.title)}
+                    disabled={saved.has(i) || saving === i || favourites.some(f => f.title === r.title)}
                     onClick={() => handleSave(r, i)}
                   >
-                    {saved.has(i) || favorites.some(f => f.title === r.title) ? "Already in favorites" : saving === i ? "Saving..." : "Add to favorites"}
+                    {saved.has(i) || favourites.some(f => f.title === r.title) ? "Already in favourites" : saving === i ? "Saving..." : "Add to favourites"}
                   </button>
                 }
               />
@@ -164,18 +164,18 @@ export function Recipes() {
         </>
       )}
 
-      <h1>Favorites</h1>
-   {loadingFavorites ? (
+      <h1>Favourites</h1>
+   {loadingFavourites ? (
   <p>Loading...</p>
-) : favorites.length === 0 ? (
-  <p>No favorites yet. Search for recipes and add some.</p>
+) : favourites.length === 0 ? (
+  <p>No favourites yet. Search for recipes and add some.</p>
 ) : (
   <div style={{ display: "flex", gap: "20px", alignItems: "stretch" }}>
 
     {/* LEFT - GRID */}
     <div style={{ flex: 1 }}>
       <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }}>
-        {favorites.map(r => (
+        {favourites.map(r => (
           <Paper
             key={r.id}
             p="md"
@@ -202,7 +202,7 @@ export function Recipes() {
               color="red"
               onClick={(e) => {
                 e.stopPropagation()
-                if (confirm("Remove from favorites?")) {
+                if (confirm("Remove from favourites?")) {
                   handleDelete(r.id)
                 }
               }}
@@ -215,7 +215,7 @@ export function Recipes() {
       </SimpleGrid>
     </div>
 
-    {/* RIGHT - DETAIL PANEL (ONLY FAVORITES) */}
+    {/* RIGHT - DETAIL PANEL (ONLY FAVOURITES) */}
     <div style={{ flex: 1 }}>
       {selectedRecipe ? (
         <Paper p="lg" radius="md" withBorder shadow="md">
