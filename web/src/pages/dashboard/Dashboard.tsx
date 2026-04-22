@@ -8,12 +8,8 @@ import { searchRecipes } from "../../lib/searchRecipes"
 import { RecipeSearchModal } from "../../components/RecipeSearchModal"
 import { HouseholdMembers } from "../../components/dashboard/HouseholdMembers"
 import { FoodRestrictionsModal } from "../../components/dashboard/FoodRestrictionsModal"
-<<<<<<< HEAD
 import { useDisplayName } from "../../hooks/useDisplayName";
-
-=======
 import { HouseholdBudgetSummary } from '../../components/budget_summary/HouseholdBudgetSummary';
->>>>>>> origin/main
 
 // Types
 interface Product {
