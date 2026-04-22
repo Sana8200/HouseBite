@@ -1,6 +1,6 @@
 import './Dashboard.css';
 import React, { useState, useRef, useEffect } from 'react';
-import {ActionIcon, Badge, Button, Card, Checkbox, Group, Paper, SimpleGrid, Stack, Text, Title } from '@mantine/core';
+import { ActionIcon, Alert, Badge, Button, Card, Checkbox, Group, Loader, Modal, NumberInput, Paper, Select, SimpleGrid, Stack, Text, TextInput, Title } from '@mantine/core';
 import { IconLayoutGrid, IconReceiptEuro,IconPlus, IconShoppingCart, IconTrash,IconToolsKitchen2Off } from '@tabler/icons-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../../supabase';
@@ -445,23 +445,22 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="page dashboard">
-      <div className="section-header">
+      <Group justify="space-between" align="flex-start" mb="lg" wrap="wrap" gap="sm">
         <div>
-          <h1>Hello {displayName ?? 'there'}, welcome back</h1>
-          <p className="dashboard-subtitle">
+          <Title order={1}>Hello {displayName ?? 'there'}, welcome back</Title>
+          <Text c="dimmed" mt={4}>
             Viewing household: {selectedHouseholdName ?? 'Choose a household'}
-          </p>
+          </Text>
         </div>
         <Button leftSection={<IconPlus size={16} />} onClick={() => setShowCreateModal(true)}>
           Add Product
         </Button>
-      </div>
+      </Group>
 
       {error && (
-        <div className="error-banner">
+        <Alert color="red" withCloseButton onClose={() => setError(null)} mb="md">
           {error}
-          <button className="error-dismiss" onClick={() => setError(null)}>×</button>
-        </div>
+        </Alert>
       )}
 
       <SimpleGrid
@@ -499,7 +498,7 @@ const Dashboard: React.FC = () => {
       </SimpleGrid>
 
       {loading ? (
-        <p className="loading-text">Loading products...</p>
+        <Group justify="center" py="xl"><Loader /></Group>
       ) : (
         //filter the products array in Dashboard before passing it to ProductsInDanger, keeping only products expiring in 2? days
         <ProductsInDanger
@@ -533,66 +532,36 @@ const Dashboard: React.FC = () => {
         />
       )}
 
-      {showCreateModal && (
-        <div className="modal-overlay" onClick={() => setShowCreateModal(false)}>
-          <div className="modal" onClick={e => e.stopPropagation()}>
-            <h2>Add Product</h2>
-
-            <div className="modal-field">
-              <label>Name *</label>
-              <input type="text" value={newName} onChange={e => setNewName(e.target.value)} placeholder="e.g. Fresh Milk" />
-            </div>
-
-            <div className="modal-field">
-              <label>Household *</label>
-              <select value={newHouseholdId} onChange={e => setNewHouseholdId(e.target.value)}>
-                <option value="">Select a household</option>
-                {households.map(h => (
-                  <option key={h.id} value={h.id}>{h.house_name}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="modal-field">
-              <label>Expiration Date</label>
-              <input type="date" value={newExpirationDate} onChange={e => setNewExpirationDate(e.target.value)} />
-            </div>
-
-            <div className="modal-field">
-              <label>Quantity</label>
-              <input type="number" min="1" value={newQuantity} onChange={e => setNewQuantity(e.target.value)} />
-            </div>
-
-            <div className="modal-field">
-              <label>Size</label>
-              <input type="text" value={newSize} onChange={e => setNewSize(e.target.value)} placeholder="e.g. 500" />
-            </div>
-
-            <div className="modal-field">
-              <label>Unit</label>
-              <select value={newUnit} onChange={e => setNewUnit(e.target.value)}>
-                <option value="">No unit</option>
-                <option value="gr">gr</option>
-                <option value="ml">ml</option>
-                <option value="kg">kg</option>
-                <option value="L">L</option>
-              </select>
-            </div>
-
-            <div className="modal-field">
-              <label>Price</label>
-              <input type="number" step="0.01" min="0" value={newPrice} onChange={e => setNewPrice(e.target.value)} placeholder="e.g. 4.99" />
-            </div>
-
-            <div className="modal-actions">
-              <button className="btn btn-secondary" onClick={() => setShowCreateModal(false)}>Cancel</button>
-              <button className="btn btn-primary" onClick={() => void handleCreate()} disabled={creating}>
-                {creating ? 'Adding...' : 'Add Product'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <Modal opened={showCreateModal} onClose={() => setShowCreateModal(false)}
+        centered radius="lg" title={<Title order={3}>Add Product</Title>}>
+        <Stack gap="md">
+          <TextInput label="Name" required placeholder="e.g. Fresh Milk"
+            value={newName} onChange={e => setNewName(e.target.value)} />
+          <Select label="Household" required placeholder="Select a household"
+            value={newHouseholdId} onChange={v => setNewHouseholdId(v ?? "")}
+            data={households.map(h => ({ value: h.id, label: h.house_name }))} />
+          <TextInput label="Expiration Date" type="date"
+            value={newExpirationDate} onChange={e => setNewExpirationDate(e.target.value)} />
+          <NumberInput label="Quantity" min={1} value={newQuantity ? parseInt(newQuantity) : 1}
+            onChange={v => setNewQuantity(String(v))} />
+          <TextInput label="Size" placeholder="e.g. 500"
+            value={newSize} onChange={e => setNewSize(e.target.value)} />
+          <Select label="Unit" placeholder="No unit" clearable
+            value={newUnit || null} onChange={v => setNewUnit(v ?? "")}
+            data={[
+              { value: "gr", label: "gr" },
+              { value: "ml", label: "ml" },
+              { value: "kg", label: "kg" },
+              { value: "L", label: "L" },
+            ]} />
+          <NumberInput label="Price" placeholder="e.g. 4.99" min={0} decimalScale={2}
+            value={newPrice ? parseFloat(newPrice) : ""} onChange={v => setNewPrice(String(v))} />
+          <Group justify="flex-end" gap="sm">
+            <Button variant="default" onClick={() => setShowCreateModal(false)}>Cancel</Button>
+            <Button onClick={() => void handleCreate()} loading={creating}>Add Product</Button>
+          </Group>
+        </Stack>
+      </Modal>
     </div>
   );
 };
