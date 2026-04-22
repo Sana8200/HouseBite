@@ -324,45 +324,50 @@ export function Pantry({ user }: PantryProps) {
 
   const fetchProducts = async () => {
     setLoading(true);
-    let query = supabase
-      .from("product")
-      .select(`
-        id,
-        name,
-        household_id,
-        product_specs(quantity, size, unit, expiration_date)
-      `);
+    try {
+      let query = supabase
+        .from("product")
+        .select(`
+          id,
+          name,
+          household_id,
+          product_specs(quantity, size, unit, expiration_date)
+        `);
 
-    if (householdId) {
-      query = query.eq("household_id", householdId);
-    }
+      if (householdId) {
+        query = query.eq("household_id", householdId);
+      }
 
-    const { data, error } = await query;
+      const { data, error } = await query;
 
-    if (error) {
+      if (error) {
+        setError("Could not load products");
+        return;
+      }
+
+      const mapped: PantryProduct[] = (data ?? []).map((p: any) => {
+        const specs = Array.isArray(p.product_specs) ? p.product_specs[0] : p.product_specs;
+        return {
+          id: p.id,
+          name: p.name,
+          householdId: p.household_id,
+          quantity: specs?.quantity ?? 1,
+          size: specs?.size ?? null,
+          unit: specs?.unit ?? null,
+          expirationDate: specs?.expiration_date ?? null,
+          purchasedOn: null,
+          shopName: null,
+          boughtBy: null,
+        };
+      });
+
+      setProducts(mapped);
+    } catch (e) {
+      console.error("pantry fetchProducts failed", e);
       setError("Could not load products");
+    } finally {
       setLoading(false);
-      return;
     }
-
-    const mapped: PantryProduct[] = (data ?? []).map((p: any) => {
-      const specs = Array.isArray(p.product_specs) ? p.product_specs[0] : p.product_specs;
-      return {
-        id: p.id,
-        name: p.name,
-        householdId: p.household_id,
-        quantity: specs?.quantity ?? 1,
-        size: specs?.size ?? null,
-        unit: specs?.unit ?? null,
-        expirationDate: specs?.expiration_date ?? null,
-        purchasedOn: null,
-        shopName: null,
-        boughtBy: null,
-      };
-    });
-
-    setProducts(mapped);
-    setLoading(false);
   };
 
   const fetchHouseholds = async () => {
@@ -393,7 +398,7 @@ export function Pantry({ user }: PantryProps) {
       // create receipt for this purchase
       const price = newPrice !== "" ? Number(newPrice) : null;
       const purchaseDate = newExpirationDate || new Date().toISOString().split('T')[0];
-      
+
       const { data: receipt, error: receiptError } = await supabase
         .from('receipt')
         .insert({
@@ -436,24 +441,24 @@ export function Pantry({ user }: PantryProps) {
       }
 
       // reset form
-      setNewName(""); 
-      setNewHouseholdId(householdId ?? null); 
+      setNewName("");
+      setNewHouseholdId(householdId ?? null);
       setNewQuantity(1);
-      setNewSize(""); 
-      setNewUnit(null); 
-      setNewExpirationDate(""); 
+      setNewSize("");
+      setNewUnit(null);
+      setNewExpirationDate("");
       setNewPrice("");
       setShowCreateModal(false);
-      
+
       // refresh data
       await fetchProducts();
-      
+
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not add product');
     } finally {
       setCreating(false);
     }
-  };  
+  };
 
   const handleDelete = async (productId: string) => {
     const { error } = await supabase

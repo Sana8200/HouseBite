@@ -23,15 +23,20 @@ export function FoodRestrictionsModal({ householdId, opened, onClose }: FoodRest
 
     const load = useCallback(async () => {
         setLoading(true)
-        const [{ data: all }, { data: memberData }, { data: hhData }] = await Promise.all([
-            supabase.from("food_restriction").select("id, name, category").order("category").order("name"),
-            supabase.rpc("get_household_restrictions", { p_household_id: householdId }),
-            supabase.from("household_food_restriction").select("restriction_id").eq("household_id", householdId),
-        ])
-        setRestrictions(all ?? [])
-        setMemberRestrictions((memberData ?? []) as MemberRestriction[])
-        setHhIds(new Set((hhData ?? []).map(r => r.restriction_id as string)))
-        setLoading(false)
+        try {
+            const [{ data: all }, { data: memberData }, { data: hhData }] = await Promise.all([
+                supabase.from("food_restriction").select("id, name, category").order("category").order("name"),
+                supabase.rpc("get_household_restrictions", { p_household_id: householdId }),
+                supabase.from("household_food_restriction").select("restriction_id").eq("household_id", householdId),
+            ])
+            setRestrictions(all ?? [])
+            setMemberRestrictions((memberData ?? []) as MemberRestriction[])
+            setHhIds(new Set((hhData ?? []).map(r => r.restriction_id as string)))
+        } catch (e) {
+            console.error("FoodRestrictionsModal load failed", e)
+        } finally {
+            setLoading(false)
+        }
     }, [householdId])
 
     useEffect(() => {
@@ -40,16 +45,21 @@ export function FoodRestrictionsModal({ householdId, opened, onClose }: FoodRest
 
     const toggle = async (id: string) => {
         setBusy(id)
-        if (hhIds.has(id)) {
-            await supabase.from("household_food_restriction").delete()
-                .eq("household_id", householdId).eq("restriction_id", id)
-            setHhIds(prev => { const n = new Set(prev); n.delete(id); return n })
-        } else {
-            await supabase.from("household_food_restriction")
-                .insert({ household_id: householdId, restriction_id: id })
-            setHhIds(prev => new Set(prev).add(id))
+        try {
+            if (hhIds.has(id)) {
+                await supabase.from("household_food_restriction").delete()
+                    .eq("household_id", householdId).eq("restriction_id", id)
+                setHhIds(prev => { const n = new Set(prev); n.delete(id); return n })
+            } else {
+                await supabase.from("household_food_restriction")
+                    .insert({ household_id: householdId, restriction_id: id })
+                setHhIds(prev => new Set(prev).add(id))
+            }
+        } catch (e) {
+            console.error("FoodRestrictionsModal toggle failed", e)
+        } finally {
+            setBusy(null)
         }
-        setBusy(null)
     }
 
     // Derived

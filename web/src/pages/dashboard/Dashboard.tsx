@@ -368,45 +368,50 @@ export default function Dashboard(props: DashboardProps) {
 
   const fetchProducts = async (householdId: string | null) => {
     setLoading(true);
-    let query = supabase
-      .from('product')
-      .select(`
-        id,
-        name,
-        household_id,
-        household:household_id(house_name),
-        product_specs(quantity, expiration_date)
-      `);
+    try {
+      let query = supabase
+        .from('product')
+        .select(`
+          id,
+          name,
+          household_id,
+          household:household_id(house_name),
+          product_specs(quantity, expiration_date)
+        `);
 
-    if (householdId) {
-      query = query.eq('household_id', householdId);
-    }
+      if (householdId) {
+        query = query.eq('household_id', householdId);
+      }
 
-    const { data, error } = await query;
+      const { data, error } = await query;
 
-    if (error) {
+      if (error) {
+        setError('Could not load products');
+        return;
+      }
+
+      const mapped: Product[] = (data ?? []).map((p: any) => {
+        // Supabase may return product_specs as an object or array depending on version
+        const specs = Array.isArray(p.product_specs)
+          ? p.product_specs[0]
+          : p.product_specs;
+        return {
+          id: p.id,
+          name: p.name,
+          expiryDate: specs?.expiration_date ?? null,
+          quantity: specs?.quantity ?? 1,
+          householdName: p.household?.house_name ?? 'Unknown',
+          householdId: p.household_id,
+        };
+      });
+
+      setProducts(mapped);
+    } catch (e) {
+      console.error('Dashboard fetchProducts failed', e);
       setError('Could not load products');
+    } finally {
       setLoading(false);
-      return;
     }
-
-    const mapped: Product[] = (data ?? []).map((p: any) => {
-      // Supabase may return product_specs as an object or array depending on version
-      const specs = Array.isArray(p.product_specs)
-        ? p.product_specs[0]
-        : p.product_specs;
-      return {
-        id: p.id,
-        name: p.name,
-        expiryDate: specs?.expiration_date ?? null,
-        quantity: specs?.quantity ?? 1,
-        householdName: p.household?.house_name ?? 'Unknown',
-        householdId: p.household_id,
-      };
-    });
-
-    setProducts(mapped);
-    setLoading(false);
   };
 
   const handleCreate = async () => {
@@ -430,7 +435,7 @@ export default function Dashboard(props: DashboardProps) {
       // Create receipt for this purchase
       const price = newPrice ? parseFloat(newPrice) : null;
       const purchaseDate = newExpirationDate || new Date().toISOString().split('T')[0];
-      
+
       const { data: receipt, error: receiptError } = await supabase
         .from('receipt')
         .insert({
@@ -478,10 +483,10 @@ export default function Dashboard(props: DashboardProps) {
     setNewName(''); setNewHouseholdId(''); setNewQuantity('1');
     setNewSize(''); setNewUnit(''); setNewExpirationDate(''); setNewPrice('');
       setShowCreateModal(false);
-      
+
       // refresh data
       await fetchProducts(selectedHouseholdId);
-      
+
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not add product');
     } finally {

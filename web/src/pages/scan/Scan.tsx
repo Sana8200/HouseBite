@@ -399,7 +399,10 @@ function ScanFinished(props: ScanFinishedProps) {
                 }
             });
         } catch (error) {
+            console.error("Scan handleSave failed", error)
             setState({state: "error", error: error as Error});
+        } finally {
+            setSaving(false);
         }
     };
 

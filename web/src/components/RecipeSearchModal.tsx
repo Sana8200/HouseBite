@@ -32,39 +32,43 @@ export function RecipeSearchModal({ opened, onClose, onProceed, householdId, use
     void load();
   }, [opened, householdId]);
 
-  const load = async () => {
-    setLoading(true);
+    const load = async () => {
+        setLoading(true);
+        try {
+            // Fetch the current user's personal dietary restrictions from their account.
+            const { data: myData } = await supabase
+                .from("member_restriction")
+                .select("food_restriction(id, name, category)")
+                .eq("member_id", userId);
 
-    // Fetch the current user's personal dietary restrictions from their account.
-    const { data: myData } = await supabase
-          .from("member_restriction")
-          .select("food_restriction(id, name, category)")
-          .eq("member_id", userId);
+            const myR: Restriction[] = (myData ?? [])
+                .map((r: any) => r.food_restriction)
+                .filter(Boolean);
 
-    const myR: Restriction[] = (myData ?? [])
-      .map((r: any) => r.food_restriction)
-      .filter(Boolean);
+            // Fetch restrictions set at the household level (via the Food Restrictions modal).
+            // We exclude anything already shown under "My restrictions" to avoid duplicates.
+            const { data: hhData } = await supabase
+                .from("household_food_restriction")
+                .select("food_restriction(id, name, category)")
+                .eq("household_id", householdId);
 
-    // Fetch restrictions set at the household level (via the Food Restrictions modal).
-    // We exclude anything already shown under "My restrictions" to avoid duplicates.
-    const { data: hhData } = await supabase
-      .from("household_food_restriction")
-      .select("food_restriction(id, name, category)")
-      .eq("household_id", householdId);
+            const myIds = new Set(myR.map((r) => r.id));
+            const householdR: Restriction[] = (hhData ?? [])
+                .map((r: any) => r.food_restriction)
+                .filter((r: Restriction | null): r is Restriction => !!r && !myIds.has(r.id));
 
-    const myIds = new Set(myR.map((r) => r.id));
-    const householdR: Restriction[] = (hhData ?? [])
-      .map((r: any) => r.food_restriction)
-      .filter((r: Restriction | null): r is Restriction => !!r && !myIds.has(r.id));
+            setMyRestrictions(myR);
+            setHouseholdRestrictions(householdR);
+            // Pre-check everything so no restriction is accidentally ignored.
+            setSelectedIds(new Set([...myR, ...householdR].map((r) => r.id)));
+        } catch (e) {
+            console.error("RecipeSearchModal load failed", e);
+        } finally {
+            setLoading(false);
+        }
+    };
 
-    setMyRestrictions(myR);
-    setHouseholdRestrictions(householdR);
-    // Pre-check everything so no restriction is accidentally ignored.
-    setSelectedIds(new Set([...myR, ...householdR].map((r) => r.id)));
-    setLoading(false);
-  };
-
-  // Toggle a single restriction on or off.
+    // Toggle a single restriction on or off.
   const toggle = (id: string) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
@@ -83,9 +87,14 @@ export function RecipeSearchModal({ opened, onClose, onProceed, householdId, use
     const diets = checked.filter((r) => r.category === "diet").map((r) => r.name);
     const intolerances = checked.filter((r) => r.category === "intolerance").map((r) => r.name);
 
-    await onProceed(diets, intolerances);
-    setProceeding(false);
-    onClose();
+    try {
+      await onProceed(diets, intolerances);
+      onClose();
+    } catch (e) {
+      console.error("RecipeSearchModal handleProceed failed", e);
+    } finally {
+      setProceeding(false);
+    }
   };
 
   // Renders a group of restrictions split into diets and intolerances with checkboxes.
