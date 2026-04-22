@@ -7,7 +7,6 @@ import { getHouseholds, type Household } from "../api/household";
 import { signOut } from "../api/auth";
 import { useMediaQuery } from "@mantine/hooks";
 import { IconLogout, IconUser, IconCamera, IconDeviceTabletStar, IconHome } from "@tabler/icons-react";
-
 import IconHouseBite from "../assets/icon.svg";
 import { supabase } from "../supabase";
 
