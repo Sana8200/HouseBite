@@ -543,99 +543,99 @@ const Dashboard: React.FC = () => {
   const [favouriteRecipes, setFavouriteRecipes] = useState<FavRecipe[]>([]);
 
   return (
-  <Container size="lg" py="xl">
-    <Stack gap="xl">
+    <Container size="lg" py="xl">
+      <Stack gap="xl">
 
-      {/* Header */}
-      <Group justify="space-between" align="flex-start" wrap="wrap" gap="sm">
-        <div>
-          <Title order={1}>Hello {displayName ?? 'there'}, welcome back</Title>
-          <Text c="dimmed" mt={4}>
-            Viewing household: {selectedHouseholdName ?? 'Choose a household'}
-          </Text>
-        </div>
-        <Button leftSection={<IconPlus size={16} />} onClick={() => setShowCreateModal(true)}>
-          Add Product
-        </Button>
-      </Group>
+        {/* Header */}
+        <Group justify="space-between" align="flex-start" wrap="wrap" gap="sm">
+          <div>
+            <Title order={1}>Hello {displayName ?? 'there'}, welcome back</Title>
+            <Text c="dimmed" mt={4}>
+              Viewing household: {selectedHouseholdName ?? 'Choose a household'}
+            </Text>
+          </div>
+          <Button leftSection={<IconPlus size={16} />} onClick={() => setShowCreateModal(true)}>
+            Add Product
+          </Button>
+        </Group>
 
-      {error && (
-        <Alert color="red" withCloseButton onClose={() => setError(null)}>
-          {error}
-        </Alert>
-      )}
+        {error && (
+          <Alert color="red" withCloseButton onClose={() => setError(null)}>
+            {error}
+          </Alert>
+        )}
 
-      {/* Nav cards */}
-      <SimpleGrid
-        cols={{ base: 2, sm: 4 }}
-        spacing="lg"
-        className="dashboard-nav"
-        aria-label="Dashboard navigation"
-      >
-        {dashboardNavCards.map((card) => (
-          <Paper
+        {/* Nav cards */}
+        <SimpleGrid
+          cols={{ base: 2, sm: 4 }}
+          spacing="lg"
+          className="dashboard-nav"
+          aria-label="Dashboard navigation"
+        >
+          {dashboardNavCards.map((card) => (
+            <Paper
               key={card.route ?? card.action}
-            component="button"
-            className="dashboard-nav-card"
-            onClick={() => {
+              component="button"
+              className="dashboard-nav-card"
+              onClick={() => {
                 if (card.action === 'food-restrictions') {
                   setShowFoodRestrictions(true)
                 } else if (card.route) {
-              void navigate(card.route, {
-                state: { householdId: selectedHouseholdId, householdName: selectedHouseholdName }
-              })
+                  void navigate(card.route, {
+                    state: { householdId: selectedHouseholdId, householdName: selectedHouseholdName }
+                  })
                 }
-            }}
-            radius="lg"
-            withBorder
-          >
-            <span className="dashboard-nav-card__icon" aria-hidden="true">
-              {card.icon}
-            </span>
-            <Text component="h2" className="dashboard-nav-card__title">
-              {card.title}
-            </Text>
-            <Text className="dashboard-nav-card__description">
-              {card.description}
-            </Text>
-          </Paper>
-        ))}
-      </SimpleGrid>
+              }}
+              radius="lg"
+              withBorder
+            >
+              <span className="dashboard-nav-card__icon" aria-hidden="true">
+                {card.icon}
+              </span>
+              <Text component="h2" className="dashboard-nav-card__title">
+                {card.title}
+              </Text>
+              <Text className="dashboard-nav-card__description">
+                {card.description}
+              </Text>
+            </Paper>
+          ))}
+        </SimpleGrid>
 
-      {/* Expiring products */}
-      {loading ? (
-        <Group justify="center" py="xl"><Loader /></Group>
-      ) : (
-        <ProductsInDanger
-          products={products.filter(p => {
-            if (!p.expiryDate) return false;
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            const expiry = new Date(p.expiryDate);
-            expiry.setHours(0, 0, 0, 0);
-            const days = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-            return days < 3;
-          })}
-          onDelete={handleDelete}
-        />
-      )}
+        {/* Expiring products */}
+        {loading ? (
+          <Group justify="center" py="xl"><Loader /></Group>
+        ) : (
+          <ProductsInDanger
+            products={products.filter(p => {
+              if (!p.expiryDate) return false;
+              const today = new Date();
+              today.setHours(0, 0, 0, 0);
+              const expiry = new Date(p.expiryDate);
+              expiry.setHours(0, 0, 0, 0);
+              const days = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+              return days < 3;
+            })}
+            onDelete={handleDelete}
+          />
+        )}
 
-      {/* Household members */}
-      {selectedHouseholdId && (
-        <HouseholdMembers
-          householdId={selectedHouseholdId}
-          inviteId={households.find(h => h.id === selectedHouseholdId)?.invite_id}
-        />
-      )}
+        {/* Household members */}
+        {selectedHouseholdId && (
+          <HouseholdMembers
+            householdId={selectedHouseholdId}
+            inviteId={households.find(h => h.id === selectedHouseholdId)?.invite_id}
+          />
+        )}
 
-      {/* Favourite recipes */}
-      <FavouriteRecipes recipes={favouriteRecipes} />
+        {/* Favourite recipes */}
+        <FavouriteRecipes recipes={favouriteRecipes} />
 
       </Stack>
 
       {selectedHouseholdId && (
-        <FoodRestrictionsModal 
-          householdId={selectedHouseholdId} 
+        <FoodRestrictionsModal
+          householdId={selectedHouseholdId}
           opened={showFoodRestrictions}
           onClose={() => setShowFoodRestrictions(false)}
         />
@@ -651,14 +651,14 @@ const Dashboard: React.FC = () => {
 
       <Modal opened={showCreateModal} onClose={() => setShowCreateModal(false)}
         centered radius="lg" title={<Title order={3}>Add Product</Title>}>
-      <Stack gap="md">
+        <Stack gap="md">
           <TextInput label="Name" required placeholder="e.g. Fresh Milk"
             value={newName} onChange={e => setNewName(e.target.value)} />
           <Select label="Household" required placeholder="Select a household"
             value={newHouseholdId} onChange={v => setNewHouseholdId(v ?? "")}
             data={households.map(h => ({ value: h.id, label: h.house_name }))} />
           <TextInput label="Expiration Date" type="date"
-          value={newExpirationDate}
+            value={newExpirationDate}
             min={expirationDateBounds.min}
             max={expirationDateBounds.max}
             onChange={e => setNewExpirationDate(e.target.value)} />
@@ -668,22 +668,22 @@ const Dashboard: React.FC = () => {
             value={newSize} onChange={e => setNewSize(e.target.value)} />
           <Select label="Unit" placeholder="No unit" clearable
             value={newUnit || null} onChange={v => setNewUnit(v ?? "")}
-          data={[
-            { value: "gr", label: "gr" },
-            { value: "ml", label: "ml" },
-            { value: "kg", label: "kg" },
-            { value: "L", label: "L" },
+            data={[
+              { value: "gr", label: "gr" },
+              { value: "ml", label: "ml" },
+              { value: "kg", label: "kg" },
+              { value: "L", label: "L" },
             ]} />
           <NumberInput label="Price" placeholder="e.g. 4.99" min={0} decimalScale={2}
             value={newPrice ? parseFloat(newPrice) : ""} onChange={v => setNewPrice(String(v))} />
-        <Group justify="flex-end" gap="sm">
-          <Button variant="default" onClick={() => setShowCreateModal(false)}>Cancel</Button>
-          <Button onClick={() => void handleCreate()} loading={creating}>Add Product</Button>
-        </Group>
-      </Stack>
-    </Modal>
-  </Container>
-);
+          <Group justify="flex-end" gap="sm">
+            <Button variant="default" onClick={() => setShowCreateModal(false)}>Cancel</Button>
+            <Button onClick={() => void handleCreate()} loading={creating}>Add Product</Button>
+          </Group>
+        </Stack>
+      </Modal>
+    </Container>
+  );
 };
 
 export default Dashboard;
