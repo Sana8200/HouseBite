@@ -432,39 +432,75 @@ export function Pantry() {
     setCreating(true);
     setError(null);
 
-    const { data: product, error: productError } = await supabase
-      .from("product")
-      .insert({ name: newName.trim(), household_id: newHouseholdId })
-      .select()
-      .single();
+    try {
+      // get current user info
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
 
-    if (productError) {
-      setError("Could not create product: " + productError.message);
+      // create receipt for this purchase
+      const price = newPrice !== "" ? Number(newPrice) : null;
+      const purchaseDate = newExpirationDate || new Date().toISOString().split('T')[0];
+      
+      const { data: receipt, error: receiptError } = await supabase
+        .from('receipt')
+        .insert({
+          household_id: newHouseholdId,
+          store_name: 'Manual Entry',
+          total: price || 0,
+          purchase_at: purchaseDate,
+          buyer_id: user.id
+        })
+        .select()
+        .single();
+
+      if (receiptError) throw new Error('Could not create receipt: ' + receiptError.message);
+
+      // create product linked to receipt
+      const { data: product, error: productError } = await supabase
+        .from("product")
+      .insert({ name: newName.trim(), household_id: newHouseholdId, receipt_id: receipt.id })
+        .select()
+        .single();
+
+      if (productError) {
+        // to match try/catch pattern to prevent inconsistent state
+        throw new Error("Could not create product: " + productError.message);
+      }
+
+      // create product specs
+      const { error: specsError } = await supabase.from("product_specs").insert({
+        product_id: product.id,
+        quantity: Number(newQuantity) || 1,
+        size: newSize || null,
+        unit: newUnit || null,
+        expiration_date: newExpirationDate || null,
+        price: price, // because we compute it above already
+      });
+
+      if (specsError) {
+        // to match try/catch pattern to prevent inconsistent state
+        throw new Error("Could not save product specs: " + specsError.message);
+      }
+
+      // reset form
+      setNewName(""); 
+      setNewHouseholdId(householdId ?? null); 
+      setNewQuantity(1);
+      setNewSize(""); 
+      setNewUnit(null); 
+      setNewExpirationDate(""); 
+      setNewPrice("");
+      setShowCreateModal(false);
+      
+      // refresh data
+      await fetchProducts();
+      
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not add product');
+    } finally {
       setCreating(false);
-      return;
     }
-
-    const { error: specsError } = await supabase.from("product_specs").insert({
-      product_id: product.id,
-      quantity: Number(newQuantity) || 1,
-      size: newSize || null,
-      unit: newUnit || null,
-      expiration_date: newExpirationDate || null,
-      price: newPrice !== "" ? Number(newPrice) : null,
-    });
-
-    if (specsError) {
-      setError("Could not save product specs: " + specsError.message);
-      setCreating(false);
-      return;
-    }
-
-    setNewName(""); setNewHouseholdId(householdId ?? null); setNewQuantity(1);
-    setNewSize(""); setNewUnit(null); setNewExpirationDate(""); setNewPrice("");
-    setShowCreateModal(false);
-    setCreating(false);
-    void fetchProducts();
-  };
+  };  
 
   const handleDelete = async (productId: string) => {
     const { error } = await supabase

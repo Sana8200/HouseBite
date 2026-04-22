@@ -8,8 +8,12 @@ import { searchRecipes } from "../../lib/searchRecipes"
 import { RecipeSearchModal } from "../../components/RecipeSearchModal"
 import { HouseholdMembers } from "../../components/dashboard/HouseholdMembers"
 import { FoodRestrictionsModal } from "../../components/dashboard/FoodRestrictionsModal"
+<<<<<<< HEAD
 import { useDisplayName } from "../../hooks/useDisplayName";
 
+=======
+import { HouseholdBudgetSummary } from '../../components/budget_summary/HouseholdBudgetSummary';
+>>>>>>> origin/main
 
 // Types
 interface Product {
@@ -441,40 +445,71 @@ const Dashboard: React.FC = () => {
     setCreating(true);
     setError(null);
 
-    const { data: product, error: productError } = await supabase
-      .from('product')
-      .insert({ name: newName.trim(), household_id: newHouseholdId })
-      .select()
-      .single();
+    try {
+      // get current user info
+      const { data: {user}} = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
 
-    if (productError) {
-      setError('Could not create product: ' + productError.message);
-      setCreating(false);
-      return;
-    }
+      // Create receipt for this purchase
+      const price = newPrice ? parseFloat(newPrice) : null;
+      const purchaseDate = newExpirationDate || new Date().toISOString().split('T')[0];
+      
+      const { data: receipt, error: receiptError } = await supabase
+        .from('receipt')
+        .insert({
+          household_id: newHouseholdId,
+          store_name: 'Manual Entry', // Or allow store selection
+          total: price || 0,
+          purchase_at: purchaseDate,
+          buyer_id: user.id
+        })
+        .select()
+        .single();
 
-    const { error: specsError } = await supabase
-      .from('product_specs')
-      .insert({
-        product_id: product.id,
-        quantity: parseInt(newQuantity) || 1,
-        size: newSize || null,
-        unit: newUnit || null,
-        expiration_date: newExpirationDate || null,
-        price: newPrice ? parseFloat(newPrice) : null,
-      });
+      if (receiptError) throw new Error('Could not create receipt: ' + receiptError.message);
 
-    if (specsError) {
-      setError('Could not save product specs: ' + specsError.message);
-      setCreating(false);
-      return;
-    }
+      // create product linked to the receipt
+      const { data: product, error: productError } = await supabase
+        .from('product')
+        .insert({ name: newName.trim(), household_id: newHouseholdId })
+        .select()
+        .single();
+
+      if (productError) {
+        setError('Could not create product: ' + productError.message);
+        setCreating(false);
+        return;
+      }
+
+      const { error: specsError } = await supabase
+        .from('product_specs')
+        .insert({
+          product_id: product.id,
+          quantity: parseInt(newQuantity) || 1,
+          size: newSize || null,
+          unit: newUnit || null,
+          expiration_date: newExpirationDate || null,
+          price: newPrice ? parseFloat(newPrice) : null,
+        });
+
+      if (specsError) {
+        setError('Could not save product specs: ' + specsError.message);
+        setCreating(false);
+        return;
+      }
 
     setNewName(''); setNewHouseholdId(''); setNewQuantity('1');
     setNewSize(''); setNewUnit(''); setNewExpirationDate(''); setNewPrice('');
-    setShowCreateModal(false);
-    setCreating(false);
-    void fetchProducts(selectedHouseholdId);
+      setShowCreateModal(false);
+      
+      // refresh data
+      await fetchProducts(selectedHouseholdId);
+      
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not add product');
+    } finally {
+      setCreating(false);
+    }
   };
 
   const handleDelete = async (productId: string) => {
@@ -588,6 +623,14 @@ const Dashboard: React.FC = () => {
           householdId={selectedHouseholdId}
           opened={showFoodRestrictions}
           onClose={() => setShowFoodRestrictions(false)}
+        />
+      )}
+
+      {/* Budget Summary */}
+      {selectedHouseholdId && (
+        <HouseholdBudgetSummary 
+          householdId={selectedHouseholdId} 
+          userId={userId || undefined}
         />
       )}
 

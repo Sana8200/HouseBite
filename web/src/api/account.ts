@@ -24,14 +24,42 @@ export async function getHouseholds() {
 }
 
 // for a specific user only, it links to it automatically by RLS
+// gets their spending for the current month (not entire HH's)
 export async function getTotalSpent() {
-    const { data, error } = await supabase
-        .from("receipt")
-        .select("total")
-    if (error) return { total: null, error }
-    // sum of all total values in all receipts
-    const total = (data ?? []).reduce((acc, r) => acc + Number(r.total ?? 0), 0)
-    return { total, error: null }
+    try {
+        // Get current user
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return { total: null, error: new Error('Not authenticated') };
+
+        // Calculate current month's date range
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = now.getMonth();
+        const startOfMonth = new Date(year, month, 1);
+        const endOfMonth = new Date(year, month + 1, 0);
+        
+        // Format dates for Supabase (YYYY-MM-DD)
+        const startDate = startOfMonth.toISOString().split('T')[0];
+        const endDate = endOfMonth.toISOString().split('T')[0];
+
+        // Query receipts for current user in current month only
+        const { data, error } = await supabase
+            .from("receipt")
+            .select("total")
+            .eq("buyer_id", user.id)  // Filter by current user
+            .gte("purchase_at", startDate)  // Start of month
+            .lte("purchase_at", endDate);  // End of month
+
+        if (error) return { total: null, error };
+        
+        // sum of all total values in all receipts
+        const total = (data ?? []).reduce((acc, r) => acc + Number(r.total ?? 0), 0);
+        
+        return { total, error: null };
+    } catch (error) {
+        console.error('Error in getTotalSpent:', error);
+        return { total: null, error };
+    }
 }
 
 export async function deleteAccount() {

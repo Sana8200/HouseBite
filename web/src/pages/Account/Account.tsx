@@ -264,12 +264,6 @@ export function Account(props: AccountProps) {
                                 </Flex>
                                 <Divider/>
                                 <Flex>
-                                    <Text c="dimmed">Personal budget</Text>
-                                    <Space flex={1}/>
-                                    <Text fw={500}>TODO</Text>
-                                </Flex>
-                                <Divider/>
-                                <Flex>
                                     <Text c="dimmed">Spent this month</Text>
                                     <Space flex={1}/>
                                     <Text fw={500}>
