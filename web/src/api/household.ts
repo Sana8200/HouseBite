@@ -40,6 +40,23 @@ export async function getHouseholdMembers(householdId: string) {
     })
 }
 
+export async function updateHousehold(id: string, name: string, budget: number | null) {
+    return supabase
+        .from("household")
+        .update({ house_name: name, monthly_budget: budget })
+        .eq("id", id)
+}
+
+export async function leaveHousehold(householdId: string) {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { error: { message: "Not authenticated" } }
+    return supabase
+        .from("allocations")
+        .delete()
+        .eq("household_id", householdId)
+        .eq("member_id", user.id)
+}
+
 export async function joinHousehold(inviteId: string) {
     return supabase.rpc('join_household', {
         p_invite_id: inviteId

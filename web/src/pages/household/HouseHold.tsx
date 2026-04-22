@@ -1,7 +1,10 @@
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
-import "./HouseHold.css"
-import { createHousehold, getHouseholds, joinHousehold, type Household } from "../../api/household"
+import {Button, Group, Text, Modal, Stack, Title, Code, CopyButton,ActionIcon, 
+    ThemeIcon, Container, SimpleGrid, Card, TextInput,NumberInput, Alert, Loader,} from "@mantine/core"
+import {IconEdit, IconDoorExit, IconCheck, IconCopy, IconLink,
+        IconPlus, IconUserPlus,} from "@tabler/icons-react"
+import { createHousehold, getHouseholds, joinHousehold, updateHousehold, leaveHousehold, type Household } from "../../api/household"
 
 export function HouseHold() {
     const navigate = useNavigate()
@@ -12,7 +15,7 @@ export function HouseHold() {
     const [error, setError] = useState<string | null>(null)
 
     const [newName, setNewName] = useState("")
-    const [newBudget, setNewBudget] = useState("")
+    const [newBudget, setNewBudget] = useState<number | string>("")
     const [creating, setCreating] = useState(false)
     const [createError, setCreateError] = useState<string | null>(null)
 
@@ -20,232 +23,321 @@ export function HouseHold() {
     const [joining, setJoining] = useState(false)
     const [joinError, setJoinError] = useState<string | null>(null)
 
+    const [editingHousehold, setEditingHousehold] = useState<Household | null>(null)
+    const [editName, setEditName] = useState("")
+    const [editBudget, setEditBudget] = useState<number | string>("")
+    const [saving, setSaving] = useState(false)
+    const [editError, setEditError] = useState<string | null>(null)
+
+    const [leavingId, setLeavingId] = useState<string | null>(null)
+    const [leaving, setLeaving] = useState(false)
+
+    const [createdHousehold, setCreatedHousehold] = useState<{ name: string; inviteId: string; id: string } | null>(null)
+
     const fetchHouseholds = async () => {
         const { data, error } = await getHouseholds()
-
         if (error) {
-            console.error("Error fetching households:", error)
             setError("Could not load households")
             setLoading(false)
             return
         }
-
         setHouseholds(data ?? [])
         setError(null)
         setLoading(false)
     }
 
-    // Warns because fetchHouseholds calls setState internally;
-    // safe to suppress since all setState calls happen after await, not synchronously.
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    useEffect(() => { void fetchHouseholds()}, [])
+    useEffect(() => { void fetchHouseholds() }, [])
 
     const handleCreate = async () => {
-        if (!newName.trim()) {
-            setCreateError("Household name is required")
-            return
-        }
-
-        const parsedBudget = newBudget ? parseFloat(newBudget) : null
-        if (parsedBudget !== null && parsedBudget < 0) {
-            setCreateError("Budget cannot be negative")
-            return
-        }
+        if (!newName.trim()) { setCreateError("Household name is required"); return }
+        const budget = typeof newBudget === "number" ? newBudget : newBudget ? parseFloat(newBudget) : null
+        if (budget !== null && budget < 0) { setCreateError("Budget cannot be negative"); return }
 
         setCreating(true)
         setCreateError(null)
+        const { data, error } = await createHousehold(newName.trim(), budget)
+        setCreating(false)
 
-        const { error } = await createHousehold(
-            newName.trim(),
-            parsedBudget
-        )
+        if (error) { setCreateError(error.message); return }
 
-        if (error) {
-            console.error("Error creating household:", error)
-            setCreateError("Could not create household: " + error.message)
-            setCreating(false)
-            return
-        }
-
-        // Reset and refresh
+        const result = data as { id: string; house_name: string; invite_id: string } | null
         setNewName("")
         setNewBudget("")
         setShowCreateModal(false)
-        setCreating(false)
+        setCreatedHousehold(result ? { name: result.house_name, inviteId: result.invite_id, id: result.id } : null)
         void fetchHouseholds()
     }
 
     const handleJoin = async () => {
-        if (!inviteId.trim()) {
-            setJoinError("Invite Id is required")
-            return
-        }
-
+        if (!inviteId.trim()) { setJoinError("Invite code is required"); return }
         setJoining(true)
         setJoinError(null)
-
         const { error } = await joinHousehold(inviteId.trim())
-
-        if (error) {
-            console.error("Error joining household:", error)
-            setJoinError(error.message)
-            setJoining(false)
-            return
-        }
-
-        // Reset and refresh
+        setJoining(false)
+        if (error) { setJoinError(error.message); return }
         setInviteId("")
         setShowJoinModal(false)
-        setJoining(false)
         void fetchHouseholds()
     }
 
-    const copyInviteId = (id: string) => {
-        void navigator.clipboard.writeText(id)
+    const openEdit = (h: Household) => {
+        setEditingHousehold(h)
+        setEditName(h.house_name)
+        setEditBudget(h.monthly_budget ?? "")
+        setEditError(null)
+    }
+
+    const handleSaveEdit = async () => {
+        if (!editingHousehold) return
+        if (!editName.trim()) { setEditError("Name is required"); return }
+        const budget = typeof editBudget === "number" ? editBudget : editBudget ? parseFloat(editBudget) : null
+        if (budget !== null && budget < 0) { setEditError("Budget cannot be negative"); return }
+        setSaving(true)
+        setEditError(null)
+        const { error } = await updateHousehold(editingHousehold.id, editName.trim(), budget)
+        setSaving(false)
+        if (error) { setEditError(error.message); return }
+        setEditingHousehold(null)
+        void fetchHouseholds()
+    }
+
+    const handleLeave = async (householdId: string) => {
+        setLeaving(true)
+        const { error } = await leaveHousehold(householdId)
+        setLeaving(false)
+        if (error) { setError("Could not leave: " + error.message); return }
+        setLeavingId(null)
+        void fetchHouseholds()
     }
 
     return (
-        <div className="page household-page">
-            <h1>Households</h1>
-            <p>Manage your shared households, invite members and customize your preferences.</p>
-
-            {error && (
-                <div className="error-banner">
-                    {error}
-                    <button className="error-dismiss" onClick={() => setError(null)}>×</button>
+        <Container size="md" py="xl">
+            <Stack gap="lg">
+                <div>
+                    <Title order={1}>Households</Title>
+                    <Text c="dimmed" mt="xs">
+                        Manage your shared households, invite members and customize your preferences.
+                    </Text>
                 </div>
-            )}
 
-            <div className="household-buttons">
-                <button className="create-btn" onClick={() => { setCreateError(null); setShowCreateModal(true) }}>
-                    + Create Household
-                </button>
-                <button className="join-btn" onClick={() => { setJoinError(null); setShowJoinModal(true) }}>
-                    + Join Household
-                </button>
-            </div>
+                {error && (
+                    <Alert color="red" withCloseButton onClose={() => setError(null)}>
+                        {error}
+                    </Alert>
+                )}
 
-            <h2>Your Households</h2>
+                <Group gap="md">
+                    <Button size="lg" leftSection={<IconPlus size={20} />}
+                        onClick={() => { setCreateError(null); setShowCreateModal(true) }}>
+                        Create Household
+                    </Button>
+                    <Button size="lg" variant="default" leftSection={<IconUserPlus size={20} />}
+                        onClick={() => { setJoinError(null); setShowJoinModal(true) }}>
+                        Join Household
+                    </Button>
+                </Group>
 
-            {loading ? (
-                <p className="loading-text">Loading households...</p>
-            ) : households.length === 0 ? (
-                <p className="empty-text">You are not part of any household yet. Create one or join with an invite code.</p>
-            ) : (
-                <div className="household-grid">
-                    {households.map((h) => (
-                        <div className="household-card" key={h.id}>
-                            <div className="household-card-info">
-                                <h3>{h.house_name}</h3>
-                                {h.monthly_budget && (
-                                    <p className="household-budget">Budget: {h.monthly_budget} kr/month</p>
+                <Title order={2} size="h3">Your Households</Title>
+
+                {loading ? (
+                    <Group justify="center" py="xl"><Loader /></Group>
+                ) : households.length === 0 ? (
+                    <Text c="dimmed" ta="center" py="xl">
+                        You are not part of any household yet. Create one or join with an invite code.
+                    </Text>
+                ) : (
+                    <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
+                        {households.map(h => (
+                            <Card key={h.id} withBorder shadow="sm" radius="md" padding="lg">
+                                <Stack gap="sm">
+                                    <div>
+                                        <Text fw={700} size="lg">{h.house_name}</Text>
+                                        {h.monthly_budget != null && (
+                                            <Text size="sm" c="dimmed">Budget: {h.monthly_budget} kr/month</Text>
+                                        )}
+                                    </div>
+
+                                    <CopyButton value={h.invite_id} timeout={3000}>
+                                        {({ copied, copy }) => (
+                                            <Group gap="xs">
+                                                <Text size="xs" c="dimmed">Invite code:</Text>
+                                                <Code style={{ letterSpacing: 0.5 }}>{h.invite_id}</Code>
+                                                <ActionIcon variant="subtle" size="sm"
+                                                    color={copied ? "green" : "gray"} onClick={copy}>
+                                                    {copied ? <IconCheck size={14} /> : <IconCopy size={14} />}
+                                                </ActionIcon>
+                                            </Group>
+                                        )}
+                                    </CopyButton>
+
+                                    <Group gap="xs" mt="xs">
+                                        <Button variant="outline" size="sm"
+                                            onClick={() => {
+                                                void navigate("/dashboard", {
+                                                    state: { householdId: h.id, householdName: h.house_name },
+                                                })
+                                            }}>
+                                            Go to household
+                                        </Button>
+                                        <Button variant="default" size="sm"
+                                            leftSection={<IconEdit size={14} />}
+                                            onClick={() => openEdit(h)}>
+                                            Edit
+                                        </Button>
+                                        {leavingId === h.id ? (
+                                            <Group gap="xs">
+                                                <Text size="xs" c="red">Leave?</Text>
+                                                <Button size="xs" color="red"
+                                                    onClick={() => void handleLeave(h.id)} loading={leaving}>
+                                                    Yes
+                                                </Button>
+                                                <Button size="xs" variant="default"
+                                                    onClick={() => setLeavingId(null)}>
+                                                    No
+                                                </Button>
+                                            </Group>
+                                        ) : (
+                                            <Button variant="subtle" color="red" size="sm"
+                                                leftSection={<IconDoorExit size={14} />}
+                                                onClick={() => setLeavingId(h.id)}>
+                                                Leave
+                                            </Button>
+                                        )}
+                                    </Group>
+                                </Stack>
+                            </Card>
+                        ))}
+                    </SimpleGrid>
+                )}
+            </Stack>
+
+            {/* Create Modal */}
+            <Modal opened={showCreateModal} onClose={() => setShowCreateModal(false)}
+                centered radius="lg" title={<Title order={3}>Create a Household</Title>}>
+                <Stack gap="md">
+                    {createError && <Alert color="red">{createError}</Alert>}
+                    <TextInput label="Household Name" placeholder="e.g. The Smiths"
+                        value={newName} onChange={e => setNewName(e.target.value)} />
+                    <NumberInput label="Monthly Budget (optional)" placeholder="e.g. 5000"
+                        min={0} value={newBudget} onChange={v => setNewBudget(v)} />
+                    <Group justify="flex-end" gap="sm">
+                        <Button variant="default" onClick={() => setShowCreateModal(false)}>Cancel</Button>
+                        <Button onClick={() => void handleCreate()} loading={creating}>Create</Button>
+                    </Group>
+                </Stack>
+            </Modal>
+
+            {/* Edit Modal */}
+            <Modal opened={!!editingHousehold} onClose={() => setEditingHousehold(null)}
+                centered radius="lg" title={<Title order={3}>Edit Household</Title>}>
+                <Stack gap="md">
+                    {editError && <Alert color="red">{editError}</Alert>}
+                    <TextInput label="Household Name" value={editName}
+                        onChange={e => setEditName(e.target.value)} />
+                    <NumberInput label="Monthly Budget (optional)" placeholder="e.g. 5000"
+                        min={0} value={editBudget} onChange={v => setEditBudget(v)} />
+                    <Group justify="flex-end" gap="sm">
+                        <Button variant="default" onClick={() => setEditingHousehold(null)}>Cancel</Button>
+                        <Button onClick={() => void handleSaveEdit()} loading={saving}>Save Changes</Button>
+                    </Group>
+                </Stack>
+            </Modal>
+
+            {/* Join Modal */}
+            <Modal opened={showJoinModal} onClose={() => setShowJoinModal(false)}
+                centered radius="lg" title={<Title order={3}>Join a Household</Title>}>
+                <Stack gap="md">
+                    <Text size="sm" c="dimmed">Ask a household member for their invite code.</Text>
+                    {joinError && <Alert color="red">{joinError}</Alert>}
+                    <TextInput label="Invite Code" placeholder="e.g. a1b2c3d4"
+                        value={inviteId} onChange={e => setInviteId(e.target.value)} />
+                    <Group justify="flex-end" gap="sm">
+                        <Button variant="default" onClick={() => setShowJoinModal(false)}>Cancel</Button>
+                        <Button onClick={() => void handleJoin()} loading={joining}>Join</Button>
+                    </Group>
+                </Stack>
+            </Modal>
+
+            {/* Success Modal */}
+            <Modal opened={!!createdHousehold} onClose={() => setCreatedHousehold(null)}
+                centered radius="xl" size="sm" padding="xl">
+                {createdHousehold && (
+                    <Stack align="center" gap="xl" py="md">
+                        <div style={{
+                            position: "relative", width: 100, height: 100,
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                        }}>
+                            <div style={{
+                                position: "absolute", inset: 0, borderRadius: "50%",
+                                background: "radial-gradient(circle, var(--color-primary-50) 0%, transparent 70%)",
+                            }} />
+                            <ThemeIcon size={60} radius="xl" color="green" variant="filled">
+                                <IconCheck size={30} stroke={3} />
+                            </ThemeIcon>
+                            <Text style={{ position: "absolute", top: -4, right: 2, fontSize: 20 }}>🎊</Text>
+                            <Text style={{ position: "absolute", top: 8, left: 0, fontSize: 14 }}>🎉</Text>
+                            <Text style={{ position: "absolute", bottom: 4, right: 8, fontSize: 12 }}>✨</Text>
+                            <Text style={{ position: "absolute", bottom: 8, left: 6, fontSize: 16 }}>🎈</Text>
+                        </div>
+
+                        <Stack align="center" gap={6}>
+                            <Title order={2} ta="center">Household created! 🎉</Title>
+                            <Text size="sm" c="dimmed" ta="center" maw={280}>
+                                You're all set. Invite your house mates to start collaborating.
+                            </Text>
+                        </Stack>
+
+                        <Stack w="100%" gap="xs" style={{
+                            background: "var(--color-primary-50)",
+                            border: "1px solid var(--color-primary-200)",
+                            borderRadius: "var(--radius-lg)",
+                            padding: "var(--space-lg)",
+                        }}>
+                            <Group gap="xs">
+                                <IconLink size={16} color="var(--color-primary-700)" />
+                                <Text size="sm" fw={700} c="var(--color-primary-700)">Your invite code</Text>
+                            </Group>
+                            <CopyButton value={createdHousehold.inviteId} timeout={4000}>
+                                {({ copied, copy }) => (
+                                    <Stack gap="xs">
+                                        <Group gap="sm" p="sm" style={{
+                                            background: "white",
+                                            borderRadius: "var(--radius-md)",
+                                            border: "1px solid var(--color-primary-200)",
+                                        }}>
+                                            <Code style={{ flex: 1, fontSize: "var(--font-size-400)", letterSpacing: 1.5, background: "transparent", fontWeight: 600 }}>
+                                                {createdHousehold.inviteId}
+                                            </Code>
+                                            <ActionIcon variant={copied ? "filled" : "light"}
+                                                color={copied ? "green" : "gray"} onClick={copy} size="lg">
+                                                {copied ? <IconCheck size={18} /> : <IconCopy size={18} />}
+                                            </ActionIcon>
+                                        </Group>
+                                        {copied && (
+                                            <Group gap={4} justify="center">
+                                                <IconCheck size={14} color="var(--color-success)" />
+                                                <Text size="sm" c="green" fw={500}>Copied!</Text>
+                                            </Group>
+                                        )}
+                                    </Stack>
                                 )}
-                                <div className="invite-code-row">
-                                    <span className="invite-label">Invite Id:</span>
-                                    <code className="invite-code">{h.invite_id}</code>
-                                    <button
-                                        className="copy-btn"
-                                        onClick={() => copyInviteId(h.invite_id)}
-                                        title="Copy invite code"
-                                    >
-                                        Copy
-                                    </button>
-                                </div>
-                            </div>
-                            <button
-                                className="go-btn"
-                                onClick={() => {
-                                    void navigate("/dashboard", {
-                                        state: {
-                                            householdId: h.id,
-                                            householdName: h.house_name,
-                                        },
-                                    })
-                                }}
-                            >
-                                Go to household
-                            </button>
-                        </div>
-                    ))}
-                </div>
-            )}
+                            </CopyButton>
+                        </Stack>
 
-            {/* Create Household Modal */}
-            {showCreateModal && (
-                <div className="modal-overlay" onClick={() => setShowCreateModal(false)}>
-                    <div className="modal" onClick={(e) => e.stopPropagation()}>
-                        <h2>Create a Household</h2>
-                        {createError && (
-                            <div className="error-banner">
-                                {createError}
-                                <button className="error-dismiss" onClick={() => setCreateError(null)}>×</button>
-                            </div>
-                        )}
-                        <div className="modal-field">
-                            <label htmlFor="house-name">Household Name</label>
-                            <input
-                                id="house-name"
-                                type="text"
-                                placeholder="e.g. The Smiths"
-                                value={newName}
-                                onChange={(e) => setNewName(e.target.value)}
-                            />
-                        </div>
-                        <div className="modal-field">
-                            <label htmlFor="house-budget">Monthly Budget (optional)</label>
-                            <input
-                                id="house-budget"
-                                type="number"
-                                placeholder="e.g. 5000"
-                                value={newBudget}
-                                onChange={(e) => setNewBudget(e.target.value)}
-                            />
-                        </div>
-                        <div className="modal-actions">
-                            <button className="cancel-btn" onClick={() => setShowCreateModal(false)}>
-                                Cancel
-                            </button>
-                            <button className="confirm-btn" onClick={() => void handleCreate()} disabled={creating}>
-                                {creating ? "Creating..." : "Create"}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Join Household Modal */}
-            {showJoinModal && (
-                <div className="modal-overlay" onClick={() => setShowJoinModal(false)}>
-                    <div className="modal" onClick={(e) => e.stopPropagation()}>
-                        <h2>Join a Household</h2>
-                        <p className="modal-hint">Ask a household member for their invite ID.</p>
-                        {joinError && (
-                            <div className="error-banner">
-                                {joinError}
-                                <button className="error-dismiss" onClick={() => setJoinError(null)}>×</button>
-                            </div>
-                        )}
-                        <div className="modal-field">
-                            <label htmlFor="invite-code">Invite ID</label>
-                            <input
-                                id="invite-code"
-                                type="text"
-                                placeholder="e.g. a1b2c3d4"
-                                value={inviteId}
-                                onChange={(e) => setInviteId(e.target.value)}
-                            />
-                        </div>
-                        <div className="modal-actions">
-                            <button className="cancel-btn" onClick={() => setShowJoinModal(false)}>
-                                Cancel
-                            </button>
-                            <button className="confirm-btn" onClick={() => void handleJoin()} disabled={joining}>
-                                {joining ? "Joining..." : "Join"}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-        </div>
+                        <Button fullWidth size="lg" color="dark" radius="md"
+                            rightSection={<span style={{ fontSize: 18 }}>→</span>}
+                            onClick={() => {
+                                setCreatedHousehold(null)
+                                void navigate("/dashboard", {
+                                    state: { householdId: createdHousehold.id, householdName: createdHousehold.name },
+                                })
+                            }}>
+                            Continue to household
+                        </Button>
+                    </Stack>
+                )}
+            </Modal>
+        </Container>
     )
 }
