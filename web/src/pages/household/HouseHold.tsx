@@ -128,11 +128,11 @@ export function HouseHold() {
                 )}
 
                 <Group gap="md">
-                    <Button leftSection={<IconPlus size={16} />}
+                    <Button size="lg" leftSection={<IconPlus size={20} />}
                         onClick={() => { setCreateError(null); setShowCreateModal(true) }}>
                         Create Household
                     </Button>
-                    <Button variant="default" leftSection={<IconUserPlus size={16} />}
+                    <Button size="lg" variant="default" leftSection={<IconUserPlus size={20} />}
                         onClick={() => { setJoinError(null); setShowJoinModal(true) }}>
                         Join Household
                     </Button>
