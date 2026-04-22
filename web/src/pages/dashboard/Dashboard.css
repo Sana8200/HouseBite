@@ -1,6 +1,3 @@
-/* Dashboard page — most layout handled by Mantine.
-   Only nav cards + recipe carousel styles below. */
-
 /* Nav card grid */
 .dashboard-nav {
   margin-bottom: var(--space-6);
