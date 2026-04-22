@@ -120,6 +120,10 @@ export function Recipes() {
   }
 
   const handleSave = async (recipe: SearchRecipe, index: number) => {
+    if (favorites.some(f => f.title === recipe.title)) {
+      setSaved(prev => new Set(prev).add(index))
+      return
+    }
     setSaving(index)
     const { data: { user } } = await supabase.auth.getUser()
     const { error } = await supabase.functions.invoke("save-recipe", {
