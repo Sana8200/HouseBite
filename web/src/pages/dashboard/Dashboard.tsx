@@ -1,13 +1,13 @@
 import './Dashboard.css';
-
 import React, { useState, useRef, useEffect } from 'react';
 import { ActionIcon, Alert, Badge, Button, Card, Checkbox, Container, Group, Loader, Modal, NumberInput, Paper, Select, SimpleGrid, Stack, Text, TextInput, Title } from '@mantine/core';
 import { IconLayoutGrid, IconReceiptEuro, IconPlus, IconShoppingCart, IconTrash, IconToolsKitchen2Off, IconChefHat, IconUsers, IconClock } from '@tabler/icons-react';
-
 import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../../supabase';
 import { searchRecipes } from "../../lib/searchRecipes"
+import { RecipeSearchModal } from "../../components/RecipeSearchModal"
 import { HouseholdMembers } from "../../components/dashboard/HouseholdMembers"
+import { FoodRestrictionsModal } from "../../components/dashboard/FoodRestrictionsModal"
 import { HouseholdBudgetSummary } from '../../components/budget_summary/HouseholdBudgetSummary';
 
 // Types
@@ -46,7 +46,8 @@ interface FavouriteRecipesProps {
 interface DashboardNavCards {
   title: string;
   description: string;
-  route: string;
+  route?: string;
+  action?: string;
   icon: React.ReactNode;
 }
 
@@ -56,21 +57,45 @@ const dashboardNavCards: DashboardNavCards[] = [
     title: 'Shopping List',
     description: 'Manage the household shopping list and keep track of what still needs to be bought.',
     route: '/shoppinglist',
-    icon: <IconShoppingCart size={24} stroke={1.8} />,
+    icon: <IconShoppingCart size={25} stroke={1.9} />,
   },
   {
     title: 'Pantry',
     description: 'Review pantry items, spot products that are running low and check what expires soon.',
     route: '/pantry',
-    icon: <IconLayoutGrid size={24} stroke={1.8} />,
+    icon: <IconLayoutGrid size={25} stroke={1.9} />,
   },
   {
     title: 'Receipts',
     description: 'Open recent receipts and review purchases already captured for the household.',
     route: '/receipts',
-    icon: <IconReceiptEuro size={24} stroke={1.8} />,
+    icon: <IconReceiptEuro size={25} stroke={1.9} />,
+  },
+  {
+    title: 'Food Restrictions',
+    description: 'Manage allergies and dietary preferences of your household for better recipes and shopping.',
+    action: 'food-restrictions',
+    icon: <IconToolsKitchen2Off size={25} stroke={1.9} />,
   },
 ];
+
+const formatDateInputValue = (date: Date) => date.toISOString().slice(0, 10);
+
+const getExpirationDateBounds = () => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const minDate = new Date(today);
+  minDate.setFullYear(today.getFullYear() - 100);
+
+  const maxDate = new Date(today);
+  maxDate.setFullYear(today.getFullYear() + 100);
+
+  return {
+    min: formatDateInputValue(minDate),
+    max: formatDateInputValue(maxDate),
+  };
+};
 
 // ----------------------------------------------------------------------------
 
@@ -81,6 +106,8 @@ const ProductsInDanger: React.FC<{
 }> = ({ products, onDelete }) => {
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [showRecipeModal, setShowRecipeModal] = useState(false);
+  const [pendingSearch, setPendingSearch] = useState<{ ingredients: string[]; householdId: string } | null>(null);
   const navigate = useNavigate();
 
   const getDaysUntilExpiry = (expiryDate: string | null): number | null => {
@@ -106,13 +133,20 @@ const ProductsInDanger: React.FC<{
     return da - db;
   });
 
-  const handleFindRecipes = async () => {
+  const handleFindRecipes = () => {
     const selected = products.filter(p => selectedProducts.includes(p.id));
     const ingredientNames = selected.map(p => p.name);
     const householdId = selected[0]?.householdId;
     if (!householdId) return;
-    const results = await searchRecipes(ingredientNames, householdId);
-    navigate('/recipes', { state: { recipes: results, householdId } });
+    setPendingSearch({ ingredients: ingredientNames, householdId });
+    setShowRecipeModal(true);
+  };
+
+  // Receives exactly the diets and intolerances the user left checked in the modal.
+  const handleProceed = async (diets: string[], intolerances: string[]) => {
+    if (!pendingSearch) return;
+    const results = await searchRecipes(pendingSearch.ingredients, pendingSearch.householdId, diets, intolerances);
+    navigate('/recipes', { state: { recipes: results, householdId: pendingSearch.householdId } });
   };
 
   if (!products.length) {
@@ -199,10 +233,19 @@ const ProductsInDanger: React.FC<{
 
       {selectedProducts.length > 0 && (
         <Group justify="center">
-          <Button onClick={() => void handleFindRecipes()}>
+          <Button onClick={() => handleFindRecipes()}>
             Find Recipes ({selectedProducts.length} product{selectedProducts.length !== 1 ? 's' : ''} selected)
           </Button>
         </Group>
+      )}
+
+      {pendingSearch && (
+        <RecipeSearchModal
+          opened={showRecipeModal}
+          onClose={() => setShowRecipeModal(false)}
+          onProceed={handleProceed}
+          householdId={pendingSearch.householdId}
+        />
       )}
     </Stack>
   );
@@ -212,11 +255,8 @@ const ProductsInDanger: React.FC<{
 
 // Favourite Recipes Component with Carousel
 const FavouriteRecipes: React.FC<FavouriteRecipesProps> = ({ recipes }) => {
-
-  const carouselRef = useRef<HTMLDivElement>(null);
- // const carouselRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
-  const scroll = (dir: number) => carouselRef.current?.scrollBy({ left: dir * 300, behavior: 'smooth' });
+
   if (!recipes.length) {
     return (
       <Paper withBorder p="xl" radius="md">
@@ -284,6 +324,7 @@ const FavouriteRecipes: React.FC<FavouriteRecipesProps> = ({ recipes }) => {
 
 // Main Dashboard Component
 const Dashboard: React.FC = () => {
+  const expirationDateBounds = getExpirationDateBounds();
   const navigate = useNavigate();
   const location = useLocation();
   const locationState = (location.state as DashboardLocationState | null) ?? null;
@@ -295,6 +336,7 @@ const Dashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showFoodRestrictions, setShowFoodRestrictions] = useState(false);
   const [creating, setCreating] = useState(false);
 
   const [newName, setNewName] = useState('');
@@ -407,6 +449,14 @@ const Dashboard: React.FC = () => {
       return;
     }
 
+    if (
+      newExpirationDate
+      && (newExpirationDate < expirationDateBounds.min || newExpirationDate > expirationDateBounds.max)
+    ) {
+      setError(`Expiration date must be between ${expirationDateBounds.min} and ${expirationDateBounds.max}`);
+      return;
+    }
+
     setCreating(true);
     setError(null);
 
@@ -446,8 +496,6 @@ const Dashboard: React.FC = () => {
         return;
       }
 
-      // create product specs
-
       const { error: specsError } = await supabase
         .from('product_specs')
         .insert({
@@ -465,18 +513,12 @@ const Dashboard: React.FC = () => {
         return;
       }
 
-      // reset form
-      setNewName(''); 
-      setNewHouseholdId(''); 
-      setNewQuantity('1');
-      setNewSize(''); 
-      setNewUnit(''); 
-      setNewExpirationDate(''); 
-      setNewPrice('');
+    setNewName(''); setNewHouseholdId(''); setNewQuantity('1');
+    setNewSize(''); setNewUnit(''); setNewExpirationDate(''); setNewPrice('');
       setShowCreateModal(false);
       
-      // Refresh data
-      await fetchProducts();
+      // refresh data
+      await fetchProducts(selectHouseholdId);
       
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not add product');
@@ -503,6 +545,7 @@ const Dashboard: React.FC = () => {
   return (
   <Container size="lg" py="xl">
     <Stack gap="xl">
+
       {/* Header */}
       <Group justify="space-between" align="flex-start" wrap="wrap" gap="sm">
         <div>
@@ -531,13 +574,17 @@ const Dashboard: React.FC = () => {
       >
         {dashboardNavCards.map((card) => (
           <Paper
-            key={card.route}
+              key={card.route ?? card.action}
             component="button"
             className="dashboard-nav-card"
             onClick={() => {
+                if (card.action === 'food-restrictions') {
+                  setShowFoodRestrictions(true)
+                } else if (card.route) {
               void navigate(card.route, {
                 state: { householdId: selectedHouseholdId, householdName: selectedHouseholdName }
               })
+                }
             }}
             radius="lg"
             withBorder
@@ -584,6 +631,16 @@ const Dashboard: React.FC = () => {
       {/* Favourite recipes */}
       <FavouriteRecipes recipes={favouriteRecipes} />
 
+      </Stack>
+
+      {selectedHouseholdId && (
+        <FoodRestrictionsModal 
+          householdId={selectedHouseholdId} 
+          opened={showFoodRestrictions}
+          onClose={() => setShowFoodRestrictions(false)}
+        />
+      )}
+
       {/* Budget Summary */}
       {selectedHouseholdId && (
         <HouseholdBudgetSummary 
@@ -591,78 +648,34 @@ const Dashboard: React.FC = () => {
           userId={userId || undefined}
         />
       )}
-    </Stack>
 
-    {/* Add Product Modal - Using Mantine Modal instead of custom div */}
-    <Modal 
-      opened={showCreateModal} 
-      onClose={() => setShowCreateModal(false)}
-      centered 
-      radius="lg" 
-      title={<Title order={3}>Add Product</Title>}
-    >
+      <Modal opened={showCreateModal} onClose={() => setShowCreateModal(false)}
+        centered radius="lg" title={<Title order={3}>Add Product</Title>}>
       <Stack gap="md">
-        <TextInput 
-          label="Name" 
-          required 
-          placeholder="e.g. Fresh Milk"
-          value={newName} 
-          onChange={e => setNewName(e.target.value)} 
-        />
-        
-        <Select 
-          label="Household" 
-          required 
-          placeholder="Select a household"
-          value={newHouseholdId} 
-          onChange={v => setNewHouseholdId(v ?? "")}
-          data={households.map(h => ({ value: h.id, label: h.house_name }))} 
-        />
-        
-        <TextInput 
-          label="Expiration Date" 
-          type="date"
+          <TextInput label="Name" required placeholder="e.g. Fresh Milk"
+            value={newName} onChange={e => setNewName(e.target.value)} />
+          <Select label="Household" required placeholder="Select a household"
+            value={newHouseholdId} onChange={v => setNewHouseholdId(v ?? "")}
+            data={households.map(h => ({ value: h.id, label: h.house_name }))} />
+          <TextInput label="Expiration Date" type="date"
           value={newExpirationDate}
-          onChange={e => setNewExpirationDate(e.target.value)} 
-        />
-        
-        <NumberInput 
-          label="Quantity" 
-          min={1} 
-          value={newQuantity ? parseInt(newQuantity) : 1}
-          onChange={v => setNewQuantity(String(v))} 
-        />
-        
-        <TextInput 
-          label="Size" 
-          placeholder="e.g. 500"
-          value={newSize} 
-          onChange={e => setNewSize(e.target.value)} 
-        />
-        
-        <Select 
-          label="Unit" 
-          placeholder="No unit" 
-          clearable
-          value={newUnit || null} 
-          onChange={v => setNewUnit(v ?? "")}
+            min={expirationDateBounds.min}
+            max={expirationDateBounds.max}
+            onChange={e => setNewExpirationDate(e.target.value)} />
+          <NumberInput label="Quantity" min={1} value={newQuantity ? parseInt(newQuantity) : 1}
+            onChange={v => setNewQuantity(String(v))} />
+          <TextInput label="Size" placeholder="e.g. 500"
+            value={newSize} onChange={e => setNewSize(e.target.value)} />
+          <Select label="Unit" placeholder="No unit" clearable
+            value={newUnit || null} onChange={v => setNewUnit(v ?? "")}
           data={[
             { value: "gr", label: "gr" },
             { value: "ml", label: "ml" },
             { value: "kg", label: "kg" },
             { value: "L", label: "L" },
-          ]} 
-        />
-        
-        <NumberInput 
-          label="Price" 
-          placeholder="e.g. 4.99" 
-          min={0} 
-          decimalScale={2}
-          value={newPrice ? parseFloat(newPrice) : ""} 
-          onChange={v => setNewPrice(String(v))} 
-        />
-        
+            ]} />
+          <NumberInput label="Price" placeholder="e.g. 4.99" min={0} decimalScale={2}
+            value={newPrice ? parseFloat(newPrice) : ""} onChange={v => setNewPrice(String(v))} />
         <Group justify="flex-end" gap="sm">
           <Button variant="default" onClick={() => setShowCreateModal(false)}>Cancel</Button>
           <Button onClick={() => void handleCreate()} loading={creating}>Add Product</Button>
