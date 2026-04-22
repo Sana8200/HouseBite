@@ -518,7 +518,7 @@ const Dashboard: React.FC = () => {
       setShowCreateModal(false);
       
       // refresh data
-      await fetchProducts(selectHouseholdId);
+      await fetchProducts(selectedHouseholdId);
       
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not add product');

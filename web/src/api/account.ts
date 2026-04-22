@@ -23,7 +23,8 @@ export async function getHouseholds() {
     }
 }
 
-// for a specific user only, gets their spending for the current month (not entire HH's)
+// for a specific user only, it links to it automatically by RLS
+// gets their spending for the current month (not entire HH's)
 export async function getTotalSpent() {
     try {
         // Get current user
@@ -51,7 +52,7 @@ export async function getTotalSpent() {
 
         if (error) return { total: null, error };
         
-        // Sum all totals for this user this month
+        // sum of all total values in all receipts
         const total = (data ?? []).reduce((acc, r) => acc + Number(r.total ?? 0), 0);
         
         return { total, error: null };

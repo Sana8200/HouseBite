@@ -258,7 +258,7 @@ export function HouseholdBudgetSummary({ householdId, userId }: HouseholdBudgetS
           {/* Interactive Progress Bar */}
           {memberSpending.length > 0 && householdBudget && (
             <Box mt="md">
-              <Text size="sm" fw={500} mb="xs">Spending breakdown by member</Text>
+              <Title order={4} mb="md">Spending breakdown</Title>
               <Progress.Root size="xl">
                 {progressSegments.map((segment, idx) => (
                   <Tooltip key={idx} label={segment.tooltip} withArrow>
@@ -297,16 +297,15 @@ export function HouseholdBudgetSummary({ householdId, userId }: HouseholdBudgetS
           )}
 
           {/* Spending by Member Table */}
-          <Box mt="lg">
-          <Title order={4} mb="md">Spending by member</Title>
+          <Box mt="lg">          
           {memberSpending.length > 0 ? (
             <Table>
               <Table.Thead>
                 <Table.Tr>
                   <Table.Th>Member</Table.Th>
                   <Table.Th>This month</Table.Th>
-                  <Table.Th>Receipts</Table.Th>
-                  <Table.Th>% of total</Table.Th>
+                  <Table.Th>Number of receipts</Table.Th>
+                  <Table.Th>% of total spending of the household</Table.Th>
                 </Table.Tr>
               </Table.Thead>
               <Table.Tbody>
