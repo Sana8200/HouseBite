@@ -47,15 +47,31 @@ export function RecipeSearchModal({ opened, onClose, onProceed, householdId }: P
       .map((r: any) => r.food_restriction)
       .filter(Boolean);
 
-    // All household restrictions via SECURITY DEFINER RPC
+    // All household member restrictions via SECURITY DEFINER RPC
     const { data: householdData } = await supabase.rpc("get_household_distinct_restrictions", {
       p_household_id: householdId,
     });
 
+    // Household-level restrictions set via the Food Restrictions modal
+    const { data: hhData } = await supabase
+      .from("household_food_restriction")
+      .select("food_restriction(id, name, category)")
+      .eq("household_id", householdId);
+
+    const hhLevelR: Restriction[] = (hhData ?? [])
+      .map((r: any) => r.food_restriction)
+      .filter(Boolean);
+
+    // Merge member + household-level restrictions, deduplicate by id
+    const seen = new Set<string>();
+    const merged = [...(householdData ?? []), ...hhLevelR].filter((r: Restriction) => {
+      if (seen.has(r.id)) return false;
+      seen.add(r.id);
+      return true;
+    });
+
     const myIds = new Set(myR.map((r) => r.id));
-    const householdR: Restriction[] = (householdData ?? []).filter(
-      (r: Restriction) => !myIds.has(r.id),
-    );
+    const householdR: Restriction[] = merged.filter((r: Restriction) => !myIds.has(r.id));
 
     setMyRestrictions(myR);
     setHouseholdRestrictions(householdR);
@@ -142,7 +158,7 @@ export function RecipeSearchModal({ opened, onClose, onProceed, householdId }: P
           <Divider />
 
           <div>
-            <Text fw={600} mb="xs">Other household members' restrictions</Text>
+            <Text fw={600} mb="xs">Household restrictions</Text>
             {renderGroup(householdRestrictions)}
           </div>
 
