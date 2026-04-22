@@ -5,6 +5,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import { searchRecipes } from "../../lib/searchRecipes";
 import { supabase } from "../../supabase";
+import { RecipeSearchModal } from "../../components/RecipeSearchModal";
 
 type PantryViewMode = "grid" | "list";
 type ExpiryStatusFilter = "all" | "expired" | "critical" | "warning" | "fresh" | "no-date";
@@ -26,6 +27,24 @@ interface PantryProduct {
 interface PantryLocationState {
   householdId?: string;
 }
+
+const formatDateInputValue = (date: Date) => date.toISOString().slice(0, 10);
+
+const getExpirationDateBounds = () => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const minDate = new Date(today);
+  minDate.setFullYear(today.getFullYear() - 100);
+
+  const maxDate = new Date(today);
+  maxDate.setFullYear(today.getFullYear() + 100);
+
+  return {
+    min: formatDateInputValue(minDate),
+    max: formatDateInputValue(maxDate),
+  };
+};
 
 /* Helper for getting the number of days remaining for expiring a product. */
 function getDaysUntilExpiry(expirationDate: string | null): number | null {
@@ -308,6 +327,7 @@ function PantryAllProductsList({
 
 /* Main pantry page component. */
 export function Pantry() {
+  const expirationDateBounds = getExpirationDateBounds();
   const location = useLocation();
   const navigate = useNavigate();
   const locationState = location.state as PantryLocationState | undefined;
@@ -321,6 +341,8 @@ export function Pantry() {
   const [searchValue, setSearchValue] = useState("");
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [showRecipeModal, setShowRecipeModal] = useState(false);
+  const [pendingSearch, setPendingSearch] = useState<{ ingredients: string[]; householdId: string } | null>(null);
 
   const [households, setHouseholds] = useState<{ id: string; house_name: string }[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -394,6 +416,14 @@ export function Pantry() {
       return;
     }
 
+    if (
+      newExpirationDate
+      && (newExpirationDate < expirationDateBounds.min || newExpirationDate > expirationDateBounds.max)
+    ) {
+      setError(`Expiration date must be between ${expirationDateBounds.min} and ${expirationDateBounds.max}`);
+      return;
+    }
+
     setCreating(true);
     setError(null);
 
@@ -454,7 +484,7 @@ export function Pantry() {
     );
   };
 
-  const handleFindRecipes = async () => {
+  const handleFindRecipes = () => {
     const selectedProductObjects = products.filter((product) =>
       selectedProducts.includes(product.id),
     );
@@ -463,8 +493,15 @@ export function Pantry() {
 
     if (!selectedHouseholdId || ingredientNames.length === 0) return;
 
-    const results = await searchRecipes(ingredientNames, selectedHouseholdId);
-    navigate("/recipes", { state: { recipes: results, householdId: selectedHouseholdId } });
+    setPendingSearch({ ingredients: ingredientNames, householdId: selectedHouseholdId });
+    setShowRecipeModal(true);
+  };
+
+  // Receives exactly the diets and intolerances the user left checked in the modal.
+  const handleProceed = async (diets: string[], intolerances: string[]) => {
+    if (!pendingSearch) return;
+    const results = await searchRecipes(pendingSearch.ingredients, pendingSearch.householdId, diets, intolerances);
+    navigate("/recipes", { state: { recipes: results, householdId: pendingSearch.householdId } });
   };
 
   /* Memoized list of products after applying search, filter and expiry ordering. */
@@ -590,7 +627,7 @@ export function Pantry() {
         />
         <Button
           disabled={selectedProducts.length === 0}
-          onClick={() => void handleFindRecipes()}
+          onClick={() => handleFindRecipes()}
         >
           Find recipes
         </Button>
@@ -658,6 +695,15 @@ export function Pantry() {
           )}
         </Stack>
       </Paper>
+      {pendingSearch && (
+        <RecipeSearchModal
+          opened={showRecipeModal}
+          onClose={() => setShowRecipeModal(false)}
+          onProceed={handleProceed}
+          householdId={pendingSearch.householdId}
+        />
+      )}
+
       <Modal
         opened={showCreateModal}
         onClose={() => setShowCreateModal(false)}
@@ -684,6 +730,8 @@ export function Pantry() {
             label="Expiration Date"
             type="date"
             value={newExpirationDate}
+            min={expirationDateBounds.min}
+            max={expirationDateBounds.max}
             onChange={(e) => setNewExpirationDate(e.currentTarget.value)}
           />
           <NumberInput

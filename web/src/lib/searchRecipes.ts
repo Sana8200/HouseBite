@@ -1,8 +1,21 @@
 import { supabase } from "../supabase"
 
-export const searchRecipes = async (ingredients: string[], householdId: string) => {
+// Calls the edge function with the ingredients the user picked and the
+// restrictions they chose to keep active in the modal. The edge function
+// will pass these straight to Spoonacular instead of re-fetching from the DB.
+export const searchRecipes = async (
+  ingredients: string[],
+  householdId: string,
+  diets: string[],
+  intolerances: string[],
+) => {
   const { data, error } = await supabase.functions.invoke("search-recipes", {
-    body: { ingredients: ingredients.join(","), household_id: householdId }
+    body: {
+      ingredients: ingredients.join(","),
+      household_id: householdId,
+      diets,
+      intolerances,
+    },
   })
 
   if (error) throw error

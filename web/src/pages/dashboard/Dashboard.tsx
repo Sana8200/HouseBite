@@ -5,6 +5,7 @@ import { IconLayoutGrid, IconReceiptEuro,IconPlus, IconShoppingCart, IconTrash,I
 import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../../supabase';
 import { searchRecipes } from "../../lib/searchRecipes"
+import { RecipeSearchModal } from "../../components/RecipeSearchModal"
 import { HouseholdMembers } from "../../components/dashboard/HouseholdMembers"
 import { FoodRestrictionsModal } from "../../components/dashboard/FoodRestrictionsModal"
 
@@ -78,6 +79,24 @@ const dashboardNavCards: DashboardNavCards[] = [
   },
 ];
 
+const formatDateInputValue = (date: Date) => date.toISOString().slice(0, 10);
+
+const getExpirationDateBounds = () => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const minDate = new Date(today);
+  minDate.setFullYear(today.getFullYear() - 100);
+
+  const maxDate = new Date(today);
+  maxDate.setFullYear(today.getFullYear() + 100);
+
+  return {
+    min: formatDateInputValue(minDate),
+    max: formatDateInputValue(maxDate),
+  };
+};
+
 // ----------------------------------------------------------------------------
 
 // Products in Danger Component
@@ -87,6 +106,8 @@ const ProductsInDanger: React.FC<{
 }> = ({ products, onDelete }) => {
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [showRecipeModal, setShowRecipeModal] = useState(false);
+  const [pendingSearch, setPendingSearch] = useState<{ ingredients: string[]; householdId: string } | null>(null);
   const navigate = useNavigate();
 
   const getDaysUntilExpiry = (expiryDate: string | null): number | null => {
@@ -112,13 +133,20 @@ const ProductsInDanger: React.FC<{
     return da - db;
   });
 
-  const handleFindRecipes = async () => {
+  const handleFindRecipes = () => {
     const selected = products.filter(p => selectedProducts.includes(p.id));
     const ingredientNames = selected.map(p => p.name);
     const householdId = selected[0]?.householdId;
     if (!householdId) return;
-    const results = await searchRecipes(ingredientNames, householdId);
-    navigate('/recipes', { state: { recipes: results, householdId } });
+    setPendingSearch({ ingredients: ingredientNames, householdId });
+    setShowRecipeModal(true);
+  };
+
+  // Receives exactly the diets and intolerances the user left checked in the modal.
+  const handleProceed = async (diets: string[], intolerances: string[]) => {
+    if (!pendingSearch) return;
+    const results = await searchRecipes(pendingSearch.ingredients, pendingSearch.householdId, diets, intolerances);
+    navigate('/recipes', { state: { recipes: results, householdId: pendingSearch.householdId } });
   };
 
   if (!products.length) {
@@ -205,10 +233,19 @@ const ProductsInDanger: React.FC<{
 
       {selectedProducts.length > 0 && (
         <Group justify="center">
-          <Button onClick={() => void handleFindRecipes()}>
+          <Button onClick={() => handleFindRecipes()}>
             Find Recipes ({selectedProducts.length} product{selectedProducts.length !== 1 ? 's' : ''} selected)
           </Button>
         </Group>
+      )}
+
+      {pendingSearch && (
+        <RecipeSearchModal
+          opened={showRecipeModal}
+          onClose={() => setShowRecipeModal(false)}
+          onProceed={handleProceed}
+          householdId={pendingSearch.householdId}
+        />
       )}
     </Stack>
   );
@@ -218,48 +255,57 @@ const ProductsInDanger: React.FC<{
 
 // Favourite Recipes Component with Carousel
 const FavouriteRecipes: React.FC<FavouriteRecipesProps> = ({ recipes }) => {
-  const carouselRef = useRef<HTMLDivElement>(null);
+ // const carouselRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
-  const scroll = (dir: number) => carouselRef.current?.scrollBy({ left: dir * 300, behavior: 'smooth' });
+ // const scroll = (dir: number) => carouselRef.current?.scrollBy({ left: dir * 300, behavior: 'smooth' });
 
   if (!recipes.length) {
     return (
-      <div className="favourite-recipes-empty">
-        <p>No favourite recipes yet. Start adding some</p>
-      </div>
+        <Text c="dimmed" ta="center" mt="md">
+        No favourite recipes yet. Start adding some
+      </Text>
     );
   }
 
   return (
-    <div className="favourite-recipes-container">
-      <div className="section-header">
-        <h2 className="section-title">Here are your favourite recipes</h2>
-      </div>
+    <div>
+      <Text fw={700} size="lg" mb="md">
+        Here are your favourite recipes
+      </Text>
 
-      <div className="carousel-wrapper">
-        <button onClick={() => scroll(-1)} className="carousel-arrow left-arrow" aria-label="Scroll left">‹</button>
-        <div className="recipes-carousel" ref={carouselRef}>
-          {recipes.map(recipe => {
-            const nutrition = recipe.description?.split('\n\n')[0] ?? ''
-            return (
-              <div
-                key={recipe.id}
-                className="recipe-card"
-                style={{ cursor: 'pointer' }}
-                onClick={() => navigate('/recipes', { state: { openRecipeId: recipe.id } })}
-              >
-                <div className="recipe-info">
-                  <h3 className="recipe-name">{recipe.title}</h3>
-                  <p className="recipe-time">Servings: {recipe.servings ?? '?'} · Prep: {recipe.prep_time ?? '?'} min</p>
-                  <p className="recipe-description">{nutrition}</p>
-                </div>
-              </div>
-            )
-          })}
-        </div>
-        <button onClick={() => scroll(1)} className="carousel-arrow right-arrow" aria-label="Scroll right">›</button>
-      </div>
+      <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }}>
+        {recipes.map((recipe) => {
+          const nutrition = recipe.description?.split("\n\n")[0] ?? "";
+
+          return (
+            <Paper
+              key={recipe.id}
+              p="md"
+              radius="md"
+              withBorder
+              shadow="sm"
+              style={{ cursor: "pointer" }}
+              onClick={() =>
+                navigate("/recipes", { state: { openRecipeId: recipe.id } })
+              }
+            >
+              <Stack gap="xs">
+                <Text fw={600}>{recipe.title}</Text>
+
+                <Text size="sm" c="dimmed">
+                  Servings: {recipe.servings ?? "?"} · Prep:{" "}
+                  {recipe.prep_time ?? "?"} min
+                </Text>
+
+                <Text size="xs" c="dimmed">
+                  {nutrition}
+                </Text>
+              </Stack>
+            </Paper>
+          );
+        })}
+      </SimpleGrid>
     </div>
   );
 };
@@ -268,6 +314,7 @@ const FavouriteRecipes: React.FC<FavouriteRecipesProps> = ({ recipes }) => {
 
 // Main Dashboard Component
 const Dashboard: React.FC = () => {
+  const expirationDateBounds = getExpirationDateBounds();
   const navigate = useNavigate();
   const location = useLocation();
   const locationState = (location.state as DashboardLocationState | null) ?? null;
@@ -386,6 +433,14 @@ const Dashboard: React.FC = () => {
   const handleCreate = async () => {
     if (!newName.trim() || !newHouseholdId) {
       setError('Name and household are required');
+      return;
+    }
+
+    if (
+      newExpirationDate
+      && (newExpirationDate < expirationDateBounds.min || newExpirationDate > expirationDateBounds.max)
+    ) {
+      setError(`Expiration date must be between ${expirationDateBounds.min} and ${expirationDateBounds.max}`);
       return;
     }
 
@@ -541,7 +596,10 @@ const Dashboard: React.FC = () => {
             value={newHouseholdId} onChange={v => setNewHouseholdId(v ?? "")}
             data={households.map(h => ({ value: h.id, label: h.house_name }))} />
           <TextInput label="Expiration Date" type="date"
-            value={newExpirationDate} onChange={e => setNewExpirationDate(e.target.value)} />
+            value={newExpirationDate}
+            min={expirationDateBounds.min}
+            max={expirationDateBounds.max}
+            onChange={e => setNewExpirationDate(e.target.value)} />
           <NumberInput label="Quantity" min={1} value={newQuantity ? parseInt(newQuantity) : 1}
             onChange={v => setNewQuantity(String(v))} />
           <TextInput label="Size" placeholder="e.g. 500"
