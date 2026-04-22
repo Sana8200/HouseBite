@@ -533,7 +533,9 @@ const Dashboard: React.FC = () => {
               if (card.action === 'food-restrictions') {
                 setShowFoodRestrictions(true)
               } else if (card.route) {
-                navigate(card.route)
+                void navigate(card.route, {
+                  state: { householdId: selectedHouseholdId, householdName: selectedHouseholdName }
+                })
               }
             }}
             radius="lg"
