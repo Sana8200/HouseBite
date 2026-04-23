@@ -1,11 +1,7 @@
+import type { PostgrestSingleResponse } from '@supabase/supabase-js'
 import { supabase } from '../supabase'
+import type { Household } from './schema'
 
-export interface Household {
-    id: string
-    house_name: string
-    invite_id: string
-    monthly_budget: number | null
-}
 
 // Wrapper for a SECURITY DEFINER SQL function that creates the household
 // and links the current user in a single transaction. This replaces
@@ -19,10 +15,10 @@ export async function createHousehold(name: string, budget: number | null ) {
     })
 }
 
-export async function getHouseholds() {
+export async function getHouseholds(): Promise<PostgrestSingleResponse<Household[]>> {
     return supabase
         .from("household")
-        .select("id, house_name, invite_id, monthly_budget")
+        .select()
 }
 
 // Wrapper for a SECURITY DEFINER SQL function that finds a household
