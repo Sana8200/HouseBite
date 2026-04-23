@@ -20,10 +20,12 @@ interface Props {
 export function RecipeSearchModal({ opened, onClose, onProceed, householdId }: Props) {
   const [myRestrictions, setMyRestrictions] = useState<Restriction[]>([]);
   const [householdRestrictions, setHouseholdRestrictions] = useState<Restriction[]>([]);
+  // Tracks which restrictions are checked — all start checked so the search is as safe as possible.
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
   const [proceeding, setProceeding] = useState(false);
 
+  // Reload whenever the modal opens or the household changes.
   useEffect(() => {
     if (!opened) return;
     void load();
@@ -35,7 +37,7 @@ export function RecipeSearchModal({ opened, onClose, onProceed, householdId }: P
     const { data: userData } = await supabase.auth.getUser();
     const userId = userData.user?.id;
 
-    // My restrictions
+    // Fetch the current user's personal dietary restrictions from their account.
     const { data: myData } = userId
       ? await supabase
           .from("member_restriction")
@@ -47,7 +49,8 @@ export function RecipeSearchModal({ opened, onClose, onProceed, householdId }: P
       .map((r: any) => r.food_restriction)
       .filter(Boolean);
 
-    // Household-level restrictions set via the Food Restrictions modal
+    // Fetch restrictions set at the household level (via the Food Restrictions modal).
+    // We exclude anything already shown under "My restrictions" to avoid duplicates.
     const { data: hhData } = await supabase
       .from("household_food_restriction")
       .select("food_restriction(id, name, category)")
@@ -60,10 +63,12 @@ export function RecipeSearchModal({ opened, onClose, onProceed, householdId }: P
 
     setMyRestrictions(myR);
     setHouseholdRestrictions(householdR);
+    // Pre-check everything so no restriction is accidentally ignored.
     setSelectedIds(new Set([...myR, ...householdR].map((r) => r.id)));
     setLoading(false);
   };
 
+  // Toggle a single restriction on or off.
   const toggle = (id: string) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
@@ -75,8 +80,8 @@ export function RecipeSearchModal({ opened, onClose, onProceed, householdId }: P
   const handleProceed = async () => {
     setProceeding(true);
 
-    // Collect every restriction the user left checked, then split them by
-    // category so the search API knows which are diets and which are intolerances.
+    // Only pass along the restrictions the user left checked,
+    // split by category so the recipe search API can use them directly.
     const allRestrictions = [...myRestrictions, ...householdRestrictions];
     const checked = allRestrictions.filter((r) => selectedIds.has(r.id));
     const diets = checked.filter((r) => r.category === "diet").map((r) => r.name);
@@ -87,6 +92,7 @@ export function RecipeSearchModal({ opened, onClose, onProceed, householdId }: P
     onClose();
   };
 
+  // Renders a group of restrictions split into diets and intolerances with checkboxes.
   const renderGroup = (restrictions: Restriction[]) => {
     const diets = restrictions.filter((r) => r.category === "diet");
     const intolerances = restrictions.filter((r) => r.category === "intolerance");
@@ -135,6 +141,7 @@ export function RecipeSearchModal({ opened, onClose, onProceed, householdId }: P
         </Group>
       ) : (
         <Stack gap="md">
+          {/* The user's own personal restrictions from their account. */}
           <div>
             <Text fw={600} mb="xs">My restrictions</Text>
             {renderGroup(myRestrictions)}
@@ -142,6 +149,7 @@ export function RecipeSearchModal({ opened, onClose, onProceed, householdId }: P
 
           <Divider />
 
+          {/* Restrictions set for this household (not tied to any specific member). */}
           <div>
             <Text fw={600} mb="xs">Household restrictions</Text>
             {renderGroup(householdRestrictions)}
