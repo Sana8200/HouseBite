@@ -51,7 +51,7 @@ export function App() {
     <Route key="pantry"        path="pantry"       element={user ? <Pantry />                   : <Navigate to="/sign-in" />} />,
     <Route key="receipts"      path="receipts"     element={user ? <Receipts />                 : <Navigate to="/sign-in" />} />,
     <Route key="account"       path="account"      element={user ? <Account user={user} />      : <Navigate to="/sign-in" />} />,
-    <Route key="scan"          path="scan"         element={user ? <Scan />                     : <Navigate to="/sign-in" />} />,
+    <Route key="scan"          path="scan"         element={user ? <Scan user={user} />         : <Navigate to="/sign-in" />} />,
   ];
 
   return (

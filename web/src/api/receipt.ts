@@ -1,27 +1,15 @@
 import type { PostgrestResponse, PostgrestSingleResponse } from "@supabase/supabase-js";
 import { supabase } from "../supabase";
+import type { InsertReceipt, Product, ProductSpecs, Receipt } from "./schema";
 
-export interface Receipt {
-    id?: string;
-    household_id: string;
-    store_name: string | null;
-    total: number | null;
-    purchase_at: string;
-}
 
-export interface ReceiptProduct {
-    id: string;
-    name: string;
-    quantity: number;
-    price: number | null;
-}
+export type ReceiptProduct = Pick<Product, "id" |"name"> & Pick<ProductSpecs, "quantity" | "price">
 
-export interface ReceiptWithProducts extends Receipt {
-    id: string;
+export interface ReceiptWithProducts extends Pick<Receipt, "id" | "household_id" | "store_name" | "total" | "purchase_at"> {
     products: ReceiptProduct[];
 }
 
-export async function insertReceipt(receipt: Receipt): Promise<PostgrestSingleResponse<Receipt>> {
+export async function insertReceipt(receipt: InsertReceipt): Promise<PostgrestSingleResponse<Receipt>> {
     return await supabase
         .from("receipt")
         .insert(receipt)
