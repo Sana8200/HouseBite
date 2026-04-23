@@ -4,10 +4,10 @@ import { Alert, Box, Button, Card, Center, Checkbox, Container, Flex, Grid, Load
 import { Dropzone, IMAGE_MIME_TYPE, type FileWithPath } from "@mantine/dropzone";
 import { IconReceipt } from "@tabler/icons-react";
 import { scanReceipt, type ReceiptData, type ReceiptItemData } from "../../api/scan";
-import { getHouseholds, type Household } from "../../api/household";
+import { getHouseholds } from "../../api/household";
 import { insertProductWithSpecs } from "../../api/product.ts";
 import { insertReceipt } from "../../api/receipt.ts";
-import type { InsertProduct, InsertProductSpecs, InsertReceipt, ProductSizeUnit } from "../../api/schema.ts";
+import type { Household, InsertProduct, InsertProductSpecs, InsertReceipt, ProductSizeUnit } from "../../api/schema.ts";
 import type { User } from "@supabase/supabase-js";
 
 const IMG_SIZE = 2000;

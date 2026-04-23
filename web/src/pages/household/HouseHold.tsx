@@ -4,7 +4,8 @@ import {Button, Group, Text, Modal, Stack, Title, Code, CopyButton,ActionIcon,
     ThemeIcon, Container, SimpleGrid, Card, TextInput,NumberInput, Alert, Loader,} from "@mantine/core"
 import {IconEdit, IconDoorExit, IconCheck, IconCopy, IconLink,
         IconPlus, IconUserPlus,} from "@tabler/icons-react"
-import { createHousehold, getHouseholds, joinHousehold, updateHousehold, leaveHousehold, type Household } from "../../api/household"
+import { createHousehold, getHouseholds, joinHousehold, updateHousehold, leaveHousehold } from "../../api/household"
+import type { Household } from "../../api/schema"
 
 export function HouseHold() {
     const navigate = useNavigate()
@@ -180,7 +181,7 @@ export function HouseHold() {
                                         )}
                                     </div>
 
-                                    <CopyButton value={h.invite_id} timeout={3000}>
+                                    <CopyButton value={h.invite_id ?? ""} timeout={3000}>
                                         {({ copied, copy }) => (
                                             <Group gap="xs">
                                                 <Text size="xs" c="dimmed">Invite code:</Text>
