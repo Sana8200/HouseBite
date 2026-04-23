@@ -320,7 +320,6 @@ export default function Dashboard(props: DashboardProps) {
 
   useEffect(() => {
     void supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? null));
-    void fetchHouseholds();
   }, []);
 
   const [newName, setNewName] = useState('');
