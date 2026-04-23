@@ -5,8 +5,9 @@ import { Dropzone, IMAGE_MIME_TYPE, type FileWithPath } from "@mantine/dropzone"
 import { IconReceipt } from "@tabler/icons-react";
 import { scanReceipt, type ReceiptData, type ReceiptItemData } from "../../api/scan";
 import { getHouseholds, type Household } from "../../api/household";
-import { insertProductWithSpecs, type PantryUnit, type Product, type ProductSpecs } from "../../api/product.ts";
+import { insertProductWithSpecs } from "../../api/product.ts";
 import { insertReceipt, type Receipt } from "../../api/receipt.ts";
+import type { InsertProduct, InsertProductSpecs, ProductSizeUnit } from "../../api/schema.ts";
 
 const IMG_SIZE = 2000;
 
@@ -40,7 +41,7 @@ interface EditReceiptData extends ReceiptData {
 interface EditReceiptItemData extends ReceiptItemData {
     key: number;
     enabled: boolean;
-    unit: PantryUnit | null;
+    unit: ProductSizeUnit | null;
     expirationDate: string | null;
 }
 
@@ -352,7 +353,7 @@ function ScanFinished(props: ScanFinishedProps) {
         setSaving(true);
         try {
 
-            const items: [Product, Omit<ProductSpecs, "product_id">][] = [];
+            const items: [InsertProduct, Omit<InsertProductSpecs, "product_id">][] = [];
 
             const receipt: Receipt = {
                 household_id: selectedHousehold,
