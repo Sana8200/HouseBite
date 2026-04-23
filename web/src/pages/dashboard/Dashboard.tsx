@@ -77,7 +77,23 @@ const dashboardNavCards: DashboardNavCards[] = [
   },
 ];
 
-import { getExpirationDateBounds, getDaysUntilExpiry } from '../../utils/date';
+const formatDateInputValue = (date: Date) => date.toISOString().slice(0, 10);
+
+const getExpirationDateBounds = () => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const minDate = new Date(today);
+  minDate.setFullYear(today.getFullYear() - 100);
+
+  const maxDate = new Date(today);
+  maxDate.setFullYear(today.getFullYear() + 100);
+
+  return {
+    min: formatDateInputValue(minDate),
+    max: formatDateInputValue(maxDate),
+  };
+};
 
 // ----------------------------------------------------------------------------
 
@@ -90,6 +106,15 @@ const ProductsInDanger: React.FC<{
   const [showRecipeModal, setShowRecipeModal] = useState(false);
   const [pendingSearch, setPendingSearch] = useState<{ ingredients: string[]; householdId: string } | null>(null);
   const navigate = useNavigate();
+
+  const getDaysUntilExpiry = (expiryDate: string | null): number | null => {
+    if (!expiryDate) return null;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const expiry = new Date(expiryDate);
+    expiry.setHours(0, 0, 0, 0);
+    return Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  };
 
   const getExpiryBadge = (days: number | null) => {
     if (days === null) return <Badge variant="light">No date</Badge>;
@@ -294,9 +319,6 @@ const FavouriteRecipes: React.FC<FavouriteRecipesProps> = ({ recipes }) => {
 };
 
 // ----------------------------------------------------------------------------
-export interface DashboardProps {
-    user: User;
-}
 
 export interface DashboardProps {
   user: User;
@@ -305,6 +327,7 @@ export interface DashboardProps {
 // Main Dashboard Component
 export default function Dashboard(props: DashboardProps) {
   const { user } = props;
+
   const expirationDateBounds = getExpirationDateBounds();
   const navigate = useNavigate();
   const location = useLocation();
@@ -327,8 +350,6 @@ export default function Dashboard(props: DashboardProps) {
   const [newExpirationDate, setNewExpirationDate] = useState('');
   const [newPrice, setNewPrice] = useState('');
   const displayName = useDisplayName();
- 
-  
 
   useEffect(() => {
     if (!households.length) return;
