@@ -8,7 +8,7 @@ import { searchRecipes } from "../../lib/searchRecipes"
 import { RecipeSearchModal } from "../../components/RecipeSearchModal"
 import { HouseholdMembers } from "../../components/dashboard/HouseholdMembers"
 import { FoodRestrictionsModal } from "../../components/dashboard/FoodRestrictionsModal"
-import { useDisplayName } from "../../utils/user";
+import { getUsername } from "../../utils/user";
 import { HouseholdBudgetSummary } from '../../components/budget_summary/HouseholdBudgetSummary';
 import type { User } from '@supabase/supabase-js';
 import { getHouseholds } from '../../api/household';
@@ -349,7 +349,7 @@ export default function Dashboard(props: DashboardProps) {
   const [newUnit, setNewUnit] = useState('');
   const [newExpirationDate, setNewExpirationDate] = useState('');
   const [newPrice, setNewPrice] = useState('');
-  const displayName = useDisplayName();
+  const displayName = getUsername(user);
 
   useEffect(() => {
     if (!households.length) return;
@@ -549,7 +549,7 @@ export default function Dashboard(props: DashboardProps) {
         {/* Header */}
         <Group justify="space-between" align="flex-start" wrap="wrap" gap="sm">
           <div>
-            <Title order={1}>Hello {displayName ?? 'there'}, welcome back</Title>
+            <Title order={1}>Hello {displayName || 'there'}, welcome back</Title>
             <Text c="dimmed" mt={4}>
               Viewing household: {selectedHouseholdName ?? 'Choose a household'}
             </Text>

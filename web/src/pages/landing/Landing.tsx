@@ -2,7 +2,7 @@ import { Button, Container, Text, Title, Stack, Group, SimpleGrid, Card, ThemeIc
 import type { User } from "@supabase/supabase-js";
 import { Link } from "react-router";
 import { IconHome, IconChefHat, IconShoppingCart, IconBarcode, IconUsers, IconUser, IconLeaf, IconArrowRight } from "@tabler/icons-react";
-import { useDisplayName } from "../../utils/user";
+import { getUsername } from "../../utils/user";
 
 export interface LandingProps {
     user: User | null,
@@ -42,7 +42,6 @@ const quickLinks = [
 
 export function Landing(props: LandingProps) {
     const { user } = props;
-    const displayName = useDisplayName();
 
     if (!user) {
         return (
@@ -129,12 +128,13 @@ export function Landing(props: LandingProps) {
     }
 
     // Signed-in landing
+    const displayName = getUsername(user);
     return (
         <Container size="md" py="xl">
             <Stack gap="xl">
                 <div>
                     <Title order={1} mb={4}>
-                        Welcome back, {displayName ?? 'there'} 👋
+                        Welcome back, {displayName || 'there'} 👋
                     </Title>
                     <Text c="dimmed">
                         Jump into any section below.
