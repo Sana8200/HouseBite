@@ -11,6 +11,8 @@ import { FoodRestrictionsModal } from "../../components/dashboard/FoodRestrictio
 import { useDisplayName } from "../../hooks/useDisplayName";
 import { HouseholdBudgetSummary } from '../../components/budget_summary/HouseholdBudgetSummary';
 import type { User } from '@supabase/supabase-js';
+import { getHouseholds } from '../../api/household';
+import type { Household } from '../../api/schema';
 
 // Types
 interface Product {
@@ -20,12 +22,6 @@ interface Product {
   quantity: number;
   householdName: string;
   householdId: string;
-}
-
-interface Household {
-  id: string;
-  house_name: string;
-  invite_id?: string;
 }
 
 interface DashboardLocationState {
@@ -384,10 +380,17 @@ export default function Dashboard(props: DashboardProps) {
     void fetchProducts(selectedHouseholdId);
   }, [selectedHouseholdId]);
 
-  const fetchHouseholds = async () => {
-    const { data } = await supabase.from('household').select('id, house_name, invite_id');
-    setHouseholds(data ?? []);
-  };
+  useEffect(() => {
+    void load();
+    async function load() {
+      try {
+        const { data } = await getHouseholds();
+        setHouseholds(data ?? []);
+      } catch (error) {
+        console.log(error);
+      }
+    }
+  }, []);
 
   const fetchProducts = async (householdId: string | null) => {
     setLoading(true);
