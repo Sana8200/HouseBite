@@ -4,9 +4,11 @@ import { Alert, Box, Button, Card, Center, Checkbox, Container, Flex, Grid, Load
 import { Dropzone, IMAGE_MIME_TYPE, type FileWithPath } from "@mantine/dropzone";
 import { IconReceipt } from "@tabler/icons-react";
 import { scanReceipt, type ReceiptData, type ReceiptItemData } from "../../api/scan";
-import { getHouseholds, type Household } from "../../api/household";
-import { insertProductWithSpecs, type PantryUnit, type Product, type ProductSpecs } from "../../api/product.ts";
-import { insertReceipt, type Receipt } from "../../api/receipt.ts";
+import { getHouseholds } from "../../api/household";
+import { insertProductWithSpecs } from "../../api/product.ts";
+import { insertReceipt } from "../../api/receipt.ts";
+import type { Household, InsertProduct, InsertProductSpecs, InsertReceipt, ProductSizeUnit } from "../../api/schema.ts";
+import type { User } from "@supabase/supabase-js";
 
 const IMG_SIZE = 2000;
 
@@ -40,11 +42,17 @@ interface EditReceiptData extends ReceiptData {
 interface EditReceiptItemData extends ReceiptItemData {
     key: number;
     enabled: boolean;
-    unit: PantryUnit | null;
+    unit: ProductSizeUnit | null;
     expirationDate: string | null;
 }
 
-export function Scan() {
+export interface ScanProps {
+    user: User;
+}
+
+export function Scan(props: ScanProps) {
+    const { user } = props;
+
     const [state, setState] = useState<ScanState>({state: "ready"});
 
     const [households, setHouseholds] = useState<Household[]>([]);
@@ -66,7 +74,7 @@ export function Scan() {
             <Paper shadow="md" p="md">
                 {state.state == "ready"      && <ScanReady      state={state} setState={setState} />}
                 {state.state == "processing" && <ScanProcessing state={state} setState={setState} />}
-                {state.state == "finished"   && <ScanFinished   state={state} setState={setState} households={households} />}
+                {state.state == "finished"   && <ScanFinished   state={state} setState={setState} households={households} user={user} />}
                 {state.state == "error"      && <ScanError      state={state} setState={setState} />}
             </Paper>
         </Container>
@@ -265,10 +273,11 @@ interface ScanFinishedProps {
     state: FinishedState;
     setState: Dispatch<SetStateAction<ScanState>>;
     households: Household[];
+    user: User;
 }
 
 function ScanFinished(props: ScanFinishedProps) {
-    const {state, setState, households} = props;
+    const {state, setState, households, user} = props;
 
     const [saving, setSaving] = useState(false);
 
@@ -352,13 +361,14 @@ function ScanFinished(props: ScanFinishedProps) {
         setSaving(true);
         try {
 
-            const items: [Product, Omit<ProductSpecs, "product_id">][] = [];
+            const items: [InsertProduct, Omit<InsertProductSpecs, "product_id">][] = [];
 
-            const receipt: Receipt = {
+            const receipt: InsertReceipt = {
                 household_id: selectedHousehold,
                 store_name: state.data.storeName,
                 total: state.data.totalPrice ?? 0,
                 purchase_at: state.data.purchaseDate ?? new Date().toISOString().split("T")[0],
+                buyer_id: user.id,
             };
 
             const receipt_res = await insertReceipt(receipt);
@@ -371,7 +381,7 @@ function ScanFinished(props: ScanFinishedProps) {
                     {
                         household_id: selectedHousehold,
                         name: item.name,
-                        receipt_id: receipt_res.data.id!,
+                        receipt_id: receipt_res.data.id,
                     },
                     {
                         quantity: item.quantity ?? 1,

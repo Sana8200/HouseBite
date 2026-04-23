@@ -3,10 +3,11 @@ import { useEffect, useState } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router"
 import "./Header.css"
 import type { User } from "@supabase/supabase-js";
-import { getHouseholds, type Household } from "../api/household";
+import { getHouseholds } from "../api/household";
 import { signOut } from "../api/auth";
 import { useMediaQuery } from "@mantine/hooks";
 import { IconLogout, IconUser, IconCamera, IconDeviceTabletStar, IconHome } from "@tabler/icons-react";
+import type { Household } from "../api/schema";
 import IconHouseBite from "../assets/icon.svg";
 import { supabase } from "../supabase";
 

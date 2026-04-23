@@ -301,6 +301,10 @@ export interface DashboardProps {
     user: User;
 }
 
+export interface DashboardProps {
+  user: User;
+}
+
 // Main Dashboard Component
 export default function Dashboard(props: DashboardProps) {
   const { user } = props;
