@@ -1,27 +1,5 @@
 import { supabase } from '../supabase'
-import { getHouseholds as getHouseholdsBase } from './household'
 
-export interface Household {
-    id: string
-    house_name: string
-}
-
-interface HouseholdRow { // for data type purposes
-    id: string
-    house_name: string
-    invite_id: string
-    monthly_budget: number | null
-}
-
-// calls getHouseholds from household api but parses and returns only the data account needs
-export async function getHouseholds() {
-    const { data, error } = await getHouseholdsBase()
-    if (error) return { data: null, error }
-    return {
-        data: (data as HouseholdRow[] ?? []).map(h => ({ id: h.id, house_name: h.house_name })),
-        error: null,
-    }
-}
 
 // for a specific user only, it links to it automatically by RLS
 // gets their spending for the current month (not entire HH's)
