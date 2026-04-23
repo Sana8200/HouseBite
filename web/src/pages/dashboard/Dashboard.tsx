@@ -291,9 +291,10 @@ const FavouriteRecipes: React.FC<FavouriteRecipesProps> = ({ recipes }) => {
               shadow="sm"
               radius="md"
               padding="lg"
-              style={{ transition: "transform 0.15s, box-shadow 0.15s" }}
+              style={{ transition: "transform 0.15s, box-shadow 0.15s", cursor: "pointer" }}
               onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "var(--shadow-md)"; }}
               onMouseLeave={e => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = ""; }}
+              onClick={() => navigate("/recipes", { state: { openRecipeId: recipe.id } })}
             >
               <Stack gap="sm">
                 <Text fw={700} size="md" lineClamp={2}>{recipe.title}</Text>
