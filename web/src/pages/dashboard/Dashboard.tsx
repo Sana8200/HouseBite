@@ -10,6 +10,7 @@ import { HouseholdMembers } from "../../components/dashboard/HouseholdMembers"
 import { FoodRestrictionsModal } from "../../components/dashboard/FoodRestrictionsModal"
 import { useDisplayName } from "../../hooks/useDisplayName";
 import { HouseholdBudgetSummary } from '../../components/budget_summary/HouseholdBudgetSummary';
+import type { User } from '@supabase/supabase-js';
 
 // Types
 interface Product {
@@ -322,8 +323,14 @@ const FavouriteRecipes: React.FC<FavouriteRecipesProps> = ({ recipes }) => {
 
 // ----------------------------------------------------------------------------
 
+export interface DashboardProps {
+  user: User;
+}
+
 // Main Dashboard Component
-const Dashboard: React.FC = () => {
+export default function Dashboard(props: DashboardProps) {
+  const { user } = props;
+
   const expirationDateBounds = getExpirationDateBounds();
   const navigate = useNavigate();
   const location = useLocation();
@@ -626,7 +633,7 @@ const Dashboard: React.FC = () => {
       {selectedHouseholdId && (
         <HouseholdBudgetSummary 
           householdId={selectedHouseholdId} 
-          userId={userId || undefined}
+          userId={user.id || undefined}
         />
       )}
 
@@ -666,5 +673,3 @@ const Dashboard: React.FC = () => {
     </Container>
   );
 };
-
-export default Dashboard;
