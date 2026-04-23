@@ -107,8 +107,13 @@ export function Recipes() {
       .select("id, title, description, servings, prep_time")
       .order("created_at", { ascending: false })
       .then(({ data }) => {
-        setFavourites(data ?? [])
+        const list = data ?? []
+        setFavourites(list)
         setLoadingFavourites(false)
+        if (openRecipeId) {
+          const match = list.find(r => r.id === openRecipeId)
+          if (match) setSelectedRecipe(match)
+        }
       })
 
   useEffect(() => { void fetchFavourites() }, [])
