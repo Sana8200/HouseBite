@@ -1,4 +1,4 @@
-import { Badge, Button, Checkbox, Divider, Group, Loader, Modal, Stack, Text } from "@mantine/core";
+import { Alert, Badge, Button, Checkbox, Divider, Group, Loader, Modal, Stack, Text } from "@mantine/core";
 import { useEffect, useState } from "react";
 import { supabase } from "../supabase";
 
@@ -25,6 +25,7 @@ export function RecipeSearchModal({ opened, onClose, onProceed, householdId, use
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
   const [proceeding, setProceeding] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Reload whenever the modal opens or the household changes.
   useEffect(() => {
@@ -79,6 +80,7 @@ export function RecipeSearchModal({ opened, onClose, onProceed, householdId, use
 
   const handleProceed = async () => {
     setProceeding(true);
+    setError(null);
 
     // Only pass along the restrictions the user left checked,
     // split by category so the recipe search API can use them directly.
@@ -92,6 +94,7 @@ export function RecipeSearchModal({ opened, onClose, onProceed, householdId, use
       onClose();
     } catch (e) {
       console.error("RecipeSearchModal handleProceed failed", e);
+      setError("Could not search recipes. Check your connection and try again.");
     } finally {
       setProceeding(false);
     }
@@ -146,7 +149,11 @@ export function RecipeSearchModal({ opened, onClose, onProceed, householdId, use
         </Group>
       ) : (
         <Stack gap="md">
-          {/* The user's own personal restrictions from their account. */}
+          {error && (
+            <Alert color="red" withCloseButton onClose={() => setError(null)}>
+              {error}
+            </Alert>
+          )}
           <div>
             <Text fw={600} mb="xs">My restrictions</Text>
             {renderGroup(myRestrictions)}
