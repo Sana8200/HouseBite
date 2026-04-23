@@ -9,12 +9,12 @@ import { insertProductWithSpecs } from "../../api/product.ts";
 import { insertReceipt } from "../../api/receipt.ts";
 import type { Household, InsertProduct, InsertProductSpecs, InsertReceipt, ProductSizeUnit } from "../../api/schema.ts";
 import type { User } from "@supabase/supabase-js";
+import { useNavigate } from "react-router";
 
 const IMG_SIZE = 2000;
 
 interface ReadyState {
     state: "ready";
-    message?: string;
 }
 
 interface ProcessingState {
@@ -87,7 +87,7 @@ interface ScanReadyProps {
 }
 
 function ScanReady(props: ScanReadyProps) {
-    const {state, setState} = props;
+    const {setState} = props;
 
     const [camera, setCamera] = useState(false);
 
@@ -151,14 +151,6 @@ function ScanReady(props: ScanReadyProps) {
 
     return (
         <>
-            {state.message &&
-                <Alert variant="light" color="green" mb="md">
-                    <Center>
-                        {state.message}
-                    </Center>
-                </Alert>
-            }
-
             <Center pos="relative" style={camera ? {} : {display: "none"}}>
                 <video className="scan-video" ref={videoOutputRef}>Video stream not available.</video>
                 <Button pos="absolute" bottom={20} size="lg" onClick={takePhoto}>Scan</Button>
@@ -279,6 +271,8 @@ interface ScanFinishedProps {
 function ScanFinished(props: ScanFinishedProps) {
     const {state, setState, households, user} = props;
 
+    const navigate = useNavigate();
+
     const [saving, setSaving] = useState(false);
 
     const [selectedHousehold, setSelectedHousehold] = useState<string | null>(null);
@@ -398,8 +392,12 @@ function ScanFinished(props: ScanFinishedProps) {
                 if (result.error) throw result.error;
             }));
 
-            // setSaving(false);
-            setState({state: "ready", message: "Products added"});
+            void navigate("/pantry", {
+                state: {
+                    householdId: selectedHousehold,
+                    householdName: households.find(h => h.id == selectedHousehold)
+                }
+            });
         } catch (error) {
             setState({state: "error", error: error as Error});
         }

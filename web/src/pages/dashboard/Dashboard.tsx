@@ -11,6 +11,8 @@ import { FoodRestrictionsModal } from "../../components/dashboard/FoodRestrictio
 import { useDisplayName } from "../../utils/user";
 import { HouseholdBudgetSummary } from '../../components/budget_summary/HouseholdBudgetSummary';
 import type { User } from '@supabase/supabase-js';
+import { getHouseholds } from '../../api/household';
+import type { Household } from '../../api/schema';
 
 // Types
 interface Product {
@@ -20,12 +22,6 @@ interface Product {
   quantity: number;
   householdName: string;
   householdId: string;
-}
-
-interface Household {
-  id: string;
-  house_name: string;
-  invite_id?: string;
 }
 
 interface DashboardLocationState {
@@ -266,9 +262,10 @@ const FavouriteRecipes: React.FC<FavouriteRecipesProps> = ({ recipes }) => {
               shadow="sm"
               radius="md"
               padding="lg"
-              style={{ transition: "transform 0.15s, box-shadow 0.15s" }}
+              style={{ transition: "transform 0.15s, box-shadow 0.15s", cursor: "pointer" }}
               onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "var(--shadow-md)"; }}
               onMouseLeave={e => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = ""; }}
+              onClick={() => navigate("/recipes", { state: { openRecipeId: recipe.id } })}
             >
               <Stack gap="sm">
                 <Text fw={700} size="md" lineClamp={2}>{recipe.title}</Text>
@@ -362,10 +359,17 @@ export default function Dashboard(props: DashboardProps) {
     void fetchProducts(selectedHouseholdId);
   }, [selectedHouseholdId]);
 
-  const fetchHouseholds = async () => {
-    const { data } = await supabase.from('household').select('id, house_name, invite_id');
-    setHouseholds(data ?? []);
-  };
+  useEffect(() => {
+    void load();
+    async function load() {
+      try {
+        const { data } = await getHouseholds();
+        setHouseholds(data ?? []);
+      } catch (error) {
+        console.log(error);
+      }
+    }
+  }, []);
 
   const fetchProducts = async (householdId: string | null) => {
     setLoading(true);
@@ -508,6 +512,14 @@ export default function Dashboard(props: DashboardProps) {
   };
 
   const [favouriteRecipes, setFavouriteRecipes] = useState<FavRecipe[]>([]);
+
+  useEffect(() => {
+    void supabase
+      .from('recipe')
+      .select('id, title, description, servings, prep_time')
+      .order('created_at', { ascending: false })
+      .then(({ data }) => setFavouriteRecipes(data ?? []));
+  }, []);
 
   return (
     <Container size="lg" py="xl">
