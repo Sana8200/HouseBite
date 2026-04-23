@@ -530,6 +530,14 @@ export default function Dashboard(props: DashboardProps) {
 
   const [favouriteRecipes, setFavouriteRecipes] = useState<FavRecipe[]>([]);
 
+  useEffect(() => {
+    void supabase
+      .from('recipe')
+      .select('id, title, description, servings, prep_time')
+      .order('created_at', { ascending: false })
+      .then(({ data }) => setFavouriteRecipes(data ?? []));
+  }, []);
+
   return (
     <Container size="lg" py="xl">
       <Stack gap="xl">
