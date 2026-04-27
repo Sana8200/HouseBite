@@ -104,22 +104,26 @@ export function Recipes() {
 
   const toggle = (key: string) => setOpenId(prev => prev === key ? null : key)
 
-  const fetchFavourites = () =>
-    supabase
-      .from("recipe")
-      .select("id, title, description, servings, prep_time")
-      .order("created_at", { ascending: false })
-      .then(({ data }) => {
-        const list = data ?? []
-        setFavourites(list)
-        setLoadingFavourites(false)
-        if (openRecipeId) {
-          const match = list.find(r => r.id === openRecipeId)
-          if (match) setSelectedRecipe(match)
+    const fetchFavourites = async () => {
+        try {
+            const { data } = await supabase
+                .from("recipe")
+                .select("id, title, description, servings, prep_time")
+                .order("created_at", { ascending: false })
+            const list = data ?? []
+            setFavourites(list)
+            if (openRecipeId) {
+                const match = list.find(r => r.id === openRecipeId)
+                if (match) setSelectedRecipe(match)
+            }
+        } catch (e) {
+            console.error("recipes fetchFavourites failed", e)
+        } finally {
+            setLoadingFavourites(false)
         }
-      })
+    }
 
-  useEffect(() => { void fetchFavourites() }, [])
+    useEffect(() => { void fetchFavourites() }, [])
 
   const handleDelete = async (id: string) => {
     await supabase.from("recipe").delete().eq("id", id)
@@ -127,23 +131,28 @@ export function Recipes() {
     setOpenId(null)
   }
 
-  const handleSave = async (recipe: SearchRecipe, index: number) => {
-    if (favourites.some(f => f.title === recipe.title)) {
-      setSaved(prev => new Set(prev).add(index))
-      return
+    const handleSave = async (recipe: SearchRecipe, index: number) => {
+        if (favourites.some(f => f.title === recipe.title)) {
+            setSaved(prev => new Set(prev).add(index))
+            return
+        }
+        setSaving(index)
+        try {
+            const { error } = await supabase.functions.invoke("save-recipe", {
+                body: { recipe }
+            })
+            if (!error) {
+                setSaved(prev => new Set(prev).add(index))
+                void fetchFavourites()
+            }
+        } catch (e) {
+            console.error("recipes handleSave failed", e)
+        } finally {
+            setSaving(null)
+        }
     }
-    setSaving(index)
-    const { error } = await supabase.functions.invoke("save-recipe", {
-      body: { recipe }
-    })
-    setSaving(null)
-    if (!error) {
-      setSaved(prev => new Set(prev).add(index))
-      void fetchFavourites()
-    }
-  }
 
-  return (
+    return (
     <div className="recipes-page">
       {searchResults.length > 0 ? (
         <>

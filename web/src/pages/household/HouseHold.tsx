@@ -36,15 +36,19 @@ export function HouseHold() {
     const [createdHousehold, setCreatedHousehold] = useState<{ name: string; inviteId: string; id: string } | null>(null)
 
     const fetchHouseholds = async () => {
-        const { data, error } = await getHouseholds()
-        if (error) {
+        try {
+            const { data, error } = await getHouseholds()
+            if (error) {
+                setError("Could not load households")
+                return
+            }
+            setHouseholds(data ?? [])
+            setError(null)
+        } catch {
             setError("Could not load households")
+        } finally {
             setLoading(false)
-            return
         }
-        setHouseholds(data ?? [])
-        setError(null)
-        setLoading(false)
     }
 
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -64,17 +68,22 @@ export function HouseHold() {
 
         setCreating(true)
         setCreateError(null)
-        const { data, error } = await createHousehold(newName.trim(), budget)
-        setCreating(false)
+        try {
+            const { data, error } = await createHousehold(newName.trim(), budget)
+            if (error) { setCreateError(error.message); return }
 
-        if (error) { setCreateError(error.message); return }
-
-        const result = data as { id: string; house_name: string; invite_id: string } | null
-        setNewName("")
-        setNewBudget("")
-        setShowCreateModal(false)
-        setCreatedHousehold(result ? { name: result.house_name, inviteId: result.invite_id, id: result.id } : null)
-        void fetchHouseholds()
+            const result = data as { id: string; house_name: string; invite_id: string } | null
+            setNewName("")
+            setNewBudget("")
+            setShowCreateModal(false)
+            setCreatedHousehold(result ? { name: result.house_name, inviteId: result.invite_id, id: result.id } : null)
+            void fetchHouseholds()
+        } catch (e) {
+            console.error("createHousehold failed", e)
+            setCreateError("Could not create household. Please try again.")
+        } finally {
+            setCreating(false)
+        }
     }
 
     const handleJoin = async () => {
@@ -88,12 +97,18 @@ export function HouseHold() {
         
         setJoining(true)
         setJoinError(null)
-        const { error } = await joinHousehold(inviteId.trim())
-        setJoining(false)
-        if (error) { setJoinError(error.message); return }
-        setInviteId("")
-        setShowJoinModal(false)
-        void fetchHouseholds()
+        try {
+            const { error } = await joinHousehold(inviteId.trim())
+            if (error) { setJoinError(error.message); return }
+            setInviteId("")
+            setShowJoinModal(false)
+            void fetchHouseholds()
+        } catch (e) {
+            console.error("joinHousehold failed", e)
+            setJoinError("Could not join household. Please try again.")
+        } finally {
+            setJoining(false)
+        }
     }
 
     const openEdit = (h: Household) => {
@@ -110,20 +125,32 @@ export function HouseHold() {
         if (budget !== null && budget < 0) { setEditError("Budget cannot be negative"); return }
         setSaving(true)
         setEditError(null)
-        const { error } = await updateHousehold(editingHousehold.id, editName.trim(), budget)
-        setSaving(false)
-        if (error) { setEditError(error.message); return }
-        setEditingHousehold(null)
-        void fetchHouseholds()
+        try {
+            const { error } = await updateHousehold(editingHousehold.id, editName.trim(), budget)
+            if (error) { setEditError(error.message); return }
+            setEditingHousehold(null)
+            void fetchHouseholds()
+        } catch (e) {
+            console.error("updateHousehold failed", e)
+            setEditError("Could not update household. Please try again.")
+        } finally {
+            setSaving(false)
+        }
     }
 
     const handleLeave = async (householdId: string) => {
         setLeaving(true)
-        const { error } = await leaveHousehold(householdId)
-        setLeaving(false)
-        if (error) { setError("Could not leave: " + error.message); return }
-        setLeavingId(null)
-        void fetchHouseholds()
+        try {
+            const { error } = await leaveHousehold(householdId)
+            if (error) { setError("Could not leave: " + error.message); return }
+            setLeavingId(null)
+            void fetchHouseholds()
+        } catch (e) {
+            console.error("leaveHousehold failed", e)
+            setError("Could not leave household. Please try again.")
+        } finally {
+            setLeaving(false)
+        }
     }
 
     return (

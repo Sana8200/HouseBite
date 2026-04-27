@@ -22,11 +22,16 @@ export function App() {
   useEffect(() => {
     void(load());
     async function load() {
-      const session = await getSession();
-      if (session.data.session?.user) {
-        setUser(session.data.session?.user);
+      try {
+        const session = await getSession();
+        if (session.data.session?.user) {
+          setUser(session.data.session?.user);
+        }
+      } catch (e) {
+        console.error("App load failed", e);
+      } finally {
+        setLoaded(true);
       }
-      setLoaded(true);
     }
 
     const { data: { subscription } } = onAuthStateChange((user) => {

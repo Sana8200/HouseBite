@@ -56,22 +56,26 @@ export function Account(props: AccountProps) {
 
     useEffect(() => {
         const fetch = async () => {
-            const [totalResult, availableRestrictionsResult, userRestrictionsResult] = await Promise.all([
-                getTotalSpent(),
-                getFoodRestrictions(),
-                getMyRestrictions(user.id),
-            ]);
+            try {
+                const [totalResult, availableRestrictionsResult, userRestrictionsResult] = await Promise.all([
+                    getTotalSpent(),
+                    getFoodRestrictions(),
+                    getMyRestrictions(user.id),
+                ]);
 
-            if (totalResult.error) console.error("Error fetching total spent:", totalResult.error);
-            else setTotalSpent(totalResult.total);
+                if (totalResult.error) console.error("Error fetching total spent:", totalResult.error);
+                else setTotalSpent(totalResult.total);
 
-            if (availableRestrictionsResult.error) console.error("Error fetching availableRestrictions:", availableRestrictionsResult.error);
-            else setAvailableRestrictions((availableRestrictionsResult.data ?? []) as FoodRestriction[]);
+                if (availableRestrictionsResult.error) console.error("Error fetching availableRestrictions:", availableRestrictionsResult.error);
+                else setAvailableRestrictions((availableRestrictionsResult.data ?? []) as FoodRestriction[]);
 
-            if (userRestrictionsResult.error) console.error("Error fetching my availableRestrictions:", userRestrictionsResult.error);
-            else setUserRestrictions(new Set((userRestrictionsResult.data ?? []).map(m => m.restriction_id)));
-
-            setLoading(false)
+                if (userRestrictionsResult.error) console.error("Error fetching my availableRestrictions:", userRestrictionsResult.error);
+                else setUserRestrictions(new Set((userRestrictionsResult.data ?? []).map(m => m.restriction_id)));
+            } catch (e) {
+                console.error("Account fetch failed", e)
+            } finally {
+                setLoading(false)
+            }
         }
         void fetch()
     }, [user.id])
@@ -82,25 +86,23 @@ export function Account(props: AccountProps) {
         const has = userRestrictions.has(id)
         const next = new Set(userRestrictions)
 
-        if (has) {
-            const { error } = await removeRestriction(user.id, id)
-            if (error) {
-                setRestrictionError(error.message)
-                setTogglingId(null)
-                return
+        try {
+            if (has) {
+                const { error } = await removeRestriction(user.id, id)
+                if (error) { setRestrictionError(error.message); return }
+                next.delete(id)
+            } else {
+                const { error } = await addRestriction(user.id, id)
+                if (error) { setRestrictionError(error.message); return }
+                next.add(id)
             }
-            next.delete(id)
-        } else {
-            const { error } = await addRestriction(user.id, id)
-            if (error) {
-                setRestrictionError(error.message)
-                setTogglingId(null)
-                return
-            }
-            next.add(id)
+            setUserRestrictions(next)
+        } catch (e) {
+            console.error("toggleRestriction failed", e)
+            setRestrictionError("Could not update restrictions. Please try again.")
+        } finally {
+            setTogglingId(null)
         }
-        setUserRestrictions(next)
-        setTogglingId(null)
     }
 
     const diets = availableRestrictions.filter(r => r.category === "diet")
@@ -118,14 +120,20 @@ export function Account(props: AccountProps) {
         }
         setSavingName(true)
         setNameError(null)
-        const { error } = await saveUsername(trimmed)
-        setSavingName(false)
-        if (error) {
-            setNameError(error.message)
-            return
+        try {
+            const { error } = await saveUsername(trimmed)
+            if (error) {
+                setNameError(error.message)
+                return
+            }
+            setUsername(trimmed)
+            setEditingName(false)
+        } catch (e) {
+            console.error("saveUsername failed", e)
+            setNameError("Could not save username. Please try again.")
+        } finally {
+            setSavingName(false)
         }
-        setUsername(trimmed)
-        setEditingName(false)
     }
 
     const handleChangePasswordClick = () => {
@@ -146,32 +154,44 @@ export function Account(props: AccountProps) {
         }
         setSavingPassword(true)
         setPasswordError(null)
-        const { error } = await savePassword(newPassword)
-        setSavingPassword(false)
-        if (error) {
-            setPasswordError(error.message)
-            return
+        try {
+            const { error } = await savePassword(newPassword)
+            if (error) {
+                setPasswordError(error.message)
+                return
+            }
+            setPasswordSuccess(true)
+            setNewPassword("")
+            setConfirmPassword("")
+            setTimeout(() => {
+                setShowPasswordModal(false)
+                setPasswordSuccess(false)
+            }, 1200)
+        } catch (e) {
+            console.error("savePassword failed", e)
+            setPasswordError("Could not update password. Please try again.")
+        } finally {
+            setSavingPassword(false)
         }
-        setPasswordSuccess(true)
-        setNewPassword("")
-        setConfirmPassword("")
-        setTimeout(() => {
-            setShowPasswordModal(false)
-            setPasswordSuccess(false)
-        }, 1200)
     }
 
     const handleDeleteAccount = async () => {
         if (deleteConfirm !== "DELETE") return;
         setDeleting(true)
         setDeleteError(null)
-        const { error } = await deleteAccount()
-        if (error) {
+        try {
+            const { error } = await deleteAccount()
+            if (error) {
+                setDeleteError(error.message)
+                return
+            }
+            await signOut()
+        } catch (e) {
+            console.error("deleteAccount failed", e)
+            setDeleteError("Could not delete account. Please try again.")
+        } finally {
             setDeleting(false)
-            setDeleteError(error.message)
-            return
         }
-        await signOut()
     }
 
     const memberSince = user.created_at

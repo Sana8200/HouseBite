@@ -47,8 +47,15 @@ export function Header(props: HeaderProps) {
                 event: "*",
                 schema: "public",
                 table: "allocations"
-            }, payload => {
-                console.log(payload);
+            }, () => {
+                void loadHouseholds();
+            })
+            .on("postgres_changes", {
+                event: "*",
+                schema: "public",
+                table: "household"
+            }, () => {
+                void loadHouseholds();
             })
             .subscribe();
 

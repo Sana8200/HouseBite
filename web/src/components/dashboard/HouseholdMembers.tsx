@@ -25,16 +25,23 @@ export function HouseholdMembers({ householdId, inviteId }: HouseholdMembersProp
     const [showInvite, setShowInvite] = useState(false)
 
     useEffect(() => {
-        setLoading(true)
-        getHouseholdMembers(householdId).then(({ data, error }) => {
-            if (error) {
-                console.error("Error fetching members:", error)
-            } else {
-                const rows = data as Member[]
-                setMembers(rows ?? [])
+        const load = async () => {
+            setLoading(true)
+            try {
+                const { data, error } = await getHouseholdMembers(householdId)
+                if (error) {
+                    console.error("Error fetching members:", error)
+                } else {
+                    const rows = data as Member[]
+                    setMembers(rows ?? [])
+                }
+            } catch (e) {
+                console.error("HouseholdMembers load failed", e)
+            } finally {
+                setLoading(false)
             }
-            setLoading(false)
-        })
+        }
+        void load() // void: fire-and-forget the async call (useEffect can't await directly)
     }, [householdId])
 
     if (loading) return <Text c="dimmed" ta="center" py="xl">Loading members...</Text>
