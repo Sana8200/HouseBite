@@ -45,7 +45,7 @@ supabase functions deploy save-recipe
 ```
 Dashboard → select products → Find Recipes button
     ↓
-searchRecipes.ts  (frontend lib)
+api/recipe.ts  (frontend lib)
     ↓
 search-recipes  (Supabase Edge Function)
     ↓  1. fetch household members' diet/intolerance restrictions from DB

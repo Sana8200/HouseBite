@@ -2,6 +2,9 @@ import { useEffect, useState, useCallback } from "react"
 import { Modal, Text, Title, Group, Stack, Paper, Loader, Tooltip } from "@mantine/core"
 import { IconAlertTriangle, IconLeaf, IconLock, IconUsers } from "@tabler/icons-react"
 import { supabase } from "../../supabase"
+import { getFoodRestrictions } from "../../api/account"
+import { getHouseholdFoodRestriction, getHouseholdRestrictions, type HouseholdMemberRestriction } from "../../api/restriction"
+import type { FoodRestriction } from "../../api/schema"
 
 interface FoodRestrictionsModalProps {
     householdId: string
@@ -9,14 +12,11 @@ interface FoodRestrictionsModalProps {
     onClose: () => void
 }
 
-interface Restriction { id: string; name: string; category: string }
-interface MemberRestriction { member_id: string; member_name: string; restriction_id: string }
-
 const fmt = (s: string) => s.replace(/\b\w/g, c => c.toUpperCase())
 
 export function FoodRestrictionsModal({ householdId, opened, onClose }: FoodRestrictionsModalProps) {
-    const [restrictions, setRestrictions] = useState<Restriction[]>([])
-    const [memberRestrictions, setMemberRestrictions] = useState<MemberRestriction[]>([])
+    const [restrictions, setRestrictions] = useState<FoodRestriction[]>([])
+    const [memberRestrictions, setMemberRestrictions] = useState<HouseholdMemberRestriction[]>([])
     const [hhIds, setHhIds] = useState<Set<string>>(new Set())
     const [busy, setBusy] = useState<string | null>(null)
     const [loading, setLoading] = useState(true)
@@ -25,13 +25,13 @@ export function FoodRestrictionsModal({ householdId, opened, onClose }: FoodRest
         setLoading(true)
         try {
             const [{ data: all }, { data: memberData }, { data: hhData }] = await Promise.all([
-                supabase.from("food_restriction").select("id, name, category").order("category").order("name"),
-                supabase.rpc("get_household_restrictions", { p_household_id: householdId }),
-                supabase.from("household_food_restriction").select("restriction_id").eq("household_id", householdId),
+                getFoodRestrictions(),
+                getHouseholdRestrictions(householdId),
+                getHouseholdFoodRestriction(householdId),
             ])
             setRestrictions(all ?? [])
-            setMemberRestrictions((memberData ?? []) as MemberRestriction[])
-            setHhIds(new Set((hhData ?? []).map(r => r.restriction_id as string)))
+            setMemberRestrictions(memberData ?? [])
+            setHhIds(new Set((hhData ?? []).map(r => r.restriction_id)))
         } catch (e) {
             console.error("FoodRestrictionsModal load failed", e)
         } finally {
