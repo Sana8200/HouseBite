@@ -1,4 +1,6 @@
+import type { PostgrestSingleResponse } from '@supabase/supabase-js';
 import { supabase } from '../supabase'
+import type { FoodRestriction } from './schema';
 
 
 // for a specific user only, it links to it automatically by RLS
@@ -44,16 +46,10 @@ export async function deleteAccount() {
     return supabase.rpc("delete_account")
 }
 
-export interface FoodRestriction {
-    id: string
-    name: string
-    category: "diet" | "intolerance"
-}
-
-export async function getFoodRestrictions() {
+export async function getFoodRestrictions(): Promise<PostgrestSingleResponse<FoodRestriction[]>> {
     return supabase
         .from("food_restriction")
-        .select("id, name, category")
+        .select()
         .order("category")
         .order("name")
 }

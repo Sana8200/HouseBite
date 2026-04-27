@@ -8,11 +8,11 @@ import {
     getMyRestrictions,
     addRestriction,
     removeRestriction,
-    type FoodRestriction,
 } from "../../api/account"
 import { getAvatar, getUsername } from "../../utils/user"
 import { ActionIcon, Alert, Avatar, Button, Card, Center, Chip, Container, Divider, Flex, Grid, Group, Loader, Modal, Space, Stack, Text, TextInput, Title } from "@mantine/core"
 import { IconEdit, IconDeviceFloppyFilled } from '@tabler/icons-react';
+import type { FoodRestriction } from "../../api/schema"
 
 interface AccountProps {
     user: User;
@@ -67,7 +67,7 @@ export function Account(props: AccountProps) {
                 else setTotalSpent(totalResult.total);
 
                 if (availableRestrictionsResult.error) console.error("Error fetching availableRestrictions:", availableRestrictionsResult.error);
-                else setAvailableRestrictions((availableRestrictionsResult.data ?? []) as FoodRestriction[]);
+                else setAvailableRestrictions(availableRestrictionsResult.data ?? []);
 
                 if (userRestrictionsResult.error) console.error("Error fetching my availableRestrictions:", userRestrictionsResult.error);
                 else setUserRestrictions(new Set((userRestrictionsResult.data ?? []).map(m => m.restriction_id)));
