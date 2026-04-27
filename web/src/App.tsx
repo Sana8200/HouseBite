@@ -47,14 +47,14 @@ export function App() {
 
   const routes = [
     //     key                 path                                signed in                      not signed in
-    <Route key="sign-in"       path="sign-in"      element={user ? <Navigate to="/household" /> : <SignIn setUser={setUser} />} />,
-    <Route key="sign-up"       path="sign-up"      element={user ? <Navigate to="/household" /> : <SignIn setUser={setUser} defaultTab="signUp" />} />,
+    <Route key="sign-in"       path="sign-in"      element={user ? <Navigate to="/household" /> : <SignIn />} />,
+    <Route key="sign-up"       path="sign-up"      element={user ? <Navigate to="/household" /> : <SignIn defaultTab="signUp" />} />,
     <Route key="household"     path="household"    element={user ? <HouseHold />                : <Navigate to="/sign-in" />} />,
     <Route key="dashboard"     path="dashboard"    element={user ? <Dashboard user={user} />    : <Navigate to="/sign-in" />} />,
     <Route key="recipes"       path="recipes"      element={user ? <Recipes />                  : <Navigate to="/sign-in" />} />,
     <Route key="shopping-list" path="shoppinglist" element={user ? <ShoppingList />             : <Navigate to="/sign-in" />} />,
     <Route key="pantry"        path="pantry"       element={user ? <Pantry user={user} />       : <Navigate to="/sign-in" />} />,
-    <Route key="receipts"      path="receipts"     element={user ? <Receipts user={user} />                 : <Navigate to="/sign-in" />} />,
+    <Route key="receipts"      path="receipts"     element={user ? <Receipts user={user} />     : <Navigate to="/sign-in" />} />,
     <Route key="account"       path="account"      element={user ? <Account user={user} />      : <Navigate to="/sign-in" />} />,
     <Route key="scan"          path="scan"         element={user ? <Scan user={user} />         : <Navigate to="/sign-in" />} />,
   ];

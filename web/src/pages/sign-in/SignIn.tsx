@@ -1,57 +1,117 @@
 import "./SignIn.css";
 import { useState } from "react";
-import type { User } from "@supabase/supabase-js";
-import { Container, Paper } from "@mantine/core";
-import { SignInForm } from "./SignInForm";
-import { SignUpForm } from "./SignUpForm";
+import { Alert, Button, Center, Container, Paper, PasswordInput, Stack, Text, TextInput } from "@mantine/core";
+import { signIn, signUp, turnstileSiteKey } from "../../api/auth";
+import { Turnstile } from "@marsidev/react-turnstile";
 
-type AuthTab = "signIn" | "signUp";
+export type AuthTab = "signIn" | "signUp";
 
 export interface SignInProps {
-  setUser: (user: User) => void;
-  defaultTab?: AuthTab;
+    defaultTab?: AuthTab;
 }
 
-export function SignIn({ setUser, defaultTab = "signIn" }: SignInProps) {
-  const [activeTab, setActiveTab] = useState<AuthTab>(defaultTab);
+export function SignIn(props: SignInProps) {
+    const {
+        defaultTab = "signIn"
+    } = props;
+    const [activeTab, setActiveTab] = useState<AuthTab>(defaultTab);
 
-  return (
-    <Container p="md" size="xs">
-      <Paper p="md" radius="xl" shadow="md" withBorder>
-        <div
-          className={`auth-switch ${
-            activeTab === "signUp" ? "auth-switch--sign-up" : ""
-          }`}
-        >
-          <button
-            type="button"
-            className={`auth-switch__option ${
-              activeTab === "signIn" ? "is-active" : ""
-            }`}
-            onClick={() => setActiveTab("signIn")}
-          >
-            Sign in
-          </button>
+    const [error, setError] = useState<Error | null>(null);
+    const [loading, setLoading] = useState(false);
 
-          <button
-            type="button"
-            className={`auth-switch__option ${
-              activeTab === "signUp" ? "is-active" : ""
-            }`}
-            onClick={() => setActiveTab("signUp")}
-          >
-            Sign up
-          </button>
-        </div>
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [displayName, setDisplayName] = useState("");
 
-        <div className="auth-content">
-          {activeTab === "signIn" ? (
-            <SignInForm setUser={setUser} />
-          ) : (
-            <SignUpForm setUser={setUser} />
-          )}
-        </div>
-      </Paper>
-    </Container>
-  );
+    const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+
+    const onSubmit = async (e: React.SubmitEvent) => {
+        e.preventDefault();
+        setLoading(true);
+        setError(null);
+
+        if (!captchaToken) return;
+
+        try {
+            if (activeTab == "signIn") {
+                await signIn(email, password, captchaToken);
+            } else {
+                await signUp(email, password, displayName, captchaToken);
+            }
+        } catch (error) {
+            setError(error as Error);
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    const disabled = loading || (activeTab == "signUp" ? !displayName : false) || !email || !password || !captchaToken;
+
+    return (
+        <Container p="md" size="xs">
+            <Paper p="md" radius="xl" shadow="md" withBorder>
+                <div className={`auth-switch ${ activeTab === "signUp" ? "auth-switch--sign-up" : "" }`}>
+                    <button
+                        type="button"
+                        className={`auth-switch__option ${ activeTab === "signIn" ? "is-active" : "" }`}
+                        onClick={() => setActiveTab("signIn")}
+                    >
+                        Sign in
+                    </button>
+
+                    <button
+                        type="button"
+                        className={`auth-switch__option ${ activeTab === "signUp" ? "is-active" : "" }`}
+                        onClick={() => setActiveTab("signUp")}
+                    >
+                        Sign up
+                    </button>
+                </div>
+
+                <div className="auth-content">
+                    <form className="auth-form" onSubmit={e => void(onSubmit(e))}>
+                        <Stack gap="md">
+                            { error &&
+                                <Alert variant="light" color="red">
+                                        <Center>
+                                                <Text>{error.message}</Text>
+                                        </Center>
+                                </Alert>
+                            }
+
+                            { activeTab == "signUp" &&
+                                <TextInput
+                                    label="Name"
+                                    type="text"
+                                    placeholder="Your name"
+                                    value={displayName}
+                                    onChange={(e) => setDisplayName(e.target.value)}
+                                />
+                            }
+
+                            <TextInput 
+                                label="Email"
+                                type="email"
+                                placeholder="your@email.com"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                            />
+                            
+                            <PasswordInput
+                                label="Password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                            />
+
+                            <Turnstile siteKey={turnstileSiteKey} onSuccess={setCaptchaToken} />
+
+                            <Button type="submit" variant="primary" disabled={disabled} loading={loading}>
+                                {activeTab == "signIn" ? "Sign in" : "Sign up" }
+                            </Button>
+                        </Stack>
+                    </form>
+                </div>
+            </Paper>
+        </Container>
+    );
 }
