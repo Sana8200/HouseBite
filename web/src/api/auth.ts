@@ -1,6 +1,8 @@
 import { supabase } from '../supabase'
 import type { User } from '@supabase/supabase-js'
 
+export const turnstileSiteKey = (import.meta.env.VITE_TURNSTILE_SITEKEY as string | undefined) || "1x00000000000000000000AA";
+
 export async function getSession() {
     return supabase.auth.getSession()
 }
@@ -12,8 +14,12 @@ export async function signOut() {
 /**
  * @throws `AuthError` if the sign-in fails.
  */
-export async function signIn(email: string, password: string): Promise<User> {
-    const result = await supabase.auth.signInWithPassword({ email, password })
+export async function signIn(email: string, password: string, captchaToken: string): Promise<User> {
+    const result = await supabase.auth.signInWithPassword({
+        email,
+        password,
+        options: { captchaToken }
+    })
     if (result.error) throw result.error
     return result.data.user
 }
