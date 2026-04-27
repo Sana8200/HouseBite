@@ -2,6 +2,9 @@ import { useState } from "react"
 import { signUp } from "../../api/auth";
 import type { User } from "@supabase/supabase-js";
 import { Alert, Button, Center, PasswordInput, Stack, Text, TextInput } from "@mantine/core";
+import { Turnstile } from '@marsidev/react-turnstile';
+
+const turnstileSiteKey = (import.meta.env.VITE_TURNSTILE_SITEKEY as string | undefined) || "1x00000000000000000000AA";
 
 
 export interface SignUpProps {
@@ -16,19 +19,22 @@ export function SignUpForm(props: SignUpProps) {
     const [email, setEmail] = useState("")
     const [password, setPassword] = useState("")
     const [displayName, setDisplayName] = useState("")
+    const [captchaToken, setCaptchaToken] = useState<string | null>(null);
 
     const onSubmit = async (e: React.SubmitEvent) => {
         e.preventDefault();
 
+        if (!captchaToken) return;
+
         try {
-            const user = await signUp(email, password, displayName);
+            const user = await signUp(email, password, displayName, captchaToken);
             setUser(user);
         } catch (error) {
             setError(error as Error);
         }
     }
 
-    const disabled = !displayName || !email || !password;
+    const disabled = !displayName || !email || !password || !captchaToken;
 
     return (
         <form className="auth-form" onSubmit={e => void(onSubmit(e))}>
@@ -63,6 +69,7 @@ export function SignUpForm(props: SignUpProps) {
                     onChange={(e) => setPassword(e.target.value)}
                 />
 
+                <Turnstile siteKey={turnstileSiteKey} onSuccess={setCaptchaToken} />
 
                 <Button type="submit" variant="primary" disabled={disabled}>
                     Sign up
