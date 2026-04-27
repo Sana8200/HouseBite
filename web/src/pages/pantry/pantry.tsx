@@ -10,6 +10,9 @@ import { RecipeSearchModal } from "../../components/RecipeSearchModal";
 import type { User } from "@supabase/supabase-js";
 import { getExpirationDateBounds, getDaysUntilExpiry, formatOptionalDate, formatExpiry,
   getExpiryLabel} from "../../utils/date";
+import { insertReceipt } from "../../api/receipt";
+import { insertProductWithSpecs } from "../../api/product";
+import type { ProductSizeUnit } from "../../api/schema";
 
 type PantryViewMode = "grid" | "list";
 type ExpiryStatusFilter = "all" | "expired" | "critical" | "warning" | "fresh" | "no-date";
@@ -374,16 +377,16 @@ export function Pantry({ user }: PantryProps) {
         return;
       }
 
-      const mapped: PantryProduct[] = (data ?? []).map((p: any) => {
+      const mapped: PantryProduct[] = (data ?? []).map(p => {
         const specs = Array.isArray(p.product_specs) ? p.product_specs[0] : p.product_specs;
         return {
-          id: p.id,
-          name: p.name,
-          householdId: p.household_id,
-          quantity: specs?.quantity ?? 1,
-          size: specs?.size ?? null,
-          unit: specs?.unit ?? null,
-          expirationDate: specs?.expiration_date ?? null,
+          id: p.id as string,
+          name: p.name as string,
+          householdId: p.household_id as string,
+          quantity: specs?.quantity as number ?? 1,
+          size: specs?.size as string ?? null,
+          unit: specs?.unit as string ?? null,
+          expirationDate: specs?.expiration_date as string ?? null,
           purchasedOn: null,
           shopName: null,
           boughtBy: null,
@@ -428,45 +431,31 @@ export function Pantry({ user }: PantryProps) {
       const price = newPrice !== "" ? Number(newPrice) : null;
       const purchaseDate = newExpirationDate || new Date().toISOString().split('T')[0];
 
-      const { data: receipt, error: receiptError } = await supabase
-        .from('receipt')
-        .insert({
-          household_id: newHouseholdId,
-          store_name: 'Manual Entry',
-          total: price || 0,
-          purchase_at: purchaseDate,
-          buyer_id: user.id
-        })
-        .select()
-        .single();
-
-      if (receiptError) throw new Error('Could not create receipt: ' + receiptError.message);
-
-      // create product linked to receipt
-      const { data: product, error: productError } = await supabase
-        .from("product")
-      .insert({ name: newName.trim(), household_id: newHouseholdId, receipt_id: receipt.id })
-        .select()
-        .single();
-
-      if (productError) {
-        // to match try/catch pattern to prevent inconsistent state
-        throw new Error("Could not create product: " + productError.message);
-      }
-
-      // create product specs
-      const { error: specsError } = await supabase.from("product_specs").insert({
-        product_id: product.id,
-        quantity: Number(newQuantity) || 1,
-        size: newSize || null,
-        unit: newUnit || null,
-        expiration_date: newExpirationDate || null,
-        price: price, // because we compute it above already
+      const receiptResult = await insertReceipt({
+        household_id: newHouseholdId,
+        store_name: 'Manual Entry',
+        total: price || 0,
+        purchase_at: purchaseDate,
+        buyer_id: user.id
       });
 
-      if (specsError) {
+      if (receiptResult.error) throw new Error('Could not create receipt: ' + receiptResult.error.message);
+
+      const productResult = await insertProductWithSpecs({
+        name: newName.trim(),
+        household_id: newHouseholdId,
+        receipt_id: receiptResult.data.id
+      }, {
+        quantity: Number(newQuantity) || 1,
+        size: newSize || null,
+        unit: newUnit as ProductSizeUnit || null,
+        expiration_date: newExpirationDate || null,
+        price: price, // because we compute it above already
+      })
+
+      if (productResult.error) {
         // to match try/catch pattern to prevent inconsistent state
-        throw new Error("Could not save product specs: " + specsError.message);
+        throw new Error("Could not create product: " + productResult.error.message);
       }
 
       // reset form
