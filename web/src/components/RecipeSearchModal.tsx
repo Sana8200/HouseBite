@@ -59,7 +59,7 @@ export function RecipeSearchModal({ opened, onClose, onProceed, householdId }: P
     const myIds = new Set(myR.map((r) => r.id));
     const householdR: Restriction[] = (hhData ?? [])
       .map((r: any) => r.food_restriction)
-      .filter((r: Restriction | null): r is Restriction => Boolean(r) && !myIds.has(r.id));
+      .filter((r: Restriction | null): r is Restriction => !!r && !myIds.has(r.id));
 
     setMyRestrictions(myR);
     setHouseholdRestrictions(householdR);

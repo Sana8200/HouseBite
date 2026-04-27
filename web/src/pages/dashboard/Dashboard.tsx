@@ -624,7 +624,7 @@ export default function Dashboard(props: DashboardProps) {
         {selectedHouseholdId && (
           <HouseholdMembers
             householdId={selectedHouseholdId}
-            inviteId={households.find(h => h.id === selectedHouseholdId)?.invite_id}
+            inviteId={households.find(h => h.id === selectedHouseholdId)?.invite_id ?? undefined}
           />
         )}
 
