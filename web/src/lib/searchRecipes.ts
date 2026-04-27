@@ -19,5 +19,23 @@ export const searchRecipes = async (
   })
 
   if (error) throw error
-  return data
+  const recipes = data ?? []
+
+  const matchedIngredients = ingredients.filter((ing) =>
+  recipes.some((r: any) =>
+    r.title?.toLowerCase().includes(ing.toLowerCase())
+  )
+)
+
+const unmatchedIngredients = ingredients.filter(
+  (ing) => !matchedIngredients.includes(ing)
+)
+
+return {
+  recipes,
+  noExactRecipe: matchedIngredients.length === 0,
+  matchedIngredients,
+  unmatchedIngredients,
+
+}
 }

@@ -93,6 +93,9 @@ export function Recipes() {
   const [favourites, setFavourites] = useState<DbRecipe[]>([])
   const [loadingFavourites, setLoadingFavourites] = useState(true)
   const [selectedRecipe, setSelectedRecipe] = useState<DbRecipe | null>(null)
+  const noExactRecipe: boolean = location.state?.noExactRecipe ?? false
+  const matchedIngredients: string[] = location.state?.matchedIngredients ?? []
+  const unmatchedIngredients: string[] = location.state?.unmatchedIngredients ?? []
 
   // tracks which card is open: "fav-{id}" or "search-{index}"
   const [openId, setOpenId] = useState<string | null>(
@@ -143,10 +146,23 @@ export function Recipes() {
 
   return (
     <div className="recipes-page">
-      {searchResults.length > 0 && (
+      {searchResults.length > 0 ? (
         <>
-          <h1>Search Results</h1>
-          <p>Click a recipe to see instructions. Add it to favourites to save it.</p>
+           <h1>{noExactRecipe ? "No recipe found" : "Search Results"}</h1>
+
+    <p>
+  {unmatchedIngredients.length > 0 ? (
+    <>
+      No recipes found for: <strong>{unmatchedIngredients.join(", ")}</strong>.
+      {matchedIngredients.length > 0 && (
+        <> Showing recipes for <strong>{matchedIngredients.join(", ")}</strong>.</>
+      )}
+    </>
+  ) : (
+    "Click a recipe to see instructions. Add it to favourites to save it."
+  )}
+</p>
+
           <RecipeCarousel>
             {searchResults.map((r, i) => (
               <RecipeCard
@@ -167,6 +183,11 @@ export function Recipes() {
             ))}
           </RecipeCarousel>
         </>
+        ) : (
+  <>
+    <h1>No recipe found</h1>
+    <p>No recipe found.</p>
+  </>
       )}
 
       <h1>Favourites</h1>
