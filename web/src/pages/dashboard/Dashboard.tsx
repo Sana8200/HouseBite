@@ -13,6 +13,7 @@ import { HouseholdBudgetSummary } from '../../components/budget_summary/Househol
 import type { User } from '@supabase/supabase-js';
 import { getHouseholds } from '../../api/household';
 import type { Household } from '../../api/schema';
+import {getExpirationDateBounds, getDaysUntilExpiry, formatExpiry} from "../../utils/date";
 
 // Types
 interface Product {
@@ -77,24 +78,6 @@ const dashboardNavCards: DashboardNavCards[] = [
   },
 ];
 
-const formatDateInputValue = (date: Date) => date.toISOString().slice(0, 10);
-
-const getExpirationDateBounds = () => {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const minDate = new Date(today);
-  minDate.setFullYear(today.getFullYear() - 100);
-
-  const maxDate = new Date(today);
-  maxDate.setFullYear(today.getFullYear() + 100);
-
-  return {
-    min: formatDateInputValue(minDate),
-    max: formatDateInputValue(maxDate),
-  };
-};
-
 // ----------------------------------------------------------------------------
 
 // Products in Danger Component
@@ -107,15 +90,6 @@ const ProductsInDanger: React.FC<{
   const [showRecipeModal, setShowRecipeModal] = useState(false);
   const [pendingSearch, setPendingSearch] = useState<{ ingredients: string[]; householdId: string } | null>(null);
   const navigate = useNavigate();
-
-  const getDaysUntilExpiry = (expiryDate: string | null): number | null => {
-    if (!expiryDate) return null;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const expiry = new Date(expiryDate);
-    expiry.setHours(0, 0, 0, 0);
-    return Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-  };
 
   const getExpiryBadge = (days: number | null) => {
     if (days === null) return <Badge variant="light">No date</Badge>;
@@ -188,9 +162,7 @@ const ProductsInDanger: React.FC<{
                   <Text size="sm">
                     Expires:{' '}
                     <Text span fw={600}>
-                      {product.expiryDate
-                        ? new Date(product.expiryDate).toLocaleDateString()
-                        : 'No date'}
+                      {formatExpiry(product.expiryDate)}
                     </Text>
                   </Text>
                 </Stack>
@@ -606,13 +578,8 @@ export default function Dashboard(props: DashboardProps) {
         ) : (
           <ProductsInDanger
             products={products.filter(p => {
-              if (!p.expiryDate) return false;
-              const today = new Date();
-              today.setHours(0, 0, 0, 0);
-              const expiry = new Date(p.expiryDate);
-              expiry.setHours(0, 0, 0, 0);
-              const days = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-              return days < 3;
+              const days = getDaysUntilExpiry(p.expiryDate);
+              return days !== null && days < 3;
             })}
             onDelete={handleDelete}
             userId={user.id}

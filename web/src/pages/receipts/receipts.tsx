@@ -3,6 +3,7 @@ import { useLocation } from "react-router-dom";
 import { Badge, Box, Divider, Grid, Group, Paper, SimpleGrid, Stack, Table, Text, ThemeIcon, Title, UnstyledButton } from "@mantine/core";
 import { IconCalendarEvent, IconChevronRight, IconReceipt2, IconShoppingBag } from "@tabler/icons-react";
 import { fetchReceiptsByHousehold } from "../../api/receipt";
+import { formatCurrency, formatDate } from "../../utils/date";
 
 type ReceiptItem = {
   id: string;
@@ -24,20 +25,6 @@ type ReceiptsLocationState = {
   householdId?: string;
   householdName?: string;
 };
-
-function formatCurrency(amount: number | null): string {
-  if (amount === null) return "-";
-  return amount.toFixed(2).replace(".", ",") + " kr";
-}
-
-function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
-
 
 function ReceiptListItem({ receipt, selected, onSelect }: { receipt: ReceiptSummary; selected: boolean; onSelect: () => void; }) {
   return (

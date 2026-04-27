@@ -7,7 +7,8 @@ import { searchRecipes } from "../../lib/searchRecipes";
 import { supabase } from "../../supabase";
 import { RecipeSearchModal } from "../../components/RecipeSearchModal";
 import type { User } from "@supabase/supabase-js";
-import { getExpirationDateBounds, getDaysUntilExpiry } from "../../utils/date";
+import { getExpirationDateBounds, getDaysUntilExpiry, formatOptionalDate, formatExpiry,
+  getExpiryLabel} from "../../utils/date";
 
 type PantryViewMode = "grid" | "list";
 type ExpiryStatusFilter = "all" | "expired" | "critical" | "warning" | "fresh" | "no-date";
@@ -32,19 +33,6 @@ interface PantryLocationState {
 
 interface PantryProps {
   user: User;
-}
-
-
-/* Helper for formatting the expiration date. */
-function formatExpiry(expirationDate: string | null): string {
-  if (!expirationDate) return "No expiration date";
-  return new Date(expirationDate).toLocaleDateString();
-}
-
-/* Helper for formatting the purchasedOn date or other Optional dates needed. */
-function formatOptionalDate(date: string | null): string {
-  if (!date) return "-";
-  return new Date(date).toLocaleDateString();
 }
 
 /* Helper for formatting the amount of a product. */
@@ -110,14 +98,6 @@ function renderGridStatusTag(daysUntilExpiry: number | null) {
       {`Expires in ${daysUntilExpiry} day(s)`}
     </Badge>
   );
-}
-
-/* Helper for returning the expiration label shown in the table view. */
-function getExpiryLabel(daysUntilExpiry: number | null): string {
-  if (daysUntilExpiry === null) return "No date";
-  if (daysUntilExpiry < 0) return `Expired ${Math.abs(daysUntilExpiry)} day(s) ago`;
-  if (daysUntilExpiry === 0) return "Expires today";
-  return `Expires in ${daysUntilExpiry} day(s)`;
 }
 
 /* Component for rendering the pantry products in grid format. */
@@ -232,8 +212,8 @@ function PantryAllProductsList({
     );
   }
 
-  const rows = products.map((product) => {
-    const daysUntilExpiry = getDaysUntilExpiry(product.expirationDate);
+  const rows = products.map((product) => { 
+  const daysUntilExpiry = getDaysUntilExpiry(product.expirationDate);
 
     return (
       <Table.Tr key={product.id}>
@@ -308,7 +288,7 @@ export function Pantry({ user }: PantryProps) {
   const navigate = useNavigate();
   const locationState = location.state as PantryLocationState | undefined;
   const householdId = locationState?.householdId;
-  
+
   const [products, setProducts] = useState<PantryProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
