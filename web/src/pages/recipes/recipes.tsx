@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react"
-import { useLocation} from "react-router-dom"
+import { useLocation } from "react-router-dom"
 import { supabase } from "../../supabase"
 import "./recipes.css"
-import { Paper, Text, SimpleGrid, Stack, ActionIcon, Button} from "@mantine/core"
+import { Paper, Text, SimpleGrid, Stack, ActionIcon, Button, Group } from "@mantine/core"
 import { IconX } from "@tabler/icons-react"
+import { notifications } from "@mantine/notifications";
 
 export type DbRecipe = {
   id: string
@@ -101,75 +102,103 @@ export function Recipes() {
   const [openId, setOpenId] = useState<string | null>(
     openRecipeId ? `fav-${openRecipeId}` : null
   )
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
 
   const toggle = (key: string) => setOpenId(prev => prev === key ? null : key)
 
-    const fetchFavourites = async () => {
-        try {
-            const { data } = await supabase
-                .from("recipe")
-                .select("id, title, description, servings, prep_time")
-                .order("created_at", { ascending: false })
-            const list = data ?? []
-            setFavourites(list)
-            if (openRecipeId) {
-                const match = list.find(r => r.id === openRecipeId)
-                if (match) setSelectedRecipe(match)
-            }
-        } catch (e) {
-            console.error("recipes fetchFavourites failed", e)
-        } finally {
-            setLoadingFavourites(false)
-        }
+  const fetchFavourites = async () => {
+    try {
+      const { data } = await supabase
+        .from("recipe")
+        .select("id, title, description, servings, prep_time")
+        .order("created_at", { ascending: false })
+      const list = data ?? []
+      setFavourites(list)
+      if (openRecipeId) {
+        const match = list.find(r => r.id === openRecipeId)
+        if (match) setSelectedRecipe(match)
+      }
+    } catch (e) {
+      console.error("recipes fetchFavourites failed", e)
+    } finally {
+      setLoadingFavourites(false)
     }
-
-    useEffect(() => { void fetchFavourites() }, [])
-
-  const handleDelete = async (id: string) => {
-    await supabase.from("recipe").delete().eq("id", id)
-    setFavourites(prev => prev.filter(r => r.id !== id))
-    setOpenId(null)
   }
 
-    const handleSave = async (recipe: SearchRecipe, index: number) => {
-        if (favourites.some(f => f.title === recipe.title)) {
-            setSaved(prev => new Set(prev).add(index))
-            return
-        }
-        setSaving(index)
-        try {
-            const { error } = await supabase.functions.invoke("save-recipe", {
-                body: { recipe }
-            })
-            if (!error) {
-                setSaved(prev => new Set(prev).add(index))
-                void fetchFavourites()
-            }
-        } catch (e) {
-            console.error("recipes handleSave failed", e)
-        } finally {
-            setSaving(null)
-        }
-    }
+  useEffect(() => { void fetchFavourites() }, [])
 
-    return (
+  const handleDelete = async (id: string) => {
+    const { error } = await supabase.from("recipe").delete().eq("id", id);
+    if (error) {
+      notifications.show({
+        color: "red",
+        title: "Could not remove favourite",
+        message: error.message,
+      });
+      return;
+    }
+    setFavourites(prev => prev.filter(r => r.id !== id));
+    setOpenId(null);
+    notifications.show({
+      color: "indigo",
+      title: "Removed",
+      message: "Recipe removed from favourites.",
+    });
+  };
+
+
+  const handleSave = async (recipe: SearchRecipe, index: number) => {
+    if (favourites.some(f => f.title === recipe.title)) {
+      setSaved(prev => new Set(prev).add(index))
+      return
+    }
+    setSaving(index)
+    try {
+      const { error } = await supabase.functions.invoke("save-recipe", { body: { recipe } })
+      if (error) {
+        notifications.show({
+          color: "red",
+          title: "Could not save recipe",
+          message: error.message,
+        })
+        return
+      }
+      setSaved(prev => new Set(prev).add(index))
+      void fetchFavourites()
+      notifications.show({
+        color: "green",
+        title: "Saved",
+        message: `${recipe.title} added to favourites.`,
+      })
+    } catch (e) {
+      notifications.show({
+        color: "red",
+        title: "Could not save recipe",
+        message: e instanceof Error ? e.message : "Please try again.",
+      });
+    } finally {
+      setSaving(null)
+    }
+  }
+
+  return (
     <div className="recipes-page">
       {searchResults.length > 0 ? (
         <>
-           <h1>{noExactRecipe ? "No recipe found" : "Search Results"}</h1>
+          <h1>{noExactRecipe ? "No recipe found" : "Search Results"}</h1>
 
-    <p>
-  {unmatchedIngredients.length > 0 ? (
-    <>
-      No recipes found for: <strong>{unmatchedIngredients.join(", ")}</strong>.
-      {matchedIngredients.length > 0 && (
-        <> Showing recipes for <strong>{matchedIngredients.join(", ")}</strong>.</>
-      )}
-    </>
-  ) : (
-    "Click a recipe to see instructions. Add it to favourites to save it."
-  )}
-</p>
+          <p>
+            {unmatchedIngredients.length > 0 ? (
+              <>
+                No recipes found for: <strong>{unmatchedIngredients.join(", ")}</strong>.
+                {matchedIngredients.length > 0 && (
+                  <> Showing recipes for <strong>{matchedIngredients.join(", ")}</strong>.</>
+                )}
+              </>
+            ) : (
+              "Click a recipe to see instructions. Add it to favourites to save it."
+            )}
+          </p>
 
           <RecipeCarousel>
             {searchResults.map((r, i) => (
@@ -179,109 +208,130 @@ export function Recipes() {
                 isOpen={openId === `search-${i}`}
                 onToggle={() => toggle(`search-${i}`)}
                 action={
-                  <button
-                    className="recipe-card-save"
-                    disabled={saved.has(i) || saving === i || favourites.some(f => f.title === r.title)}
-                    onClick={() => handleSave(r, i)}
-                  >
-                    {saved.has(i) || favourites.some(f => f.title === r.title) ? "Already in favourites" : saving === i ? "Saving..." : "Add to favourites"}
-                  </button>
+                  <Button
+                    variant="filled"
+                    color = "rgba(102, 173, 138, 1)"
+                    loading={saving === i}
+                    disabled={saved.has(i) || favourites.some(f => f.title === r.title)}
+                    onClick={() => void handleSave(r, i)}>
+                    {saved.has(i) || favourites.some(f => f.title === r.title)
+                      ? "Already in favourites"
+                      : "Add to favourites"}
+                  </Button>
                 }
               />
             ))}
           </RecipeCarousel>
         </>
-        ) : (
-  <>
-    <h1>No recipe found</h1>
-    <p>No recipe found.</p>
-  </>
+      ) : (
+        <>
+          <h1>No recipe found</h1>
+          <p>No recipe found.</p>
+        </>
       )}
 
       <h1>Favourites</h1>
-   {loadingFavourites ? (
-  <p>Loading...</p>
-) : favourites.length === 0 ? (
-  <p>No favourites yet. Search for recipes and add some.</p>
-) : (
-  <div style={{ display: "flex", gap: "20px", alignItems: "stretch" }}>
-
-    {/* LEFT - GRID */}
-    <div style={{ flex: 1 }}>
-      <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }}>
-        {favourites.map(r => (
-          <Paper
-            key={r.id}
-            p="md"
-            radius="md"
-            withBorder
-            shadow="sm"
-            style={{ cursor: "pointer", position: "relative" }}
-            onClick={() => setSelectedRecipe(r)}
-          >
-            <Stack gap="xs">
-              <Text fw={600}>{r.title}</Text>
-
-              <Text size="sm" c="dimmed">
-                Servings: {r.servings ?? "?"} · Prep: {r.prep_time ?? "?"} min
-              </Text>
-
-              <Text size="xs" c="dimmed">
-                {r.description?.split("\n\n")[0] ?? ""}
-              </Text>
-            </Stack>
-
-            <ActionIcon
-              variant="subtle"
-              color="red"
-              onClick={(e) => {
-                e.stopPropagation()
-                if (confirm("Remove from favourites?")) {
-                  handleDelete(r.id)
-                }
-              }}
-              style={{ position: "absolute", top: 8, right: 8 }}
-            >
-              <IconX size={16} />
-            </ActionIcon>
-          </Paper>
-        ))}
-      </SimpleGrid>
-    </div>
-
-    {/* RIGHT - DETAIL PANEL (ONLY FAVOURITES) */}
-    <div style={{ flex: 1 }}>
-      {selectedRecipe ? (
-        <Paper p="lg" radius="md" withBorder shadow="md">
-          <Stack>
-            
-            <Button
-            variant="subtle"
-            size="xs"
-            onClick={() => setSelectedRecipe(null)}
-          >
-            Close
-          </Button>
-          
-            <Text fw={700} size="lg">
-              {selectedRecipe.title}
-            </Text>
-
-            <Text size="sm" c="dimmed">
-              Servings: {selectedRecipe.servings ?? "?"} · Prep: {selectedRecipe.prep_time ?? "?"} min
-            </Text>
-
-            <Text size="sm" style={{ whiteSpace: "pre-wrap" }}>
-              {selectedRecipe.description}
-            </Text>
-          </Stack>
-        </Paper>
+      {loadingFavourites ? (
+        <p>Loading...</p>
+      ) : favourites.length === 0 ? (
+        <p>No favourites yet. Search for recipes and add some.</p>
       ) : (
-        <Text c="dimmed">Select a recipe to see details</Text>
+        <div style={{ display: "flex", gap: "20px", alignItems: "stretch" }}>
+
+          {/* LEFT - GRID */}
+          <div style={{ flex: 1 }}>
+            <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }}>
+              {favourites.map(r => (
+                <Paper
+                  key={r.id}
+                  p="md"
+                  radius="md"
+                  withBorder
+                  shadow="sm"
+                  style={{ cursor: "pointer", position: "relative" }}
+                  onClick={() => setSelectedRecipe(r)}>
+                  <Stack gap="xs">
+                    <Text fw={600}>{r.title}</Text>
+
+                    <Text size="sm" c="dimmed">
+                      Servings: {r.servings ?? "?"} · Prep: {r.prep_time ?? "?"} min
+                    </Text>
+
+                    <Text size="xs" c="dimmed">
+                      {r.description?.split("\n\n")[0] ?? ""}
+                    </Text>
+                  </Stack>
+
+                  {confirmDeleteId === r.id ? (
+                    <Group gap={4} style={{ position: "absolute", top: 8, right: 8 }}>
+                      <Button
+                        size="xs"
+                        variant="subtle"
+                        onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(null); }}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        size="xs"
+                        color="red"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setConfirmDeleteId(null);
+                          void handleDelete(r.id);
+                        }}
+                      >
+                        Remove
+                      </Button>
+                    </Group>
+                  ) : (
+                    <ActionIcon
+                      variant="subtle"
+                      color="red"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setConfirmDeleteId(r.id);
+                      }}
+                      style={{ position: "absolute", top: 8, right: 8 }}>
+                      <IconX size={16} />
+                    </ActionIcon>
+                  )}
+                </Paper>
+              ))}
+            </SimpleGrid>
+          </div>
+
+          {/* RIGHT - DETAIL PANEL (ONLY FAVOURITES) */}
+          <div style={{ flex: 1 }}>
+            {selectedRecipe ? (
+              <Paper p="lg" radius="md" withBorder shadow="md">
+                <Stack>
+
+                  <Button
+                    variant="subtle"
+                    size="xs"
+                    onClick={() => setSelectedRecipe(null)}>
+                    Close
+                  </Button>
+
+                  <Text fw={700} size="lg">
+                    {selectedRecipe.title}
+                  </Text>
+
+                  <Text size="sm" c="dimmed">
+                    Servings: {selectedRecipe.servings ?? "?"} · Prep: {selectedRecipe.prep_time ?? "?"} min
+                  </Text>
+
+                  <Text size="sm" style={{ whiteSpace: "pre-wrap" }}>
+                    {selectedRecipe.description}
+                  </Text>
+                </Stack>
+              </Paper>
+            ) : (
+              <Text c="dimmed">Select a recipe to see details</Text>
+            )}
+          </div>
+        </div>
       )}
     </div>
-
-  </div>
-)}
- </div>
-)}
+  )
+}

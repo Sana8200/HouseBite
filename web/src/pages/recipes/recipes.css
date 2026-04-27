@@ -105,23 +105,6 @@
   color: white;
 }
 
-.recipe-card-save {
-  display: block;
-  width: 100%;
-  margin-top: 12px;
-  padding: 8px;
-  border: none;
-  border-radius: 8px;
-  background: #667eea;
-  color: white;
-  font-size: 13px;
-  cursor: pointer;
-  transition: opacity 0.15s;
-}
-
-.recipe-card-save:hover:not(:disabled) { opacity: 0.85; }
-.recipe-card-save:disabled { opacity: 0.6; cursor: not-allowed; }
-
 /* Arrows */
 .recipe-carousel-arrow {
   background: white;

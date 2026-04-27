@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Alert, Button, Center, Container, Paper, PasswordInput, Stack, Text, TextInput } from "@mantine/core";
 import { signIn, signUp, turnstileSiteKey } from "../../api/auth";
 import { Turnstile } from "@marsidev/react-turnstile";
+import { notifications } from "@mantine/notifications";
 
 export type AuthTab = "signIn" | "signUp";
 
@@ -25,12 +26,15 @@ export function SignIn(props: SignInProps) {
 
     const [captchaToken, setCaptchaToken] = useState<string | null>(null);
 
-    const onSubmit = async (e: React.SubmitEvent) => {
+    const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setLoading(true);
         setError(null);
 
-        if (!captchaToken) return;
+        if (!captchaToken) {
+          setLoading(false);
+          return;
+        }
 
         try {
             if (activeTab == "signIn") {

@@ -4,8 +4,9 @@ import {Button, Group, Text, Modal, Stack, Title, Code, CopyButton,ActionIcon,
     ThemeIcon, Container, SimpleGrid, Card, TextInput,NumberInput, Alert, Loader,} from "@mantine/core"
 import {IconEdit, IconDoorExit, IconCheck, IconCopy, IconLink,
         IconPlus, IconUserPlus,} from "@tabler/icons-react"
-import { createHousehold, getHouseholds, joinHousehold, updateHousehold, leaveHousehold } from "../../api/household"
+import { createHousehold, getHouseholds, joinHousehold, updateHousehold, leaveHousehold, getHouseholdMembers } from "../../api/household"
 import type { Household } from "../../api/schema"
+import { notifications } from "@mantine/notifications"
 
 export function HouseHold() {
     const navigate = useNavigate()
@@ -32,6 +33,9 @@ export function HouseHold() {
 
     const [leavingId, setLeavingId] = useState<string | null>(null)
     const [leaving, setLeaving] = useState(false)
+    const [lastMemberLeaveId, setLastMemberLeaveId] = useState<string | null>(null)
+    const [confirmName, setConfirmName] = useState("")
+    const [checkingMembers, setCheckingMembers] = useState<string | null>(null)
 
     const [createdHousehold, setCreatedHousehold] = useState<{ name: string; inviteId: string; id: string } | null>(null)
 
@@ -153,6 +157,35 @@ export function HouseHold() {
         }
     }
 
+    const handleLeaveClick = async (householdId: string) => {
+        setCheckingMembers(householdId)
+        try {
+            const { data, error } = await getHouseholdMembers(householdId)
+            if (error) {
+                notifications.show({
+                    color: "red",
+                    title: "Could not check members",
+                    message: error.message,
+                })
+                return
+            }
+            const memberCount = (data ?? []).length
+            if (memberCount <= 1) {
+                setLastMemberLeaveId(householdId)
+            } else {
+                setLeavingId(householdId)
+            }
+        } catch (e) {
+            notifications.show({
+                color: "red",
+                title: "Could not check members",
+                message: e instanceof Error ? e.message : "Please try again.",
+            })
+        } finally {
+            setCheckingMembers(null)
+        }
+    }
+
     return (
         <Container size="md" py="xl">
             <Stack gap="lg">
@@ -250,7 +283,8 @@ export function HouseHold() {
                                         ) : (
                                             <Button variant="subtle" color="red" size="sm"
                                                 leftSection={<IconDoorExit size={14} />}
-                                                onClick={() => setLeavingId(h.id)}>
+                                                loading={checkingMembers === h.id}
+                                                onClick={() => void handleLeaveClick(h.id)}>
                                                 Leave
                                             </Button>
                                         )}
@@ -388,6 +422,48 @@ export function HouseHold() {
                     </Stack>
                 )}
             </Modal>
+
+            {/* Last-member leave warning */}
+            {(() => {
+                const h = households.find(x => x.id === lastMemberLeaveId)
+                if (!h) return null
+                const closeModal = () => { setLastMemberLeaveId(null); setConfirmName("") }
+                return (
+                    <Modal opened={!!lastMemberLeaveId} onClose={closeModal}
+                        centered radius="lg" title={<Text fw={700} c="red">Delete household?</Text>}>
+                        <Stack gap="md">
+                            <Alert color="red" variant="light" title="This action is permanent">
+                                You're the last member of <strong>{h.house_name}</strong>.
+                                Leaving will permanently delete this household and everything in it:
+                                pantry, receipts, shopping list, food restrictions, and budget history.
+                                This cannot be undone.
+                            </Alert>
+                            <Text size="sm">
+                                Type <strong>{h.house_name}</strong> to confirm:
+                            </Text>
+                            <TextInput
+                                value={confirmName}
+                                onChange={e => setConfirmName(e.currentTarget.value)}
+                                placeholder={h.house_name}
+                            />
+                            <Group justify="flex-end" gap="sm">
+                                <Button variant="default" onClick={closeModal}>Cancel</Button>
+                                <Button color="red"
+                                    disabled={confirmName !== h.house_name}
+                                    loading={leaving}
+                                    onClick={() => {
+                                        void (async () => {
+                                            await handleLeave(h.id)
+                                            closeModal()
+                                        })()
+                                    }}>
+                                    Delete household and leave
+                                </Button>
+                            </Group>
+                        </Stack>
+                    </Modal>
+                )
+            })()}
         </Container>
     )
 }

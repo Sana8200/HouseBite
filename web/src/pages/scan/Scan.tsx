@@ -10,6 +10,7 @@ import { insertReceipt } from "../../api/receipt.ts";
 import type { Household, InsertProduct, InsertProductSpecs, InsertReceipt, ProductSizeUnit } from "../../api/schema.ts";
 import type { User } from "@supabase/supabase-js";
 import { useNavigate } from "react-router";
+//import { notifications } from "@mantine/notifications";
 
 const IMG_SIZE = 2000;
 
