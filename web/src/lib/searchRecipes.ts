@@ -23,7 +23,8 @@ export const searchRecipes = async (
 
   const matchedIngredients = ingredients.filter((ing) =>
   recipes.some((r: any) =>
-    r.title?.toLowerCase().includes(ing.toLowerCase())
+    r.description?.toLowerCase().includes(ing.toLowerCase())
+    
   )
 )
 
