@@ -49,7 +49,7 @@ export function App() {
     //     key                 path                                signed in                      not signed in
     <Route key="sign-in"       path="sign-in"      element={user ? <Navigate to="/household" /> : <SignIn />} />,
     <Route key="sign-up"       path="sign-up"      element={user ? <Navigate to="/household" /> : <SignIn defaultTab="signUp" />} />,
-    <Route key="household"     path="household"    element={user ? <HouseHold />                : <Navigate to="/sign-in" />} />,
+    <Route key="household"     path="household"    element={user ? <HouseHold user={user} />    : <Navigate to="/sign-in" />} />,
     <Route key="dashboard"     path="dashboard"    element={user ? <Dashboard user={user} />    : <Navigate to="/sign-in" />} />,
     <Route key="recipes"       path="recipes"      element={user ? <Recipes />                  : <Navigate to="/sign-in" />} />,
     <Route key="shopping-list" path="shoppinglist" element={user ? <ShoppingList />             : <Navigate to="/sign-in" />} />,

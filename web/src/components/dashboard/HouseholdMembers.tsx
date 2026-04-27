@@ -1,26 +1,20 @@
 import { useEffect, useState } from "react"
 import { Paper, Avatar, Text, Title, Group, UnstyledButton, Stack } from "@mantine/core"
 import { IconShare } from "@tabler/icons-react"
-import { getHouseholdMembers } from "../../api/household"
+import { getHouseholdMembers, type HouseholdMember } from "../../api/household"
 import { InviteModal } from "./InviteModal"
 import "./HouseholdMembers.css"
-
-interface Member {
-    id: string
-    display_name: string | null
-    email: string | null
-}
 
 interface HouseholdMembersProps {
     householdId: string
     inviteId?: string
 }
 
-const getName = (m: Member) =>
+const getName = (m: HouseholdMember) =>
     m.display_name || m.email?.split("@")[0] || "Unknown"
 
 export function HouseholdMembers({ householdId, inviteId }: HouseholdMembersProps) {
-    const [members, setMembers] = useState<Member[]>([])
+    const [members, setMembers] = useState<HouseholdMember[]>([])
     const [loading, setLoading] = useState(true)
     const [showInvite, setShowInvite] = useState(false)
 
@@ -32,8 +26,7 @@ export function HouseholdMembers({ householdId, inviteId }: HouseholdMembersProp
                 if (error) {
                     console.error("Error fetching members:", error)
                 } else {
-                    const rows = data as Member[]
-                    setMembers(rows ?? [])
+                    setMembers(data ?? [])
                 }
             } catch (e) {
                 console.error("HouseholdMembers load failed", e)
