@@ -2,6 +2,7 @@ import './Dashboard.css';
 import React, { useState, useEffect} from 'react';
 import { ActionIcon, Alert, Badge, Button, Card, Checkbox, Container, Group, Loader, Modal, NumberInput, Paper, Select, SimpleGrid, Stack, Text, TextInput, Title } from '@mantine/core';
 import { IconLayoutGrid, IconReceiptEuro, IconPlus, IconShoppingCart, IconTrash, IconToolsKitchen2Off, IconChefHat, IconUsers, IconClock } from '@tabler/icons-react';
+import { AddToShoppingListModal } from "../../components/AddToShoppingListModal";
 import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../../supabase';
 import { searchRecipes } from "../../lib/searchRecipes"
@@ -89,6 +90,7 @@ const ProductsInDanger: React.FC<{
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [showRecipeModal, setShowRecipeModal] = useState(false);
   const [pendingSearch, setPendingSearch] = useState<{ ingredients: string[]; householdId: string } | null>(null);
+  const [shoppingListProduct, setShoppingListProduct] = useState<{ name: string; householdId: string } | null>(null);
   const navigate = useNavigate();
 
   const getExpiryBadge = (days: number | null) => {
@@ -167,34 +169,44 @@ const ProductsInDanger: React.FC<{
                   </Text>
                 </Stack>
 
-                <Group justify="space-between" align="center">
+                <Stack gap={6}>
                   {getExpiryBadge(days)}
-
-                  {confirmDeleteId === product.id ? (
-                    <Group gap={6}>
-                      <Text size="xs" c="dimmed">Are you sure?</Text>
-                      <Button size="xs" variant="subtle" onClick={() => setConfirmDeleteId(null)}>
-                        Cancel
-                      </Button>
-                      <Button
-                        size="xs"
-                        color="red"
-                        onClick={() => { setConfirmDeleteId(null); void onDelete(product.id); }}
-                      >
-                        Delete
-                      </Button>
-                    </Group>
-                  ) : (
-                    <ActionIcon
-                      variant="subtle"
-                      color="red"
-                      aria-label={`Delete ${product.name}`}
-                      onClick={() => setConfirmDeleteId(product.id)}
+                  <Group justify="space-between" align="center">
+                    <Button
+                      size="compact-xs"
+                      variant="light"
+                      leftSection={<IconShoppingCart size={10} />}
+                      onClick={() => setShoppingListProduct({ name: product.name, householdId: product.householdId })}
                     >
-                      <IconTrash size={16} />
-                    </ActionIcon>
-                  )}
-                </Group>
+                      Add to shopping list
+                    </Button>
+
+                    {confirmDeleteId === product.id ? (
+                      <Group gap={6}>
+                        <Text size="xs" c="dimmed">Are you sure?</Text>
+                        <Button size="xs" variant="subtle" onClick={() => setConfirmDeleteId(null)}>
+                          Cancel
+                        </Button>
+                        <Button
+                          size="xs"
+                          color="red"
+                          onClick={() => { setConfirmDeleteId(null); void onDelete(product.id); }}
+                        >
+                          Delete
+                        </Button>
+                      </Group>
+                    ) : (
+                      <ActionIcon
+                        variant="subtle"
+                        color="red"
+                        aria-label={`Delete ${product.name}`}
+                        onClick={() => setConfirmDeleteId(product.id)}
+                      >
+                        <IconTrash size={16} />
+                      </ActionIcon>
+                    )}
+                  </Group>
+                </Stack>
               </Stack>
             </Card>
           );
@@ -218,6 +230,11 @@ const ProductsInDanger: React.FC<{
           userId={userId}
         />
       )}
+
+      <AddToShoppingListModal
+        product={shoppingListProduct}
+        onClose={() => setShoppingListProduct(null)}
+      />
     </Stack>
   );
 };
