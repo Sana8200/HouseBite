@@ -654,7 +654,7 @@ export default function Dashboard(props: DashboardProps) {
             products={products.filter(p => {
               const days = getDaysUntilExpiry(p.expiryDate);
               return days !== null && days < 3;
-            })}
+            }).slice(0, 27)}
             onDelete={handleDelete}
             userId={user.id}
           />
