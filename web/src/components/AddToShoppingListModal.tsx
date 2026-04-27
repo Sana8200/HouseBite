@@ -1,5 +1,5 @@
-import { Button, Modal, Stack, Text, Textarea } from "@mantine/core";
-import { useState } from "react";
+import { Button, Modal, Stack, Text, Textarea, TextInput } from "@mantine/core";
+import { useEffect, useState } from "react";
 import { supabase } from "../supabase";
 
 interface Props {
@@ -8,11 +8,17 @@ interface Props {
 }
 
 export function AddToShoppingListModal({ product, onClose }: Props) {
+  const [name, setName] = useState("");
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (product) setName(product.name);
+  }, [product]);
+
   function handleClose() {
+    setName("");
     setNotes("");
     setError(null);
     onClose();
@@ -43,7 +49,7 @@ export function AddToShoppingListModal({ product, onClose }: Props) {
 
       const { error: insertError } = await supabase
         .from("shopping_item")
-        .insert({ shopping_list_id: list!.id, name: product.name, notes: notes || null });
+        .insert({ shopping_list_id: list!.id, name: name.trim(), notes: notes || null });
 
       if (insertError) throw insertError;
 
@@ -58,9 +64,11 @@ export function AddToShoppingListModal({ product, onClose }: Props) {
   return (
     <Modal opened={product !== null} onClose={handleClose} title="Add to Shopping List" centered>
       <Stack gap="md">
-        <Text>
-          <Text span fw={600}>Product:</Text> {product?.name}
-        </Text>
+        <TextInput
+          label="Product"
+          value={name}
+          onChange={(e) => setName(e.currentTarget.value)}
+        />
         <Textarea
           label="Notes"
           placeholder="Any notes..."
@@ -69,7 +77,7 @@ export function AddToShoppingListModal({ product, onClose }: Props) {
           minRows={3}
         />
         {error && <Text c="red" size="sm">{error}</Text>}
-        <Button fullWidth onClick={() => void handleSubmit()} loading={loading}>
+        <Button fullWidth onClick={() => void handleSubmit()} loading={loading} disabled={!name.trim()}>
           Add to Shopping List
         </Button>
       </Stack>
