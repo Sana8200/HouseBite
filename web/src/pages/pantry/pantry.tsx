@@ -4,7 +4,7 @@ import { IconArrowLeft, IconGridDots, IconList, IconPlus, IconSearch, IconShoppi
 import { AddToShoppingListModal } from "../../components/AddToShoppingListModal";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
-import { searchRecipes } from "../../lib/searchRecipes";
+import { searchRecipes } from "../../api/recipe";
 import { supabase } from "../../supabase";
 import { RecipeSearchModal } from "../../components/RecipeSearchModal";
 import type { User } from "@supabase/supabase-js";
@@ -528,8 +528,8 @@ export function Pantry({ user }: PantryProps) {
   // Receives exactly the diets and intolerances the user left checked in the modal.
   const handleProceed = async (diets: string[], intolerances: string[]) => {
     if (!pendingSearch) return;
-    const {recipes, noExactRecipe, matchedIngredients, unmatchedIngredients, } = await searchRecipes(pendingSearch.ingredients, pendingSearch.householdId, diets, intolerances);
-    navigate("/recipes", { state: { recipes, householdId: pendingSearch.householdId, noExactRecipe, matchedIngredients, unmatchedIngredients, } });
+    const result = await searchRecipes(pendingSearch.ingredients, pendingSearch.householdId, diets, intolerances);
+    void navigate("/recipes", { state: { householdId: pendingSearch.householdId, ...result } });
   };
 
   /* Memoized list of products after applying search, filter and expiry ordering. */

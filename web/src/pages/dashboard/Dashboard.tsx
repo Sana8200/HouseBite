@@ -5,7 +5,7 @@ import { IconLayoutGrid, IconReceiptEuro, IconPlus, IconShoppingCart, IconTrash,
 import { AddToShoppingListModal } from "../../components/AddToShoppingListModal";
 import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../../supabase';
-import { searchRecipes } from "../../lib/searchRecipes"
+import { searchRecipes } from "../../api/recipe"
 import { RecipeSearchModal } from "../../components/RecipeSearchModal"
 import { HouseholdMembers } from "../../components/dashboard/HouseholdMembers"
 import { FoodRestrictionsModal } from "../../components/dashboard/FoodRestrictionsModal"
@@ -119,8 +119,8 @@ const ProductsInDanger: React.FC<{
   // Receives exactly the diets and intolerances the user left checked in the modal.
   const handleProceed = async (diets: string[], intolerances: string[]) => {
     if (!pendingSearch) return;
-    const { recipes, noExactRecipe , matchedIngredients, unmatchedIngredients, }  = await searchRecipes(pendingSearch.ingredients, pendingSearch.householdId, diets, intolerances);
-    navigate('/recipes', { state: { recipes, householdId: pendingSearch.householdId, noExactRecipe , matchedIngredients, unmatchedIngredients,} });
+    const result  = await searchRecipes(pendingSearch.ingredients, pendingSearch.householdId, diets, intolerances);
+    void navigate('/recipes', { state: { householdId: pendingSearch.householdId, ...result} });
   };
 
   if (!products.length) {
@@ -281,7 +281,7 @@ const FavouriteRecipes: React.FC<FavouriteRecipesProps> = ({ recipes }) => {
               style={{ transition: "transform 0.15s, box-shadow 0.15s", cursor: "pointer" }}
               onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "var(--shadow-md)"; }}
               onMouseLeave={e => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = ""; }}
-              onClick={() => navigate("/recipes", { state: { openRecipeId: recipe.id } })}
+              onClick={() => void navigate("/recipes", { state: { openRecipeId: recipe.id } })}
             >
               <Stack gap="sm">
                 <Text fw={700} size="md" lineClamp={2}>{recipe.title}</Text>

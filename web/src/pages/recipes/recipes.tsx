@@ -4,16 +4,8 @@ import { supabase } from "../../supabase"
 import "./recipes.css"
 import { Paper, Text, SimpleGrid, Stack, ActionIcon, Button} from "@mantine/core"
 import { IconX } from "@tabler/icons-react"
-
-export type DbRecipe = {
-  id: string
-  title: string
-  description: string | null
-  servings: number | null
-  prep_time: number | null
-}
-
-type SearchRecipe = Omit<DbRecipe, "id">
+import { getRecipes, saveRecipe, type SearchRecipe, type SearchRecipesResult } from "../../api/recipe"
+import type { Recipe } from "../../api/schema"
 
 function parseDescription(description: string | null): { nutrition: string; ingredients: string; steps: string } {
   if (!description) return { nutrition: "", ingredients: "", steps: "" }
@@ -28,7 +20,7 @@ export function RecipeCard({
   action,
   onDelete,
 }: {
-  recipe: SearchRecipe | DbRecipe
+  recipe: SearchRecipe | Recipe
   isOpen: boolean
   onToggle: () => void
   action?: React.ReactNode
@@ -82,20 +74,26 @@ export function RecipeCarousel({ children }: { children: React.ReactNode }) {
   )
 }
 
+export interface RecipesParams extends Partial<SearchRecipesResult> {
+  householdId?: string;
+  openRecipeId?: string;
+}
+
 export function Recipes() {
   const location = useLocation()
-  const searchResults: SearchRecipe[] = location.state?.recipes ?? []
-  const householdId: string = location.state?.householdId
-  const openRecipeId: string | undefined = location.state?.openRecipeId
+  const locationState = location.state as RecipesParams;
+  const searchResults = locationState?.recipes ?? []
+  // const householdId = locationState?.householdId
+  const openRecipeId = locationState?.openRecipeId
 
   const [saved, setSaved] = useState<Set<number>>(new Set())
   const [saving, setSaving] = useState<number | null>(null)
-  const [favourites, setFavourites] = useState<DbRecipe[]>([])
+  const [favourites, setFavourites] = useState<Recipe[]>([])
   const [loadingFavourites, setLoadingFavourites] = useState(true)
-  const [selectedRecipe, setSelectedRecipe] = useState<DbRecipe | null>(null)
-  const noExactRecipe: boolean = location.state?.noExactRecipe ?? false
-  const matchedIngredients: string[] = location.state?.matchedIngredients ?? []
-  const unmatchedIngredients: string[] = location.state?.unmatchedIngredients ?? []
+  const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null)
+  const noExactRecipe = locationState?.noExactRecipe ?? false
+  const matchedIngredients = locationState?.matchedIngredients ?? []
+  const unmatchedIngredients = locationState?.unmatchedIngredients ?? []
 
   // tracks which card is open: "fav-{id}" or "search-{index}"
   const [openId, setOpenId] = useState<string | null>(
@@ -106,10 +104,7 @@ export function Recipes() {
 
     const fetchFavourites = async () => {
         try {
-            const { data } = await supabase
-                .from("recipe")
-                .select("id, title, description, servings, prep_time")
-                .order("created_at", { ascending: false })
+            const { data } = await getRecipes();
             const list = data ?? []
             setFavourites(list)
             if (openRecipeId) {
@@ -123,6 +118,7 @@ export function Recipes() {
         }
     }
 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => { void fetchFavourites() }, [])
 
   const handleDelete = async (id: string) => {
@@ -138,10 +134,8 @@ export function Recipes() {
         }
         setSaving(index)
         try {
-            const { error } = await supabase.functions.invoke("save-recipe", {
-                body: { recipe }
-            })
-            if (!error) {
+            const result = await saveRecipe(recipe);
+            if (!result.error) {
                 setSaved(prev => new Set(prev).add(index))
                 void fetchFavourites()
             }
@@ -182,7 +176,7 @@ export function Recipes() {
                   <button
                     className="recipe-card-save"
                     disabled={saved.has(i) || saving === i || favourites.some(f => f.title === r.title)}
-                    onClick={() => handleSave(r, i)}
+                    onClick={() => void handleSave(r, i)}
                   >
                     {saved.has(i) || favourites.some(f => f.title === r.title) ? "Already in favourites" : saving === i ? "Saving..." : "Add to favourites"}
                   </button>
@@ -237,7 +231,7 @@ export function Recipes() {
               onClick={(e) => {
                 e.stopPropagation()
                 if (confirm("Remove from favourites?")) {
-                  handleDelete(r.id)
+                  void handleDelete(r.id)
                 }
               }}
               style={{ position: "absolute", top: 8, right: 8 }}
