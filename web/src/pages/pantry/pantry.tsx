@@ -6,6 +6,9 @@ import { useEffect, useMemo, useState } from "react";
 import { searchRecipes } from "../../lib/searchRecipes";
 import { supabase } from "../../supabase";
 import { RecipeSearchModal } from "../../components/RecipeSearchModal";
+import type { User } from "@supabase/supabase-js";
+import { getExpirationDateBounds, getDaysUntilExpiry, formatOptionalDate, formatExpiry,
+  getExpiryLabel} from "../../utils/date";
 
 type PantryViewMode = "grid" | "list";
 type ExpiryStatusFilter = "all" | "expired" | "critical" | "warning" | "fresh" | "no-date";
@@ -28,47 +31,8 @@ interface PantryLocationState {
   householdId?: string;
 }
 
-const formatDateInputValue = (date: Date) => date.toISOString().slice(0, 10);
-
-const getExpirationDateBounds = () => {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const minDate = new Date(today);
-  minDate.setFullYear(today.getFullYear() - 100);
-
-  const maxDate = new Date(today);
-  maxDate.setFullYear(today.getFullYear() + 100);
-
-  return {
-    min: formatDateInputValue(minDate),
-    max: formatDateInputValue(maxDate),
-  };
-};
-
-/* Helper for getting the number of days remaining for expiring a product. */
-function getDaysUntilExpiry(expirationDate: string | null): number | null {
-  if (!expirationDate) return null;
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const expiry = new Date(expirationDate);
-  expiry.setHours(0, 0, 0, 0);
-
-  return Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-}
-
-/* Helper for formatting the expiration date. */
-function formatExpiry(expirationDate: string | null): string {
-  if (!expirationDate) return "No expiration date";
-  return new Date(expirationDate).toLocaleDateString();
-}
-
-/* Helper for formatting the purchasedOn date or other Optional dates needed. */
-function formatOptionalDate(date: string | null): string {
-  if (!date) return "-";
-  return new Date(date).toLocaleDateString();
+interface PantryProps {
+  user: User;
 }
 
 /* Helper for formatting the amount of a product. */
@@ -134,14 +98,6 @@ function renderGridStatusTag(daysUntilExpiry: number | null) {
       {`Expires in ${daysUntilExpiry} day(s)`}
     </Badge>
   );
-}
-
-/* Helper for returning the expiration label shown in the table view. */
-function getExpiryLabel(daysUntilExpiry: number | null): string {
-  if (daysUntilExpiry === null) return "No date";
-  if (daysUntilExpiry < 0) return `Expired ${Math.abs(daysUntilExpiry)} day(s) ago`;
-  if (daysUntilExpiry === 0) return "Expires today";
-  return `Expires in ${daysUntilExpiry} day(s)`;
 }
 
 /* Component for rendering the pantry products in grid format. */
@@ -256,8 +212,8 @@ function PantryAllProductsList({
     );
   }
 
-  const rows = products.map((product) => {
-    const daysUntilExpiry = getDaysUntilExpiry(product.expirationDate);
+  const rows = products.map((product) => { 
+  const daysUntilExpiry = getDaysUntilExpiry(product.expirationDate);
 
     return (
       <Table.Tr key={product.id}>
@@ -326,7 +282,7 @@ function PantryAllProductsList({
 }
 
 /* Main pantry page component. */
-export function Pantry() {
+export function Pantry({ user }: PantryProps) {
   const expirationDateBounds = getExpirationDateBounds();
   const location = useLocation();
   const navigate = useNavigate();
@@ -433,9 +389,6 @@ export function Pantry() {
     setError(null);
 
     try {
-      // get current user info
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
 
       // create receipt for this purchase
       const price = newPrice !== "" ? Number(newPrice) : null;
@@ -742,6 +695,7 @@ export function Pantry() {
           onClose={() => setShowRecipeModal(false)}
           onProceed={handleProceed}
           householdId={pendingSearch.householdId}
+          userId={user.id}
         />
       )}
 
