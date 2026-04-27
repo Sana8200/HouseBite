@@ -40,19 +40,19 @@ export async function fetchReceiptsByHousehold(householdId?: string): Promise<Po
 
     const { data, error, ...rest } = await query;
 
-    const mapped: ReceiptWithProducts[] = (data ?? []).map((r: any) => ({
-        id: r.id,
-        household_id: r.household_id,
-        store_name: r.store_name,
-        total: r.total,
-        purchase_at: r.purchase_at,
-        products: (r.product ?? []).map((p: any) => {
+    const mapped: ReceiptWithProducts[] = (data ?? []).map(r => ({
+        id: r.id as string,
+        household_id: r.household_id as string,
+        store_name: r.store_name as string,
+        total: r.total as number,
+        purchase_at: r.purchase_at as string,
+        products: (r.product ?? []).map(p => {
             const specs = Array.isArray(p.product_specs) ? p.product_specs[0] : p.product_specs;
             return {
-                id: p.id,
-                name: p.name,
-                quantity: specs?.quantity ?? 1,
-                price: specs?.price ?? null,
+                id: p.id as string,
+                name: p.name as string,
+                quantity: (specs?.quantity as number | null) ?? 1,
+                price: (specs?.price as number | null) ?? null,
             };
         }),
     }));
