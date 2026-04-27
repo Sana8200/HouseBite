@@ -100,7 +100,8 @@ const getExpirationDateBounds = () => {
 // Products in Danger Component
 const ProductsInDanger: React.FC<{
   products: Product[];
-  onDelete: (id: string) => Promise<void>;}> = ({ products, onDelete }) => {
+  onDelete: (id: string) => Promise<void>; 
+  userId: string; }> = ({ products, onDelete, userId }) => {
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [showRecipeModal, setShowRecipeModal] = useState(false);
@@ -242,6 +243,7 @@ const ProductsInDanger: React.FC<{
           onClose={() => setShowRecipeModal(false)}
           onProceed={handleProceed}
           householdId={pendingSearch.householdId}
+          userId={userId}
         />
       )}
     </Stack>
@@ -453,10 +455,6 @@ export default function Dashboard(props: DashboardProps) {
     setError(null);
 
     try {
-      // get current user info
-      const { data: {user}} = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
-
       // Create receipt for this purchase
       const price = newPrice ? parseFloat(newPrice) : null;
       const purchaseDate = newExpirationDate || new Date().toISOString().split('T')[0];
@@ -617,6 +615,7 @@ export default function Dashboard(props: DashboardProps) {
               return days < 3;
             })}
             onDelete={handleDelete}
+            userId={user.id}
           />
         )}
 

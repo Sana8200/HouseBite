@@ -6,6 +6,8 @@ import { useEffect, useMemo, useState } from "react";
 import { searchRecipes } from "../../lib/searchRecipes";
 import { supabase } from "../../supabase";
 import { RecipeSearchModal } from "../../components/RecipeSearchModal";
+import type { User } from "@supabase/supabase-js";
+import { getExpirationDateBounds, getDaysUntilExpiry } from "../../utils/date";
 
 type PantryViewMode = "grid" | "list";
 type ExpiryStatusFilter = "all" | "expired" | "critical" | "warning" | "fresh" | "no-date";
@@ -28,7 +30,10 @@ interface PantryLocationState {
   householdId?: string;
 }
 
-import { getExpirationDateBounds, getDaysUntilExpiry } from "../../utils/date";
+interface PantryProps {
+  user: User;
+}
+
 
 /* Helper for formatting the expiration date. */
 function formatExpiry(expirationDate: string | null): string {
@@ -297,13 +302,13 @@ function PantryAllProductsList({
 }
 
 /* Main pantry page component. */
-export function Pantry() {
+export function Pantry({ user }: PantryProps) {
   const expirationDateBounds = getExpirationDateBounds();
   const location = useLocation();
   const navigate = useNavigate();
   const locationState = location.state as PantryLocationState | undefined;
   const householdId = locationState?.householdId;
-
+  
   const [products, setProducts] = useState<PantryProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -404,9 +409,6 @@ export function Pantry() {
     setError(null);
 
     try {
-      // get current user info
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
 
       // create receipt for this purchase
       const price = newPrice !== "" ? Number(newPrice) : null;
@@ -713,6 +715,7 @@ export function Pantry() {
           onClose={() => setShowRecipeModal(false)}
           onProceed={handleProceed}
           householdId={pendingSearch.householdId}
+          userId={user.id}
         />
       )}
 

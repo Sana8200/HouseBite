@@ -130,7 +130,6 @@ export function Recipes() {
       return
     }
     setSaving(index)
-    const { data: { user } } = await supabase.auth.getUser()
     const { error } = await supabase.functions.invoke("save-recipe", {
       body: { recipe }
     })

@@ -15,9 +15,10 @@ interface Props {
   // split into diets and intolerances so the search function can use them directly.
   onProceed: (diets: string[], intolerances: string[]) => Promise<void>;
   householdId: string;
+  userId: string;
 }
 
-export function RecipeSearchModal({ opened, onClose, onProceed, householdId }: Props) {
+export function RecipeSearchModal({ opened, onClose, onProceed, householdId, userId }: Props) {
   const [myRestrictions, setMyRestrictions] = useState<Restriction[]>([]);
   const [householdRestrictions, setHouseholdRestrictions] = useState<Restriction[]>([]);
   // Tracks which restrictions are checked — all start checked so the search is as safe as possible.
@@ -34,16 +35,11 @@ export function RecipeSearchModal({ opened, onClose, onProceed, householdId }: P
   const load = async () => {
     setLoading(true);
 
-    const { data: userData } = await supabase.auth.getUser();
-    const userId = userData.user?.id;
-
     // Fetch the current user's personal dietary restrictions from their account.
-    const { data: myData } = userId
-      ? await supabase
+    const { data: myData } = await supabase
           .from("member_restriction")
           .select("food_restriction(id, name, category)")
-          .eq("member_id", userId)
-      : { data: null };
+          .eq("member_id", userId);
 
     const myR: Restriction[] = (myData ?? [])
       .map((r: any) => r.food_restriction)
