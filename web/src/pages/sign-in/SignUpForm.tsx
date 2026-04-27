@@ -1,11 +1,8 @@
 import { useState } from "react"
-import { signUp } from "../../api/auth";
+import { signUp, turnstileSiteKey } from "../../api/auth";
 import type { User } from "@supabase/supabase-js";
 import { Alert, Button, Center, PasswordInput, Stack, Text, TextInput } from "@mantine/core";
 import { Turnstile } from '@marsidev/react-turnstile';
-
-const turnstileSiteKey = (import.meta.env.VITE_TURNSTILE_SITEKEY as string | undefined) || "1x00000000000000000000AA";
-
 
 export interface SignUpProps {
     setUser: (user: User) => void,
