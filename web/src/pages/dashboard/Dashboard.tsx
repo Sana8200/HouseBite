@@ -142,8 +142,8 @@ const ProductsInDanger: React.FC<{
   // Receives exactly the diets and intolerances the user left checked in the modal.
   const handleProceed = async (diets: string[], intolerances: string[]) => {
     if (!pendingSearch) return;
-    const results = await searchRecipes(pendingSearch.ingredients, pendingSearch.householdId, diets, intolerances);
-    navigate('/recipes', { state: { recipes: results, householdId: pendingSearch.householdId } });
+    const { recipes, noExactRecipe , matchedIngredients, unmatchedIngredients, }  = await searchRecipes(pendingSearch.ingredients, pendingSearch.householdId, diets, intolerances);
+    navigate('/recipes', { state: { recipes, householdId: pendingSearch.householdId, noExactRecipe , matchedIngredients, unmatchedIngredients,} });
   };
 
   if (!products.length) {
