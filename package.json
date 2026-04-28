@@ -1,6 +1,5 @@
 {
   "dependencies": {
-    "@mantine/dates": "^9.0.2",
-    "xlsx": "^0.18.5"
+    "@mantine/dates": "^9.0.2"
   }
 }
