@@ -11,7 +11,8 @@ import {
 } from "../../api/account"
 import { getAvatar, getUsername } from "../../utils/user"
 import { ActionIcon, Alert, Avatar, Button, Card, Center, Chip, Container, Divider, Flex, Grid, Group, Loader, Modal, Space, Stack, Text, TextInput, Title } from "@mantine/core"
-import { IconEdit, IconDeviceFloppyFilled } from '@tabler/icons-react';
+import { IconEdit, IconDeviceFloppyFilled, IconAlertCircle } from '@tabler/icons-react';
+import { notifications } from "@mantine/notifications";
 import type { FoodRestriction } from "../../api/schema"
 
 interface AccountProps {
@@ -40,7 +41,6 @@ export function Account(props: AccountProps) {
     const [confirmPassword, setConfirmPassword] = useState("")
     const [savingPassword, setSavingPassword] = useState(false)
     const [passwordError, setPasswordError] = useState<string | null>(null)
-    const [passwordSuccess, setPasswordSuccess] = useState(false)
 
     // Deletion modal
     const [showDeleteModal, setShowDeleteModal] = useState(false)
@@ -63,16 +63,38 @@ export function Account(props: AccountProps) {
                     getMyRestrictions(user.id),
                 ]);
 
-                if (totalResult.error) console.error("Error fetching total spent:", totalResult.error);
+                if (totalResult.error) {
+                    notifications.show({
+                        color: "red",
+                        title: "Could not load total spent",
+                        message: totalResult.error.message
+                    });
+                }
                 else setTotalSpent(totalResult.total);
 
-                if (availableRestrictionsResult.error) console.error("Error fetching availableRestrictions:", availableRestrictionsResult.error);
+                if (availableRestrictionsResult.error) {
+                    notifications.show({
+                        color: "red",
+                        title: "Could not load restrictions",
+                        message: availableRestrictionsResult.error.message
+                    });
+                }
                 else setAvailableRestrictions(availableRestrictionsResult.data ?? []);
 
-                if (userRestrictionsResult.error) console.error("Error fetching my availableRestrictions:", userRestrictionsResult.error);
+                if (userRestrictionsResult.error) {
+                    notifications.show({
+                        color: "red",
+                        title: "Could not load your restrictions",
+                        message: userRestrictionsResult.error.message
+                    })
+                }
                 else setUserRestrictions(new Set((userRestrictionsResult.data ?? []).map(m => m.restriction_id)));
             } catch (e) {
-                console.error("Account fetch failed", e)
+                notifications.show({
+                    color: "red",
+                    title: "Could not load account",
+                    message: e instanceof Error ? e.message : "Please try again."
+                });
             } finally {
                 setLoading(false)
             }
@@ -85,6 +107,8 @@ export function Account(props: AccountProps) {
         setRestrictionError(null)
         const has = userRestrictions.has(id)
         const next = new Set(userRestrictions)
+        const restriction = availableRestrictions.find(r => r.id === id)
+        const label = formatRestriction(restriction?.name ?? "Restriction")
 
         try {
             if (has) {
@@ -97,6 +121,11 @@ export function Account(props: AccountProps) {
                 next.add(id)
             }
             setUserRestrictions(next)
+            notifications.show({
+                color: has ? "orange" : "green",
+                title: has ? "Removed" : "Added",
+                message: `${label} ${has ? "removed from" : "added to"} your restrictions.`,
+            })
         } catch (e) {
             console.error("toggleRestriction failed", e)
             setRestrictionError("Could not update restrictions. Please try again.")
@@ -128,6 +157,11 @@ export function Account(props: AccountProps) {
             }
             setUsername(trimmed)
             setEditingName(false)
+            notifications.show({
+                color: "green",
+                title: "Saved",
+                message: "Username updated.",
+            })
         } catch (e) {
             console.error("saveUsername failed", e)
             setNameError("Could not save username. Please try again.")
@@ -160,13 +194,14 @@ export function Account(props: AccountProps) {
                 setPasswordError(error.message)
                 return
             }
-            setPasswordSuccess(true)
             setNewPassword("")
             setConfirmPassword("")
-            setTimeout(() => {
-                setShowPasswordModal(false)
-                setPasswordSuccess(false)
-            }, 1200)
+            setShowPasswordModal(false)
+            notifications.show({
+                color: "green",
+                title: "Password updated",
+                message: "Your password has been changed.",
+            })
         } catch (e) {
             console.error("savePassword failed", e)
             setPasswordError("Could not update password. Please try again.")
@@ -204,7 +239,7 @@ export function Account(props: AccountProps) {
 
     if (loading) return (
         <Center p="md">
-            <Loader/>
+            <Loader />
         </Center>
     );
 
@@ -213,11 +248,11 @@ export function Account(props: AccountProps) {
             <Title>Account</Title>
 
             <Grid mt="md">
-                <Grid.Col span={{base: 12, md: 5}}>
+                <Grid.Col span={{ base: 12, md: 5 }}>
                     <Stack>
                         <Card shadow="md">
                             <Flex align="center" gap="md">
-                                <Avatar src={avatar} name={username} color="initials" size="xl"/>
+                                <Avatar src={avatar} name={username} color="initials" size="xl" />
                                 <div>
                                     <Text size="xl">{username || "—"}</Text>
                                     <Text c="dimmed">{user.email}</Text>
@@ -229,18 +264,24 @@ export function Account(props: AccountProps) {
                             <Title order={4}>Profile</Title>
 
                             {nameError && (
-                                <>
-                                    <Alert variant="light" color="red" mt="md">
-                                        {nameError}
-                                    </Alert>
-                                </>
+                                <Alert
+                                    variant="light"
+                                    color="red"
+                                    radius="md"
+                                    mt="md"
+                                    icon={<IconAlertCircle size={18} />}
+                                    title="Couldn't save username"
+                                    withCloseButton
+                                    onClose={() => setNameError(null)}>
+                                    {nameError}
+                                </Alert>
                             )}
-
+                            
                             <Stack gap="xs" mt="md">
                                 <Flex>
                                     <Text c="dimmed">Username</Text>
-                                    <Space flex={1}/>
-                                    {!editingName && 
+                                    <Space flex={1} />
+                                    {!editingName &&
                                         <>
                                             <Text fw={500}>{username || "-"}</Text>
                                             <ActionIcon variant="transparent" ml="xs"
@@ -248,7 +289,7 @@ export function Account(props: AccountProps) {
                                                     setDraftName(username)
                                                     setEditingName(true)
                                                 }}>
-                                                <IconEdit/>
+                                                <IconEdit />
                                             </ActionIcon>
                                         </>
                                     }
@@ -263,29 +304,29 @@ export function Account(props: AccountProps) {
                                             rightSection={
                                                 <>
                                                     <ActionIcon variant="transparent" onClick={() => void handleSaveUsername()} disabled={savingName}>
-                                                        <IconDeviceFloppyFilled/>
+                                                        <IconDeviceFloppyFilled />
                                                     </ActionIcon>
                                                 </>
-                                            }/>
+                                            } />
                                     }
-                                    
+
                                 </Flex>
-                                <Divider/>
+                                <Divider />
                                 <Flex>
                                     <Text c="dimmed">Email</Text>
-                                    <Space flex={1}/>
+                                    <Space flex={1} />
                                     <Text fw={500}>{user.email || "-"}</Text>
                                 </Flex>
-                                <Divider/>
+                                <Divider />
                                 <Flex>
                                     <Text c="dimmed">Member since</Text>
-                                    <Space flex={1}/>
+                                    <Space flex={1} />
                                     <Text fw={500}>{memberSince}</Text>
                                 </Flex>
-                                <Divider/>
+                                <Divider />
                                 <Flex>
                                     <Text c="dimmed">Spent this month</Text>
-                                    <Space flex={1}/>
+                                    <Space flex={1} />
                                     <Text fw={500}>
                                         {totalSpent?.toFixed(2) || '-'} kr
                                     </Text>
@@ -295,8 +336,8 @@ export function Account(props: AccountProps) {
                         </Card>
                     </Stack>
                 </Grid.Col>
-                
-                <Grid.Col span={{base: 12, md: 7}}>
+
+                <Grid.Col span={{ base: 12, md: 7 }}>
                     <Card shadow="md">
                         <Title order={4}>Food Preferences & Restrictions</Title>
                         <Text c="dimmed">
@@ -306,16 +347,22 @@ export function Account(props: AccountProps) {
                         </Text>
 
                         {restrictionError && (
-                            <>
-                                <Alert variant="light" color="red" mt="md">
-                                    {restrictionError}
-                                </Alert>
-                            </>
+                            <Alert
+                                variant="light"
+                                color="red"
+                                radius="md"
+                                mt="md"
+                                icon={<IconAlertCircle size={18} />}
+                                title="Couldn't update restrictions"
+                                withCloseButton
+                                onClose={() => setRestrictionError(null)}>
+                                {restrictionError}
+                            </Alert>
                         )}
 
                         <Card p="md" shadow="none" withBorder mt="md">
                             <Text fw={500}>Your selections</Text>
-                            <Space h="xs"/>
+                            <Space h="xs" />
                             {userRestrictions.size === 0 && <Text>None selected</Text>}
                             <Group>
                                 {availableRestrictions
@@ -328,12 +375,12 @@ export function Account(props: AccountProps) {
                                 }
                             </Group>
                         </Card>
-                        <Space h="md"/>
+                        <Space h="md" />
                         <RestrictionCategory label="Intolerances" items={intolerances}
-                            togglingId={togglingId} toggleRestriction={id => void toggleRestriction(id)} userRestrictions={userRestrictions}/>
-                        <Space h="md"/>
+                            togglingId={togglingId} toggleRestriction={id => void toggleRestriction(id)} userRestrictions={userRestrictions} />
+                        <Space h="md" />
                         <RestrictionCategory label="Diets" items={diets}
-                            togglingId={togglingId} toggleRestriction={id => void toggleRestriction(id)} userRestrictions={userRestrictions}/>
+                            togglingId={togglingId} toggleRestriction={id => void toggleRestriction(id)} userRestrictions={userRestrictions} />
                     </Card>
                 </Grid.Col>
             </Grid>
@@ -363,19 +410,25 @@ export function Account(props: AccountProps) {
                 opened={showPasswordModal} onClose={() => !savingPassword && setShowPasswordModal(false)}>
 
                 {passwordError && (
-                    <Alert variant="light" color="red">{passwordError}</Alert>
-                )}
-                {passwordSuccess && (
-                    <Alert variant="light" color="green">Password updated.</Alert>
+                    <Alert
+                        variant="light"
+                        color="red"
+                        radius="md"
+                        icon={<IconAlertCircle size={18} />}
+                        title="Couldn't update password"
+                        withCloseButton
+                        onClose={() => setPasswordError(null)}>
+                        {passwordError}
+                    </Alert>
                 )}
 
-                <TextInput 
+                <TextInput
                     label="New password"
                     type="password"
                     value={newPassword}
                     onChange={e => setNewPassword(e.target.value)}
                     disabled={savingPassword}
-                    mt="sm"/>
+                    mt="sm" />
 
                 <TextInput
                     label="Confirm password"
@@ -383,14 +436,14 @@ export function Account(props: AccountProps) {
                     value={confirmPassword}
                     onChange={e => setConfirmPassword(e.target.value)}
                     disabled={savingPassword}
-                    mt="sm"/>
+                    mt="sm" />
 
                 <Flex justify="end" gap="md" mt="sm">
                     <Button
                         onClick={() => void handleSavePassword()}
                         disabled={savingPassword || !newPassword || newPassword != confirmPassword}
                         loading={savingPassword}>
-                            Save
+                        Save
                     </Button>
                 </Flex>
             </Modal>
@@ -403,11 +456,17 @@ export function Account(props: AccountProps) {
                 </Text>
 
                 {deleteError && (
-                    <>
-                        <Alert variant="light" color="red" mt="sn">
-                            {deleteError}
-                        </Alert>
-                    </>
+                    <Alert
+                        variant="light"
+                        color="red"
+                        radius="md"
+                        mt="sm"
+                        icon={<IconAlertCircle size={18} />}
+                        title="Couldn't delete account"
+                        withCloseButton
+                        onClose={() => setDeleteError(null)}>
+                        {deleteError}
+                    </Alert>
                 )}
 
                 <TextInput

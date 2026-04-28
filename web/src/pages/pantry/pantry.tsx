@@ -1,7 +1,7 @@
-import { ActionIcon, Badge, Button, Card, Checkbox, Group, Menu, Modal, NumberInput, Paper, SegmentedControl,
-  Select, SimpleGrid, Stack, Table, Text, TextInput, Title, 
-  useMantineTheme} from "@mantine/core";
-import { IconArrowLeft, IconGridDots, IconList, IconPlus, IconSearch, IconShoppingCart, IconTrash } from "@tabler/icons-react";
+import { ActionIcon, Alert, Badge, Button, Card, Checkbox, Group, Menu, Modal, NumberInput, Paper, Popover, SegmentedControl,
+  Select, SimpleGrid, Stack, Table, Text, TextInput, Title, useMantineTheme } from "@mantine/core";
+import { IconAlertCircle, IconArrowLeft, IconGridDots, IconList, IconPlus, IconSearch, IconShoppingCart, IconTrash } from "@tabler/icons-react";
+import { notifications } from "@mantine/notifications";
 import { AddToShoppingListModal } from "../../components/AddToShoppingListModal";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
@@ -9,8 +9,7 @@ import { searchRecipes } from "../../api/recipe";
 import { supabase } from "../../supabase";
 import { RecipeSearchModal } from "../../components/RecipeSearchModal";
 import type { User } from "@supabase/supabase-js";
-import { getExpirationDateBounds, getDaysUntilExpiry, formatOptionalDate, formatExpiry,
-  getExpiryLabel} from "../../utils/date";
+import { getExpirationDateBounds, getDaysUntilExpiry, formatOptionalDate, formatExpiry,getExpiryLabel} from "../../utils/date";
 import { insertReceipt } from "../../api/receipt";
 import { insertProductWithSpecs } from "../../api/product";
 import type { ProductSizeUnit } from "../../api/schema";
@@ -179,22 +178,33 @@ function PantryGrid({
                     Add to shopping list
                   </Button>
 
-                  {confirmDeleteId === product.id ? (
-                    <Group gap={6}>
-                      <Text size="xs" c="dimmed">Are you sure?</Text>
-                      <Button size="xs" variant="subtle" onClick={onDeleteCancel}>Cancel</Button>
-                      <Button size="xs" color="red" onClick={() => onDeleteConfirm(product.id)}>Delete</Button>
-                    </Group>
-                  ) : (
-                    <ActionIcon
-                      variant="subtle"
-                      color="red"
-                      aria-label={`Delete ${product.name}`}
-                      onClick={() => onDeleteClick(product.id)}
-                    >
-                      <IconTrash size={16} />
-                    </ActionIcon>
-                  )}
+                  <Popover
+                    opened={confirmDeleteId === product.id}
+                    onClose={onDeleteCancel}
+                    position="bottom-end"
+                    withArrow
+                    shadow="md"
+                  >
+                    <Popover.Target>
+                      <ActionIcon
+                        variant="subtle"
+                        color="red"
+                        aria-label={`Delete ${product.name}`}
+                        onClick={() => confirmDeleteId === product.id ? onDeleteCancel() : onDeleteClick(product.id)}
+                      >
+                        <IconTrash size={16} />
+                      </ActionIcon>
+                    </Popover.Target>
+                    <Popover.Dropdown>
+                      <Stack gap="xs">
+                        <Text size="sm">Remove this product?</Text>
+                        <Group gap="xs" justify="flex-end">
+                          <Button size="xs" variant="default" onClick={onDeleteCancel}>Cancel</Button>
+                          <Button size="xs" color="red" onClick={() => onDeleteConfirm(product.id)}>Delete</Button>
+                        </Group>
+                      </Stack>
+                    </Popover.Dropdown>
+                  </Popover>
                 </Group>
               </Group>
             </Stack>
@@ -266,22 +276,33 @@ function PantryAllProductsList({
           </Button>
         </Table.Td>
         <Table.Td>
-          {confirmDeleteId === product.id ? (
-            <Group gap={6} wrap="nowrap">
-              <Text size="xs" c="dimmed">Sure?</Text>
-              <Button size="xs" variant="subtle" onClick={onDeleteCancel}>Cancel</Button>
-              <Button size="xs" color="red" onClick={() => onDeleteConfirm(product.id)}>Delete</Button>
-            </Group>
-          ) : (
-            <ActionIcon
-              variant="subtle"
-              color="red"
-              aria-label={`Delete ${product.name}`}
-              onClick={() => onDeleteClick(product.id)}
-            >
-              <IconTrash size={16} />
-            </ActionIcon>
-          )}
+          <Popover
+            opened={confirmDeleteId === product.id}
+            onClose={onDeleteCancel}
+            position="bottom-end"
+            withArrow
+            shadow="md"
+          >
+            <Popover.Target>
+              <ActionIcon
+                variant="subtle"
+                color="red"
+                aria-label={`Delete ${product.name}`}
+                onClick={() => confirmDeleteId === product.id ? onDeleteCancel() : onDeleteClick(product.id)}
+              >
+                <IconTrash size={16} />
+              </ActionIcon>
+            </Popover.Target>
+            <Popover.Dropdown>
+              <Stack gap="xs">
+                <Text size="sm">Remove this product?</Text>
+                <Group gap="xs" justify="flex-end">
+                  <Button size="xs" variant="default" onClick={onDeleteCancel}>Cancel</Button>
+                  <Button size="xs" color="red" onClick={() => onDeleteConfirm(product.id)}>Delete</Button>
+                </Group>
+              </Stack>
+            </Popover.Dropdown>
+          </Popover>
         </Table.Td>
       </Table.Tr>
     );
@@ -409,9 +430,25 @@ export function Pantry({ user }: PantryProps) {
   };
 
   const fetchHouseholds = async () => {
-    const { data } = await supabase.from("household").select("id, house_name");
-    setHouseholds(data ?? []);
-    if (householdId) setNewHouseholdId(householdId);
+    try {
+      const { data, error } = await supabase.from("household").select("id, house_name");
+      if (error) {
+        notifications.show({
+          color: "red",
+          title: "Could not load households",
+          message: error.message,
+        });
+        return;
+      }
+      setHouseholds(data ?? []);
+      if (householdId) setNewHouseholdId(householdId);
+    } catch (e) {
+      notifications.show({
+        color: "red",
+        title: "Could not load households",
+        message: e instanceof Error ? e.message : "Please try again.",
+      });
+    }
   };
 
   const handleCreate = async () => {
@@ -464,6 +501,8 @@ export function Pantry({ user }: PantryProps) {
         throw new Error("Could not create product: " + productResult.error.message);
       }
 
+      const addedName = newName.trim();
+
       // reset form
       setNewName("");
       setNewHouseholdId(householdId ?? null);
@@ -473,6 +512,12 @@ export function Pantry({ user }: PantryProps) {
       setNewExpirationDate("");
       setNewPrice("");
       setShowCreateModal(false);
+
+      notifications.show({
+        color: "green",
+        title: "Added",
+        message: `${addedName} added to pantry.`,
+      });
 
       // refresh data
       await fetchProducts();
@@ -485,18 +530,28 @@ export function Pantry({ user }: PantryProps) {
   };
 
   const handleDelete = async (productId: string) => {
+    const product = products.find((p) => p.id === productId);
     const { error } = await supabase
       .from("product")
       .delete()
       .eq("id", productId);
 
     if (error) {
-      setError("Could not delete product: " + error.message);
+      notifications.show({
+        color: "red",
+        title: "Could not delete product",
+        message: error.message,
+      });
       return;
     }
 
     setProducts((prev) => prev.filter((p) => p.id !== productId));
     setSelectedProducts((prev) => prev.filter((id) => id !== productId));
+    notifications.show({
+      color: "orange",
+      title: "Removed",
+      message: `${product?.name ?? "Product"} removed from pantry.`,
+    });
   };
 
   const handleToggleProduct = (productId: string) => {
@@ -607,9 +662,17 @@ export function Pantry({ user }: PantryProps) {
       </Group>
 
       {error && (
-        <Paper withBorder p="md" bg="red.0">
-          <Text c="red">{error}</Text>
-        </Paper>
+        <Alert
+          variant="light"
+          color="red"
+          radius="md"
+          icon={<IconAlertCircle size={18} />}
+          title="Couldn't load pantry"
+          withCloseButton
+          onClose={() => setError(null)}
+        >
+          {error}
+        </Alert>
       )}
 
       <Group justify="flex-end" align="center" wrap="nowrap">
@@ -745,9 +808,17 @@ export function Pantry({ user }: PantryProps) {
       >
         <Stack gap="sm">
           {modalError && (
-            <Paper withBorder p="xs" bg="red.0">
-              <Text c="red" size="sm">{modalError}</Text>
-            </Paper>
+            <Alert
+              variant="light"
+              color="red"
+              radius="md"
+              icon={<IconAlertCircle size={18} />}
+              title="Couldn't add product"
+              withCloseButton
+              onClose={() => setModalError(null)}
+            >
+              {modalError}
+            </Alert>
           )}
           <TextInput
             label="Name"
