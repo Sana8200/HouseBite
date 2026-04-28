@@ -13,8 +13,10 @@ import { getUsername } from "../../utils/user";
 import { HouseholdBudgetSummary } from '../../components/budget_summary/HouseholdBudgetSummary';
 import type { User } from '@supabase/supabase-js';
 import { getHouseholds } from '../../api/household';
-import type { Household } from '../../api/schema';
+import type { Household, ProductSizeUnit } from '../../api/schema';
 import {getExpirationDateBounds, getDaysUntilExpiry, formatExpiry} from "../../utils/date";
+import { insertReceipt } from '../../api/receipt';
+import { insertProductWithSpecs } from '../../api/product';
 
 // Types
 interface Product {
@@ -333,11 +335,6 @@ export default function Dashboard(props: DashboardProps) {
   const [showFoodRestrictions, setShowFoodRestrictions] = useState(false);
   const [creating, setCreating] = useState(false);
   const [modalError, setModalError] = useState<string | null>(null);
-  const [userId, setUserId] = useState<string | null>(null);
-
-  useEffect(() => {
-    void supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? null));
-  }, []);
 
   const [newName, setNewName] = useState('');
   const [newHouseholdId, setNewHouseholdId] = useState('');
@@ -413,18 +410,18 @@ export default function Dashboard(props: DashboardProps) {
         return;
       }
 
-      const mapped: Product[] = (data ?? []).map((p: any) => {
+      const mapped: Product[] = (data ?? []).map(p => {
         // Supabase may return product_specs as an object or array depending on version
         const specs = Array.isArray(p.product_specs)
           ? p.product_specs[0]
           : p.product_specs;
         return {
-          id: p.id,
-          name: p.name,
-          expiryDate: specs?.expiration_date ?? null,
-          quantity: specs?.quantity ?? 1,
-          householdName: p.household?.house_name ?? 'Unknown',
-          householdId: p.household_id,
+          id: p.id as string,
+          name: p.name as string,
+          expiryDate: specs?.expiration_date as string ?? null,
+          quantity: (specs?.quantity as number || null) ?? 1,
+          householdName: (p.household as unknown as {house_name: string})?.house_name ?? 'Unknown',
+          householdId: p.household_id as string,
         };
       });
 
@@ -459,46 +456,30 @@ export default function Dashboard(props: DashboardProps) {
       const price = newPrice ? parseFloat(newPrice) : null;
       const purchaseDate = newExpirationDate || new Date().toISOString().split('T')[0];
 
-      const { data: receipt, error: receiptError } = await supabase
-        .from('receipt')
-        .insert({
-          household_id: newHouseholdId,
-          store_name: 'Manual Entry', // Or allow store selection
-          total: price || 0,
-          purchase_at: purchaseDate,
-          buyer_id: user.id
-        })
-        .select()
-        .single();
+      const receiptResult = await insertReceipt({
+        household_id: newHouseholdId,
+        store_name: 'Manual Entry', // Or allow store selection
+        total: price || 0,
+        purchase_at: purchaseDate,
+        buyer_id: user.id
+      });
 
-      if (receiptError) throw new Error('Could not create receipt: ' + receiptError.message);
+      if (receiptResult.error) throw new Error('Could not create receipt: ' + receiptResult.error.message);
 
-      // create product linked to the receipt
-      const { data: product, error: productError } = await supabase
-        .from('product')
-        .insert({ name: newName.trim(), household_id: newHouseholdId })
-        .select()
-        .single();
+      const productResult = await insertProductWithSpecs({
+        name: newName.trim(),
+        household_id: newHouseholdId,
+        receipt_id: receiptResult.data.id,
+      }, {
+        quantity: parseInt(newQuantity) || 1,
+        size: newSize || null,
+        unit: newUnit as ProductSizeUnit || null,
+        expiration_date: newExpirationDate || null,
+        price: newPrice ? parseFloat(newPrice) : null,
+      });
 
-      if (productError) {
-        setModalError('Could not create product: ' + productError.message);
-        setCreating(false);
-        return;
-      }
-
-      const { error: specsError } = await supabase
-        .from('product_specs')
-        .insert({
-          product_id: product.id,
-          quantity: parseInt(newQuantity) || 1,
-          size: newSize || null,
-          unit: newUnit || null,
-          expiration_date: newExpirationDate || null,
-          price: newPrice ? parseFloat(newPrice) : null,
-        });
-
-      if (specsError) {
-        setModalError('Could not save product specs: ' + specsError.message);
+      if (productResult.error) {
+        setModalError('Could not create product: ' + productResult.error.message);
         setCreating(false);
         return;
       }
