@@ -5,7 +5,7 @@ import type { FoodRestriction } from './schema';
 
 // for a specific user only, it links to it automatically by RLS
 // gets their spending for the current month (not entire HH's)
-export async function getTotalSpent() {
+export async function getTotalSpent(): Promise<{ total: number; error: null; } | { total: null; error: Error; }> {
     try {
         // Get current user
         const { data: { user } } = await supabase.auth.getUser();
@@ -38,7 +38,7 @@ export async function getTotalSpent() {
         return { total, error: null };
     } catch (error) {
         console.error('Error in getTotalSpent:', error);
-        return { total: null, error };
+        return { total: null, error: error as Error };
     }
 }
 
@@ -54,7 +54,7 @@ export async function getFoodRestrictions(): Promise<PostgrestSingleResponse<Foo
         .order("name")
 }
 
-export async function getMyRestrictions(userId: string): Promise<{ data: { restriction_id: string }[] | null; error: unknown }> {
+export async function getMyRestrictions(userId: string): Promise<PostgrestSingleResponse<{ restriction_id: string; }[]>> {
     return supabase
         .from("member_restriction")
         .select("restriction_id")
