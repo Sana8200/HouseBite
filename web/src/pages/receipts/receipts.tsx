@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import { useLocation } from "react-router-dom";
-import { Alert, Badge, Box, Divider, Grid, Group, Loader, Paper, SegmentedControl, SimpleGrid, Stack, Table, Text, ThemeIcon, Title, UnstyledButton } from "@mantine/core";
+import { Link, useLocation } from "react-router-dom";
+import { Alert, Badge, Box, Button, Divider, Grid, Group, Loader, Paper, SegmentedControl, SimpleGrid, Stack, Table, Text, ThemeIcon, Title, UnstyledButton } from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates";
 import "@mantine/dates/styles.css";
-import { IconAlertCircle, IconCalendarEvent, IconChevronRight, IconReceipt2, IconShoppingBag } from "@tabler/icons-react";
+import { IconAlertCircle, IconArrowLeft, IconCalendarEvent, IconChevronRight, IconReceipt2, IconShoppingBag } from "@tabler/icons-react";
 import { fetchReceiptsByHousehold } from "../../api/receipt";
 import { formatCurrency, formatDate } from "../../utils/date";
 
@@ -83,7 +83,8 @@ export function Receipts() {
   const location = useLocation();
 
   // Optional route state. The page still works if no household info is passed in navigation.
-  const { householdId, householdName } = (location.state as ReceiptsLocationState | null) ?? {};
+  const locationState = (location.state as ReceiptsLocationState | null) ?? null;
+  const { householdId, householdName } = locationState ?? {};
 
   const [receipts, setReceipts] = useState<ReceiptSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -176,6 +177,18 @@ export function Receipts() {
   return (
     <Box px={{ base: "md", sm: "xl", lg: 48 }} py={{ base: "xl", lg: 40 }}>
       <Stack gap="xl">
+        <Button
+          component={Link}
+          to="/dashboard"
+          state={locationState}
+          variant="subtle"
+          leftSection={<IconArrowLeft size={16} />}
+          w="fit-content"
+          px={0}
+        >
+          Back to dashboard
+        </Button>
+
         {/* Page title and context */}
         <Stack gap={6}>
           <Title order={1} size="h1">
