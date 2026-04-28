@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Paper, Title, Text, Stack, Group, Progress, Table, Badge, SimpleGrid, Box, Tooltip } from '@mantine/core';
 import { supabase } from '../../supabase';
+import type { PostgrestSingleResponse } from '@supabase/supabase-js';
 
 interface MemberSpending {
   member_id: string;
@@ -9,16 +10,6 @@ interface MemberSpending {
   receipt_count: number;
   percentage_of_total: number;
   color_index: number;
-}
-
-interface UserSpending {
-  month: string;
-  amount_spent: number;
-  receipt_count: number;
-  household_total_spent: number;
-  percentage_of_household: number;
-  household_monthly_budget: number | null;
-  budget_used_percentage: number | null;
 }
 
 interface HouseholdBudgetSummaryProps {
@@ -49,9 +40,7 @@ const getBadgeColor = (percentage: number): string => {
 
 export function HouseholdBudgetSummary({ householdId, userId }: HouseholdBudgetSummaryProps) {
   const [memberSpending, setMemberSpending] = useState<MemberSpending[]>([]);
-  const [userData, setUserData] = useState<UserSpending[]>([]);
   const [loading, setLoading] = useState(true);
-  const [householdName, setHouseholdName] = useState('');
   const [householdBudget, setHouseholdBudget] = useState<number | null>(null);
   const [hoveredMember, setHoveredMember] = useState<string | null>(null);
 
@@ -59,6 +48,7 @@ export function HouseholdBudgetSummary({ householdId, userId }: HouseholdBudgetS
     if (householdId) {
       void fetchAllData();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [householdId, userId]);
 
   const fetchAllData = async () => {
@@ -67,7 +57,6 @@ export function HouseholdBudgetSummary({ householdId, userId }: HouseholdBudgetS
       await Promise.all([
         fetchHouseholdInfo(),
         fetchMemberSpending(),
-        fetchUserSpending(),
       ]);
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -89,8 +78,7 @@ export function HouseholdBudgetSummary({ householdId, userId }: HouseholdBudgetS
     }
     
     if (data) {
-      setHouseholdName(data.house_name);
-      setHouseholdBudget(data.monthly_budget);
+      setHouseholdBudget(data.monthly_budget as number | null);
     }
   };
 
@@ -101,7 +89,7 @@ export function HouseholdBudgetSummary({ householdId, userId }: HouseholdBudgetS
       .rpc('get_household_member_spending', {
         p_household_id: householdId
         // Don't pass p_month - let it default to current month
-      });
+      }) as PostgrestSingleResponse<MemberSpending[]>;
 
     console.log('Member spending response:', { data, error });
 
@@ -116,29 +104,6 @@ export function HouseholdBudgetSummary({ householdId, userId }: HouseholdBudgetS
     } else {
       console.log('No member spending data received');
       setMemberSpending([]);
-    }
-  };
-
-  const fetchUserSpending = async () => {
-    if (!userId) return;
-    
-    console.log('Fetching user spending for user:', userId);
-    
-    const { data, error } = await supabase
-      .rpc('get_user_household_monthly_spending', {
-        p_household_id: householdId,
-        p_user_id: userId
-      });
-    
-    console.log('User spending response:', { data, error });
-    
-    if (error) {
-      console.error('Error fetching user spending:', error);
-      return;
-    }
-    
-    if (data && data.length > 0) {
-      setUserData(data);
     }
   };
 
@@ -162,14 +127,13 @@ export function HouseholdBudgetSummary({ householdId, userId }: HouseholdBudgetS
   // Get current user's spending from memberSpending array
   const currentUserSpending = memberSpending.find(m => m.member_id === userId);
   const userTotalSpent = currentUserSpending?.amount_spent || 0;
-  const userPercentage = currentUserSpending?.percentage_of_total || 0;
 
   // Calculate progress bar segments
   const getProgressSegments = () => {
     if (!householdBudget || memberSpending.length === 0) return [];
     
     const segments = [];
-    let currentOffset = 0;
+    // let currentOffset = 0;
     
     for (let i = 0; i < memberSpending.length; i++) {
       const member = memberSpending[i];
@@ -183,7 +147,7 @@ export function HouseholdBudgetSummary({ householdId, userId }: HouseholdBudgetS
         amount: member.amount_spent,
         tooltip: `${member.member_name}: ${formatCurrency(member.amount_spent)} (${member.percentage_of_total}%)`
       });
-      currentOffset += width;
+      // currentOffset += width;
     }
     
     // Add remaining budget segment
