@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import { useLocation } from "react-router-dom";
-import { Badge, Box, Button, Divider, Grid, Group, Menu, Paper, SegmentedControl, SimpleGrid, Stack, Table, Text, ThemeIcon, Title, UnstyledButton } from "@mantine/core";
+import { Link, useLocation } from "react-router-dom";
+import { Alert, Badge, Box, Button, Divider, Grid, Group, Loader, Paper, SegmentedControl, SimpleGrid, Stack, Table, Text, ThemeIcon, Title, UnstyledButton, Menu } from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates";
 import "@mantine/dates/styles.css";
-import { IconCalendarEvent, IconChevronRight, IconDownload, IconFileSpreadsheet, IconFileText, IconReceipt2, IconShoppingBag } from "@tabler/icons-react";
+import { IconAlertCircle, IconArrowLeft, IconCalendarEvent, IconChevronRight, IconReceipt2, IconShoppingBag, IconDownload, IconFileSpreadsheet, IconFileText } from "@tabler/icons-react";
+import {  } from "@tabler/icons-react";
 import * as XLSX from "xlsx";
 import { fetchReceiptsByHousehold } from "../../api/receipt";
 import { formatCurrency, formatDate } from "../../utils/date";
@@ -84,7 +85,8 @@ export function Receipts() {
   const location = useLocation();
 
   // Optional route state. The page still works if no household info is passed in navigation.
-  const { householdId, householdName } = (location.state as ReceiptsLocationState | null) ?? {};
+  const locationState = (location.state as ReceiptsLocationState | null) ?? null;
+  const { householdId, householdName } = locationState ?? {};
 
   const [receipts, setReceipts] = useState<ReceiptSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -109,7 +111,7 @@ export function Receipts() {
     const { data, error: fetchError } = await fetchReceiptsByHousehold(householdId);
 
     if (fetchError) {
-      setError("Could not load receipts");
+      setError(fetchError.message || "Could not load receipts");
       setLoading(false);
       return;
     }
@@ -207,6 +209,18 @@ export function Receipts() {
   return (
     <Box px={{ base: "md", sm: "xl", lg: 48 }} py={{ base: "xl", lg: 40 }}>
       <Stack gap="xl">
+        <Button
+          component={Link}
+          to="/dashboard"
+          state={locationState}
+          variant="subtle"
+          leftSection={<IconArrowLeft size={16} />}
+          w="fit-content"
+          px={0}
+        >
+          Back to dashboard
+        </Button>
+
         {/* Page title and context */}
         <Stack gap={6}>
           <Title order={1} size="h1">
@@ -273,9 +287,17 @@ export function Receipts() {
         </Stack>
 
         {error && (
-          <Paper withBorder p="md" bg="red.0">
-            <Text c="red">{error}</Text>
-          </Paper>
+          <Alert
+            variant="light"
+            color="red"
+            radius="md"
+            icon={<IconAlertCircle size={18} />}
+            title="Couldn't load receipts"
+            withCloseButton
+            onClose={() => setError(null)}
+          >
+            {error}
+          </Alert>
         )}
 
         {/* Main split layout: list on the left, detail on the right */}
@@ -283,7 +305,7 @@ export function Receipts() {
           <Grid.Col span={{ base: 12, lg: 5 }}>
             <Stack gap="md">
               {loading ? (
-                <Text c="dimmed">Loading receipts...</Text>
+                <Group justify="center" py="md"><Loader size="sm" /></Group>
               ) : visibleReceipts.length === 0 ? (
                 <Text c="dimmed">No receipts found for this period.</Text>
               ) : (

@@ -1,0 +1,47 @@
+/* Footer
+   Inverted brand palette: cream background, dark green foreground —
+   a lighter complement to the dark-green Header instead of a heavy
+   mirror image. */
+
+.footer {
+  margin-top: auto;
+  padding: var(--space-5) var(--space-6);
+  background: #FBF4EB;
+  border-top: 1px solid rgba(0, 87, 46, 0.12);
+  color: #00572E;
+}
+
+.footer-text {
+  color: #3a3929;
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: 0.01em;
+}
+
+.footer-link {
+  color: #00572E;
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-semibold);
+  text-decoration: none;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-md);
+  transition:
+    color 0.18s ease,
+    background-color 0.18s ease;
+}
+
+.footer-link:hover {
+  color: #003c1f;
+  background-color: rgba(0, 87, 46, 0.08);
+}
+
+.footer-link:focus-visible {
+  outline: 2px solid #00572E;
+  outline-offset: 2px;
+}
+
+@media (max-width: 48em) {
+  .footer {
+    padding: var(--space-4) var(--space-3);
+  }
+}

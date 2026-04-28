@@ -1,4 +1,6 @@
 import { Alert, Badge, Button, Checkbox, Divider, Group, Loader, Modal, Stack, Text } from "@mantine/core";
+import { IconAlertCircle } from "@tabler/icons-react";
+import { notifications } from "@mantine/notifications";
 import { useEffect, useState } from "react";
 import { supabase } from "../supabase";
 import type { FoodRestriction } from "../api/schema";
@@ -56,7 +58,11 @@ export function RecipeSearchModal({ opened, onClose, onProceed, householdId, use
             // Pre-check everything so no restriction is accidentally ignored.
             setSelectedIds(new Set([...myR, ...householdR].map((r) => r.id)));
         } catch (e) {
-            console.error("RecipeSearchModal load failed", e);
+            notifications.show({
+                color: "red",
+                title: "Could not load restrictions",
+                message: e instanceof Error ? e.message : "Please try again.",
+            });
         } finally {
             setLoading(false);
         }
@@ -90,8 +96,7 @@ export function RecipeSearchModal({ opened, onClose, onProceed, householdId, use
       await onProceed(diets, intolerances);
       onClose();
     } catch (e) {
-      console.error("RecipeSearchModal handleProceed failed", e);
-      setError("Could not search recipes. Check your connection and try again.");
+      setError(e instanceof Error ? e.message : "Could not search recipes. Check your connection and try again.");
     } finally {
       setProceeding(false);
     }
@@ -147,7 +152,15 @@ export function RecipeSearchModal({ opened, onClose, onProceed, householdId, use
       ) : (
         <Stack gap="md">
           {error && (
-            <Alert color="red" withCloseButton onClose={() => setError(null)}>
+            <Alert
+              variant="light"
+              color="red"
+              radius="md"
+              icon={<IconAlertCircle size={18} />}
+              title="Couldn't search recipes"
+              withCloseButton
+              onClose={() => setError(null)}
+            >
               {error}
             </Alert>
           )}

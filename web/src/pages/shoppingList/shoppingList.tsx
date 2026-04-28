@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent } from "react";
 import { ActionIcon, Alert, Button, Card, Checkbox, Container, Grid, Group, Loader, Paper, Stack, Table, Text, TextInput, Title } from "@mantine/core";
-import { IconArrowLeft, IconCheck, IconDeviceFloppy, IconPlus, IconShoppingCart, IconTrash, IconX } from "@tabler/icons-react";
+import { IconAlertCircle, IconArrowLeft, IconCheck, IconDeviceFloppy, IconPlus, IconShoppingCart, IconTrash, IconX } from "@tabler/icons-react";
+import { notifications } from "@mantine/notifications";
 import { Link, useLocation } from "react-router";
 import { addShoppingListItem, deleteShoppingItem, getShoppingItems, toggleShoppingItem, type ShoppingListItemView, } from "../../api/shoppingList";
 import "./shoppingList.css";
@@ -139,6 +140,8 @@ export function ShoppingList() {
     setSubmitting(true);
     setError(null);
 
+    const addedName = newItemName.trim();
+
     try {
       const createdItem = await addShoppingListItem(selectedHouseholdId, newItemName, newItemNotes);
 
@@ -146,6 +149,11 @@ export function ShoppingList() {
       setNewItemName("");
       setNewItemNotes("");
       setIsAddingItem(false);
+      notifications.show({
+        color: "green",
+        title: "Added",
+        message: `${addedName} added to shopping list.`,
+      });
     } catch (createError) {
       setError(createError instanceof Error ? createError.message : "Could not add item");
     } finally {
@@ -155,12 +163,18 @@ export function ShoppingList() {
 
   const removeItem = async (itemId: string) => {
     const previousItems = items;
+    const removedItem = previousItems.find((item) => item.id === itemId);
     setError(null);
     setItems((currentItems) => currentItems.filter((item) => item.id !== itemId));
     setHighlightedItemId((currentValue) => (currentValue === itemId ? null : currentValue));
 
     try {
       await deleteShoppingItem(itemId);
+      notifications.show({
+        color: "orange",
+        title: "Removed",
+        message: `${removedItem?.name ?? "Item"} removed from shopping list.`,
+      });
     } catch (deleteError) {
       setItems(previousItems);
       setError(deleteError instanceof Error ? deleteError.message : "Could not delete item");
@@ -250,7 +264,15 @@ export function ShoppingList() {
         </Stack>
 
         {error && (
-          <Alert color="red" withCloseButton onClose={() => setError(null)}>
+          <Alert
+            variant="light"
+            color="red"
+            radius="md"
+            icon={<IconAlertCircle size={18} />}
+            title="Shopping list error"
+            withCloseButton
+            onClose={() => setError(null)}
+          >
             {error}
           </Alert>
         )}
