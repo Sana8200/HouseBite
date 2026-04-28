@@ -1,6 +1,6 @@
 import { Button, Modal, Stack, Text, Textarea, TextInput } from "@mantine/core";
 import { useEffect, useState } from "react";
-import { supabase } from "../supabase";
+import { addShoppingListItem } from "../api/shoppingList";
 
 interface Props {
   product: { name: string; householdId: string } | null;
@@ -29,30 +29,7 @@ export function AddToShoppingListModal({ product, onClose }: Props) {
     setLoading(true);
     setError(null);
     try {
-      // Find existing shopping list for this household, or create one
-      let { data: list } = await supabase
-        .from("shopping_list")
-        .select("id")
-        .eq("household_id", product.householdId)
-        .limit(1)
-        .maybeSingle();
-
-      if (!list) {
-        const { data: newList, error: createError } = await supabase
-          .from("shopping_list")
-          .insert({ household_id: product.householdId, name: "Shopping List" })
-          .select("id")
-          .single();
-        if (createError) throw createError;
-        list = newList;
-      }
-
-      const { error: insertError } = await supabase
-        .from("shopping_item")
-        .insert({ shopping_list_id: list!.id, name: name.trim(), notes: notes || null });
-
-      if (insertError) throw insertError;
-
+      await addShoppingListItem(product.householdId, name, notes);
       handleClose();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not add to shopping list");
