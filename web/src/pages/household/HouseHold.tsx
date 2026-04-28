@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
-import {Button, Group, Text, Modal, Stack, Title, Code, CopyButton,ActionIcon, 
+import {Button, Group, Text, Modal, Stack, Title, Code, CopyButton,ActionIcon,
     ThemeIcon, Container, SimpleGrid, Card, TextInput,NumberInput, Alert, Loader,} from "@mantine/core"
-import {IconEdit, IconDoorExit, IconCheck, IconCopy, IconLink, IconPlus, IconUserPlus,} from "@tabler/icons-react"
+import {IconEdit, IconDoorExit, IconCheck, IconCopy, IconLink, IconPlus, IconUserPlus, IconAlertCircle,} from "@tabler/icons-react"
 import { createHousehold, getHouseholds, joinHousehold, updateHousehold, leaveHousehold, getHouseholdMembers } from "../../api/household"
 import type { Household } from "../../api/schema"
 import { notifications } from "@mantine/notifications"
@@ -112,6 +112,11 @@ export function HouseHold(props: HouseHoldProps) {
             setInviteId("")
             setShowJoinModal(false)
             void fetchHouseholds()
+            notifications.show({
+                color: "green",
+                title: "Joined household",
+                message: "You're now a member.",
+            })
         } catch (e) {
             console.error("joinHousehold failed", e)
             setJoinError("Could not join household. Please try again.")
@@ -139,6 +144,11 @@ export function HouseHold(props: HouseHoldProps) {
             if (error) { setEditError(error.message); return }
             setEditingHousehold(null)
             void fetchHouseholds()
+            notifications.show({
+                color: "green",
+                title: "Saved",
+                message: "Household updated.",
+            })
         } catch (e) {
             console.error("updateHousehold failed", e)
             setEditError("Could not update household. Please try again.")
@@ -148,15 +158,31 @@ export function HouseHold(props: HouseHoldProps) {
     }
 
     const handleLeave = async (householdId: string) => {
+        const household = households.find(h => h.id === householdId)
         setLeaving(true)
         try {
             const { error } = await leaveHousehold(user.id, householdId)
-            if (error) { setError("Could not leave: " + error.message); return }
+            if (error) {
+                notifications.show({
+                    color: "red",
+                    title: "Couldn't leave household",
+                    message: error.message,
+                })
+                return
+            }
             setLeavingId(null)
             void fetchHouseholds()
+            notifications.show({
+                color: "orange",
+                title: "Left household",
+                message: `You have left ${household?.house_name ?? "the household"}.`,
+            })
         } catch (e) {
-            console.error("leaveHousehold failed", e)
-            setError("Could not leave household. Please try again.")
+            notifications.show({
+                color: "red",
+                title: "Couldn't leave household",
+                message: e instanceof Error ? e.message : "Please try again.",
+            })
         } finally {
             setLeaving(false)
         }
@@ -202,7 +228,15 @@ export function HouseHold(props: HouseHoldProps) {
                 </div>
 
                 {error && (
-                    <Alert color="red" withCloseButton onClose={() => setError(null)}>
+                    <Alert
+                        variant="light"
+                        color="red"
+                        radius="md"
+                        icon={<IconAlertCircle size={18} />}
+                        title="Couldn't load households"
+                        withCloseButton
+                        onClose={() => setError(null)}
+                    >
                         {error}
                     </Alert>
                 )}
@@ -273,26 +307,12 @@ export function HouseHold(props: HouseHoldProps) {
                                             onClick={() => openEdit(h)}>
                                             Edit
                                         </Button>
-                                        {leavingId === h.id ? (
-                                            <Group gap="xs">
-                                                <Text size="xs" c="red">Leave?</Text>
-                                                <Button size="xs" color="red"
-                                                    onClick={() => void handleLeave(h.id)} loading={leaving}>
-                                                    Yes
-                                                </Button>
-                                                <Button size="xs" variant="default"
-                                                    onClick={() => setLeavingId(null)}>
-                                                    No
-                                                </Button>
-                                            </Group>
-                                        ) : (
-                                            <Button variant="subtle" color="red" size="sm"
-                                                leftSection={<IconDoorExit size={14} />}
-                                                loading={checkingMembers === h.id}
-                                                onClick={() => void handleLeaveClick(h.id)}>
-                                                Leave
-                                            </Button>
-                                        )}
+                                        <Button variant="subtle" color="red" size="sm"
+                                            leftSection={<IconDoorExit size={14} />}
+                                            loading={checkingMembers === h.id}
+                                            onClick={() => void handleLeaveClick(h.id)}>
+                                            Leave
+                                        </Button>
                                     </Group>
                                 </Stack>
                             </Card>
@@ -305,7 +325,19 @@ export function HouseHold(props: HouseHoldProps) {
             <Modal opened={showCreateModal} onClose={() => setShowCreateModal(false)}
                 centered radius="lg" title={<Title order={3}>Create a Household</Title>}>
                 <Stack gap="md">
-                    {createError && <Alert color="red">{createError}</Alert>}
+                    {createError && (
+                        <Alert
+                            variant="light"
+                            color="red"
+                            radius="md"
+                            icon={<IconAlertCircle size={18} />}
+                            title="Couldn't create household"
+                            withCloseButton
+                            onClose={() => setCreateError(null)}
+                        >
+                            {createError}
+                        </Alert>
+                    )}
                     <TextInput label="Household Name" placeholder="e.g. The Smiths"
                         value={newName} onChange={e => setNewName(e.target.value)} />
                     <NumberInput label="Monthly Budget (optional)" placeholder="e.g. 5000"
@@ -321,7 +353,19 @@ export function HouseHold(props: HouseHoldProps) {
             <Modal opened={!!editingHousehold} onClose={() => setEditingHousehold(null)}
                 centered radius="lg" title={<Title order={3}>Edit Household</Title>}>
                 <Stack gap="md">
-                    {editError && <Alert color="red">{editError}</Alert>}
+                    {editError && (
+                        <Alert
+                            variant="light"
+                            color="red"
+                            radius="md"
+                            icon={<IconAlertCircle size={18} />}
+                            title="Couldn't update household"
+                            withCloseButton
+                            onClose={() => setEditError(null)}
+                        >
+                            {editError}
+                        </Alert>
+                    )}
                     <TextInput label="Household Name" value={editName}
                         onChange={e => setEditName(e.target.value)} />
                     <NumberInput label="Monthly Budget (optional)" placeholder="e.g. 5000"
@@ -338,7 +382,19 @@ export function HouseHold(props: HouseHoldProps) {
                 centered radius="lg" title={<Title order={3}>Join a Household</Title>}>
                 <Stack gap="md">
                     <Text size="sm" c="dimmed">Ask a household member for their invite code.</Text>
-                    {joinError && <Alert color="red">{joinError}</Alert>}
+                    {joinError && (
+                        <Alert
+                            variant="light"
+                            color="red"
+                            radius="md"
+                            icon={<IconAlertCircle size={18} />}
+                            title="Couldn't join household"
+                            withCloseButton
+                            onClose={() => setJoinError(null)}
+                        >
+                            {joinError}
+                        </Alert>
+                    )}
                     <TextInput label="Invite Code" placeholder="e.g. a1b2c3d4"
                         value={inviteId} onChange={e => setInviteId(e.target.value)} />
                     <Group justify="flex-end" gap="sm">
@@ -427,6 +483,31 @@ export function HouseHold(props: HouseHoldProps) {
                     </Stack>
                 )}
             </Modal>
+
+            {/* Multi-member leave confirmation */}
+            {(() => {
+                const h = households.find(x => x.id === leavingId)
+                if (!h) return null
+                return (
+                    <Modal opened={!!leavingId} onClose={() => setLeavingId(null)}
+                        centered radius="lg" title={<Text fw={700}>Leave household?</Text>}>
+                        <Stack gap="md">
+                            <Text size="sm">
+                                You're about to leave <strong>{h.house_name}</strong>. The other members will keep using the household as normal.
+                            </Text>
+                            <Group justify="flex-end" gap="sm">
+                                <Button variant="default" onClick={() => setLeavingId(null)}>Cancel</Button>
+                                <Button color="red"
+                                    leftSection={<IconDoorExit size={16} />}
+                                    loading={leaving}
+                                    onClick={() => void handleLeave(h.id)}>
+                                    Leave
+                                </Button>
+                            </Group>
+                        </Stack>
+                    </Modal>
+                )
+            })()}
 
             {/* Last-member leave warning */}
             {(() => {
