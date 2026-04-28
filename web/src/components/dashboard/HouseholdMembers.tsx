@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import { Paper, Avatar, Text, Title, Group, UnstyledButton, Stack } from "@mantine/core"
 import { IconShare } from "@tabler/icons-react"
+import { notifications } from "@mantine/notifications"
 import { getHouseholdMembers, type HouseholdMember } from "../../api/household"
 import { InviteModal } from "./InviteModal"
 import "./HouseholdMembers.css"
@@ -24,12 +25,20 @@ export function HouseholdMembers({ householdId, inviteId }: HouseholdMembersProp
             try {
                 const { data, error } = await getHouseholdMembers(householdId)
                 if (error) {
-                    console.error("Error fetching members:", error)
-                } else {
-                    setMembers(data ?? [])
+                    notifications.show({
+                        color: "red",
+                        title: "Could not load members",
+                        message: error.message,
+                    })
+                    return
                 }
+                setMembers(data ?? [])
             } catch (e) {
-                console.error("HouseholdMembers load failed", e)
+                notifications.show({
+                    color: "red",
+                    title: "Could not load members",
+                    message: e instanceof Error ? e.message : "Please try again.",
+                })
             } finally {
                 setLoading(false)
             }

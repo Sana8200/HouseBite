@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react"
 import { Modal, Text, Title, Group, Stack, Paper, Loader, Tooltip } from "@mantine/core"
 import { IconAlertTriangle, IconLeaf, IconLock, IconUsers } from "@tabler/icons-react"
+import { notifications } from "@mantine/notifications"
 import { supabase } from "../../supabase"
 import { getFoodRestrictions } from "../../api/account"
 import { getHouseholdFoodRestriction, getHouseholdRestrictions, type HouseholdMemberRestriction } from "../../api/restriction"
@@ -33,7 +34,11 @@ export function FoodRestrictionsModal({ householdId, opened, onClose }: FoodRest
             setMemberRestrictions(memberData ?? [])
             setHhIds(new Set((hhData ?? []).map(r => r.restriction_id)))
         } catch (e) {
-            console.error("FoodRestrictionsModal load failed", e)
+            notifications.show({
+                color: "red",
+                title: "Could not load restrictions",
+                message: e instanceof Error ? e.message : "Please try again.",
+            })
         } finally {
             setLoading(false)
         }
@@ -45,18 +50,32 @@ export function FoodRestrictionsModal({ householdId, opened, onClose }: FoodRest
 
     const toggle = async (id: string) => {
         setBusy(id)
+        const wasActive = hhIds.has(id)
+        const restriction = restrictions.find(r => r.id === id)
+        const label = fmt(restriction?.name ?? "Restriction")
         try {
-            if (hhIds.has(id)) {
-                await supabase.from("household_food_restriction").delete()
+            if (wasActive) {
+                const { error } = await supabase.from("household_food_restriction").delete()
                     .eq("household_id", householdId).eq("restriction_id", id)
+                if (error) throw error
                 setHhIds(prev => { const n = new Set(prev); n.delete(id); return n })
             } else {
-                await supabase.from("household_food_restriction")
+                const { error } = await supabase.from("household_food_restriction")
                     .insert({ household_id: householdId, restriction_id: id })
+                if (error) throw error
                 setHhIds(prev => new Set(prev).add(id))
             }
+            notifications.show({
+                color: wasActive ? "orange" : "green",
+                title: wasActive ? "Removed" : "Added",
+                message: `${label} ${wasActive ? "removed from" : "added to"} household restrictions.`,
+            })
         } catch (e) {
-            console.error("FoodRestrictionsModal toggle failed", e)
+            notifications.show({
+                color: "red",
+                title: "Could not update restriction",
+                message: e instanceof Error ? e.message : "Please try again.",
+            })
         } finally {
             setBusy(null)
         }
