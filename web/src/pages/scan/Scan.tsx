@@ -5,7 +5,7 @@ import { Dropzone, IMAGE_MIME_TYPE, type FileWithPath } from "@mantine/dropzone"
 import { IconReceipt, IconAlertCircle } from "@tabler/icons-react";
 import { scanReceipt, type ReceiptData, type ReceiptItemData } from "../../api/scan";
 import { getHouseholds } from "../../api/household";
-import { insertProductWithSpecs } from "../../api/product.ts";
+import { getUserScannedProductCount, insertProductWithSpecs } from "../../api/product.ts";
 import { insertReceipt } from "../../api/receipt.ts";
 import type { Household, InsertProduct, InsertProductSpecs, InsertReceipt, ProductSizeUnit } from "../../api/schema.ts";
 import type { User } from "@supabase/supabase-js";
@@ -57,23 +57,28 @@ export function Scan(props: ScanProps) {
     const [state, setState] = useState<ScanState>({ state: "ready" });
 
     const [households, setHouseholds] = useState<Household[]>([]);
+    const [scanLimitReached, setScanLimitReached] = useState(false);
 
     useEffect(() => {
         void load();
         async function load() {
-            const result = await getHouseholds();
-            if (result.error) {
-                setState({ state: "error", error: result.error });
+            const [householdsResult, scannedCount] = await Promise.all([
+                getHouseholds(),
+                getUserScannedProductCount(),
+            ]);
+            if (householdsResult.error) {
+                setState({ state: "error", error: householdsResult.error });
             } else {
-                setHouseholds(result.data);
+                setHouseholds(householdsResult.data ?? []);
             }
+            setScanLimitReached(scannedCount >= 200);
         }
     }, []);
 
     return (
         <Container size="md" p="md">
             <Paper shadow="md" p="md">
-                {state.state == "ready" && <ScanReady state={state} setState={setState} />}
+                {state.state == "ready" && <ScanReady state={state} setState={setState} scanLimitReached={scanLimitReached} />}
                 {state.state == "processing" && <ScanProcessing state={state} setState={setState} />}
                 {state.state == "finished" && <ScanFinished state={state} setState={setState} households={households} user={user} />}
                 {state.state == "error" && <ScanError state={state} setState={setState} />}
@@ -85,6 +90,7 @@ export function Scan(props: ScanProps) {
 interface ScanReadyProps {
     state: ReadyState;
     setState: Dispatch<SetStateAction<ScanState>>;
+    scanLimitReached: boolean;
 }
 
 function friendlyScanError(err: Error): string {
@@ -96,7 +102,7 @@ function friendlyScanError(err: Error): string {
 }
 
 function ScanReady(props: ScanReadyProps) {
-    const { setState } = props;
+    const { setState , scanLimitReached} = props;
 
     const [camera, setCamera] = useState(false);
 
@@ -157,6 +163,14 @@ function ScanReady(props: ScanReadyProps) {
         if (!file) return;
         setState({ state: "processing", bitmap: window.createImageBitmap(file) });
     };
+
+    if (scanLimitReached) {
+        return (
+            <Alert variant="light" color="orange" mt="md">
+                You have reached the limit of 200 AI-scanned items. Remove some products from your pantry to scan more receipts.
+            </Alert>
+        );
+    }
 
     return (
         <>
@@ -389,7 +403,8 @@ function ScanFinished(props: ScanFinishedProps) {
                         receipt_id: receipt_res.data.id,
                     },
                     {
-                        quantity: item.quantity ?? 1,
+                        bought_quantity: item.quantity ?? 1,
+                        current_quantity: item.quantity ?? 1,
                         price: item.totalPrice,
                         size: item.weight?.toString() ?? null,
                         expiration_date: item.expirationDate,

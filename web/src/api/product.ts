@@ -19,6 +19,12 @@ export async function insertProductSpecs(productSpecs: InsertProductSpecs): Prom
         .single();
 }
 
+export async function getUserScannedProductCount(): Promise<number> {
+    const { data, error } = await supabase.rpc('get_user_scanned_product_count')
+    if (error) return 0
+    return data as number
+}
+
 export async function insertProductWithSpecs(product: InsertProduct, productSpecs: Omit<InsertProductSpecs, "product_id">): Promise<PostgrestSingleResponse<[Product, ProductSpecs]>> {
     const res1 = await insertProduct(product);
     if (res1.error) return res1;

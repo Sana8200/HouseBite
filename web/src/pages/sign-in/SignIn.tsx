@@ -69,7 +69,9 @@ export function SignIn(props: SignInProps) {
         }
     }
 
-    const disabled = loading || (activeTab == "signUp" ? !displayName : false) || !email || !password || !captchaToken;
+    const nameError = activeTab === "signUp" && displayName.length > 25 ? "Name must be 25 characters or fewer" : null;
+    const passwordError = password.length > 50 ? "Password must be 50 characters or fewer" : null;
+    const disabled = loading || (activeTab == "signUp" ? !displayName : false) || !email || !password || !captchaToken || !!nameError || !!passwordError;
 
     return (
         <Container p="md" size="xs">
@@ -116,21 +118,25 @@ export function SignIn(props: SignInProps) {
                                     placeholder="Your name"
                                     value={displayName}
                                     onChange={(e) => setDisplayName(e.target.value)}
+                                    maxLength={25}
+                                    error={nameError}
                                 />
                             }
 
-                            <TextInput 
+                            <TextInput
                                 label="Email"
                                 type="email"
                                 placeholder="your@email.com"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                             />
-                            
+
                             <PasswordInput
                                 label="Password"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
+                                maxLength={50}
+                                error={passwordError}
                             />
 
                             <Turnstile ref={turnstileRef} siteKey={turnstileSiteKey} onSuccess={setCaptchaToken} />

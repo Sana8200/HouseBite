@@ -25,7 +25,7 @@ interface Product {
   id: string;
   name: string;
   expiryDate: string | null;
-  quantity: number;
+  current_quantity: number;
   householdName: string;
   householdId: string;
 }
@@ -165,7 +165,7 @@ const ProductsInDanger: React.FC<{
                 </Group>
 
                 <Stack gap={4}>
-                  <Text size="sm">Quantity: {product.quantity}</Text>
+                  <Text size="sm">Quantity: {product.current_quantity}</Text>
                   <Text size="sm">
                     Expires:{' '}
                     <Text span fw={600}>
@@ -421,7 +421,7 @@ export default function Dashboard(props: DashboardProps) {
           name,
           household_id,
           household:household_id(house_name),
-          product_specs(quantity, expiration_date)
+          product_specs(current_quantity, expiration_date)
         `);
 
       if (householdId) {
@@ -435,22 +435,22 @@ export default function Dashboard(props: DashboardProps) {
         return;
       }
 
-      const mapped: Product[] = (data ?? []).map(p => {
-        // Supabase may return product_specs as an object or array depending on version
-        const specs = Array.isArray(p.product_specs)
-          ? p.product_specs[0]
-          : p.product_specs;
-        return {
-          id: p.id as string,
-          name: p.name as string,
-          expiryDate: specs?.expiration_date as string ?? null,
-          quantity: (specs?.quantity as number || null) ?? 1,
-          householdName: (p.household as unknown as { house_name: string })?.house_name ?? 'Unknown',
-          householdId: p.household_id as string,
-        };
-      });
+        const mapped: Product[] = (data ?? []).map((p: any) => {
+            // Supabase may return product_specs as an object or array depending on version
+            const specs = Array.isArray(p.product_specs)
+                ? p.product_specs[0]
+                : p.product_specs;
+            return {
+                id: p.id,
+                name: p.name,
+                expiryDate: specs?.expiration_date ?? null,
+                current_quantity: specs?.current_quantity ?? 1,
+                householdName: p.household?.house_name ?? 'Unknown',
+                householdId: p.household_id,
+            };
+        });
 
-      setProducts(mapped);
+        setProducts(mapped);
     } catch (e) {
       console.error('Dashboard fetchProducts failed', e);
       setError('Could not load products');
@@ -491,18 +491,20 @@ export default function Dashboard(props: DashboardProps) {
 
       if (receiptResult.error) throw new Error('Could not create receipt: ' + receiptResult.error.message);
 
-      const productResult = await insertProductWithSpecs({
-        name: newName.trim(),
-        household_id: newHouseholdId,
-        receipt_id: receiptResult.data.id,
-      }, {
-        quantity: parseInt(newQuantity) || 1,
-        size: newSize || null,
-        unit: newUnit as ProductSizeUnit || null,
-        expiration_date: newExpirationDate || null,
-        price: newPrice ? parseFloat(newPrice) : null,
-      });
+        const productResult = await insertProductWithSpecs({
+            name: newName.trim(),
+            household_id: newHouseholdId,
+            receipt_id: receiptResult.data.id,
+        }, {
+            bought_quantity: parseInt(newQuantity) || 1,
+            current_quantity: parseInt(newQuantity) || 1,
+            size: newSize || null,
+            unit: newUnit as ProductSizeUnit || null,
+            expiration_date: newExpirationDate || null,
+            price: newPrice ? parseFloat(newPrice) : null,
+        });
 
+        if (specsError) {
       if (productResult.error) {
         setModalError('Could not create product: ' + productResult.error.message);
         setCreating(false);
