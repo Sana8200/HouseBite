@@ -7,6 +7,8 @@ import OpenAI from "openai";
 import { zodTextFormat } from "openai/helpers/zod";
 import { z } from "zod";
 
+import postgres from "postgres";
+
 const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!);
 
 const openai = new OpenAI({
@@ -25,7 +27,11 @@ const Receipt = z.object({
         totalPrice: z.number().nullable(),
         estimatedExpirationDays: z.number().nullable(),
     })),
-})
+});
+
+const sql = postgres(Deno.env.get("SUPABASE_DB_URL")!);
+
+const scanLimit = parseInt(Deno.env.get("SCAN_LIMIT") || "") || 10;
 
 Deno.serve(async (req) => {
     if (req.method === "OPTIONS") {
@@ -36,6 +42,12 @@ Deno.serve(async (req) => {
     const token = req.headers.get("Authorization")!.replace("Bearer ", "");
     const claim = await supabase.auth.getClaims(token);
     if (claim.error) throw claim.error;
+
+    const result = await sql`SELECT private.rate_limit_sliding_window(${"scan"}, ${scanLimit}, ${"1 minute"}::interval ) as ok`;
+
+    if (!result[0].ok) {
+        return new Response("Please try again later.", {status: 429, headers: corsHeaders}); 
+    }
     
     const { image } = await req.json();
 
