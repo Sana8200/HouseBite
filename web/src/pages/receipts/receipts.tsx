@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Alert, Badge, Box, Button, Divider, Grid, Group, Loader, Paper, SegmentedControl, SimpleGrid, Stack, Table, Text, ThemeIcon, Title, UnstyledButton } from "@mantine/core";
+import { Alert, Badge, Box, Button, Divider, Grid, Group, Loader, Paper, SegmentedControl, SimpleGrid, Stack, Table, Text, ThemeIcon, Title, UnstyledButton, Menu } from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates";
 import "@mantine/dates/styles.css";
-import { IconAlertCircle, IconArrowLeft, IconCalendarEvent, IconChevronRight, IconReceipt2, IconShoppingBag } from "@tabler/icons-react";
+import { IconAlertCircle, IconArrowLeft, IconCalendarEvent, IconChevronRight, IconReceipt2, IconShoppingBag, IconDownload, IconFileSpreadsheet, IconFileText } from "@tabler/icons-react";
+import {  } from "@tabler/icons-react";
+import * as XLSX from "xlsx";
 import { fetchReceiptsByHousehold } from "../../api/receipt";
 import { formatCurrency, formatDate } from "../../utils/date";
 
@@ -174,6 +176,36 @@ export function Receipts() {
   const selectedReceipt =
     visibleReceipts.find(receipt => receipt.id === selectedReceiptId) ?? visibleReceipts[0] ?? null;
 
+  const exportRows = visibleReceipts.flatMap(r =>
+    r.items.map(item => ({
+      Store: r.storeName,
+      Date: r.date,
+      Product: item.name,
+      Quantity: item.quantity,
+      Price: item.price,
+    }))
+  );
+
+  function exportCSV() {
+    const headers = ["Store", "Date", "Product", "Quantity", "Price"];
+    const rows = exportRows.map(r => headers.map(h => `"${String(r[h as keyof typeof r]).replace(/"/g, '""')}"`).join(","));
+    const csv = [headers.join(","), ...rows].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "receipts.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function exportExcel() {
+    const ws = XLSX.utils.json_to_sheet(exportRows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Receipts");
+    XLSX.writeFile(wb, "receipts.xlsx");
+  }
+
   return (
     <Box px={{ base: "md", sm: "xl", lg: 48 }} py={{ base: "xl", lg: 40 }}>
       <Stack gap="xl">
@@ -232,6 +264,25 @@ export function Receipts() {
                 clearable
               />
             )}
+            <Menu shadow="md" position="bottom-end">
+              <Menu.Target>
+                <Button
+                  variant="light"
+                  leftSection={<IconDownload size={16} />}
+                  disabled={visibleReceipts.length === 0}
+                >
+                  Export
+                </Button>
+              </Menu.Target>
+              <Menu.Dropdown>
+                <Menu.Item leftSection={<IconFileText size={14} />} onClick={exportCSV}>
+                  Export as CSV
+                </Menu.Item>
+                <Menu.Item leftSection={<IconFileSpreadsheet size={14} />} onClick={exportExcel}>
+                  Export as Excel
+                </Menu.Item>
+              </Menu.Dropdown>
+            </Menu>
           </Group>
         </Stack>
 
