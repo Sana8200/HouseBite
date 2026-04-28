@@ -1,6 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
-import { Badge, Box, Divider, Grid, Group, Paper, SimpleGrid, Stack, Table, Text, ThemeIcon, Title, UnstyledButton } from "@mantine/core";
+import { Badge, Box, Divider, Grid, Group, Paper, SegmentedControl, SimpleGrid, Stack, Table, Text, ThemeIcon, Title, UnstyledButton } from "@mantine/core";
+import { DatePickerInput } from "@mantine/dates";
+import "@mantine/dates/styles.css";
 import { IconCalendarEvent, IconChevronRight, IconReceipt2, IconShoppingBag } from "@tabler/icons-react";
 import { fetchReceiptsByHousehold } from "../../api/receipt";
 import { formatCurrency, formatDate } from "../../utils/date";
@@ -16,6 +18,7 @@ type ReceiptSummary = {
   id: string;
   storeName: string;
   date: string;
+  rawDate: string;
   itemCount: number;
   total: string;
   items: ReceiptItem[];
@@ -25,6 +28,8 @@ type ReceiptsLocationState = {
   householdId?: string;
   householdName?: string;
 };
+
+type Preset = "all" | "7d" | "1m" | "3m" | "custom";
 
 function ReceiptListItem({ receipt, selected, onSelect }: { receipt: ReceiptSummary; selected: boolean; onSelect: () => void; }) {
   return (
@@ -87,6 +92,10 @@ export function Receipts() {
   // Tracks which receipt is currently shown in the detail panel.
   const [selectedReceiptId, setSelectedReceiptId] = useState<string>("");
 
+  // Filter state
+  const [preset, setPreset] = useState<Preset>("all");
+  const [customRange, setCustomRange] = useState<[Date | null, Date | null]>([null, null]);
+
   useEffect(() => {
     void fetchReceipts();
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -108,6 +117,7 @@ export function Receipts() {
       id: r.id,
       storeName: r.store_name ?? "Unknown Store",
       date: formatDate(r.purchase_at),
+      rawDate: r.purchase_at ?? "",
       itemCount: r.products.length,
       total: formatCurrency(r.total),
       items: r.products.map(p => ({
@@ -123,9 +133,45 @@ export function Receipts() {
     setLoading(false);
   };
 
+  const visibleReceipts = useMemo(() => {
+    const now = new Date();
+
+    let from: Date | null = null;
+    let to: Date | null = null;
+
+    if (preset === "7d") {
+      from = new Date(now);
+      from.setDate(from.getDate() - 7);
+    } else if (preset === "1m") {
+      from = new Date(now);
+      from.setMonth(from.getMonth() - 1);
+    } else if (preset === "3m") {
+      from = new Date(now);
+      from.setMonth(from.getMonth() - 3);
+    } else if (preset === "custom") {
+      [from, to] = customRange;
+    }
+
+    return receipts.filter(r => {
+      if (!r.rawDate) return true;
+      const date = new Date(r.rawDate + "T00:00:00");
+      if (from) {
+        const fromStart = new Date(from);
+        fromStart.setHours(0, 0, 0, 0);
+        if (date < fromStart) return false;
+      }
+      if (to) {
+        const toEnd = new Date(to);
+        toEnd.setHours(23, 59, 59, 999);
+        if (date > toEnd) return false;
+      }
+      return true;
+    });
+  }, [receipts, preset, customRange]);
+
   // Fallback to the first receipt so the detail area is never empty on initial load.
   const selectedReceipt =
-    receipts.find(receipt => receipt.id === selectedReceiptId) ?? receipts[0] ?? null;
+    visibleReceipts.find(receipt => receipt.id === selectedReceiptId) ?? visibleReceipts[0] ?? null;
 
   return (
     <Box px={{ base: "md", sm: "xl", lg: 48 }} py={{ base: "xl", lg: 40 }}>
@@ -140,16 +186,41 @@ export function Receipts() {
           </Text>
         </Stack>
 
-        {/* Section title for the receipts browser */}
-        <Group gap="sm" align="center">
-          <ThemeIcon size={48} radius="md" variant="light" color="brand">
-            <IconReceipt2 size={28} stroke={1.8} />
-          </ThemeIcon>
-          <Title order={2}>All receipts</Title>
-          <Badge variant="light" color="brand" size="lg">
-            {receipts.length}
-          </Badge>
-        </Group>
+        {/* Section title + filter controls */}
+        <Stack gap="md">
+          <Group gap="sm" align="center">
+            <ThemeIcon size={48} radius="md" variant="light" color="brand">
+              <IconReceipt2 size={28} stroke={1.8} />
+            </ThemeIcon>
+            <Title order={2}>All receipts</Title>
+            <Badge variant="light" color="brand" size="lg">
+              {visibleReceipts.length}
+            </Badge>
+          </Group>
+
+          <Group align="flex-end" gap="md">
+            <SegmentedControl
+              value={preset}
+              onChange={(v) => setPreset(v as Preset)}
+              data={[
+                { label: "All", value: "all" },
+                { label: "7 days", value: "7d" },
+                { label: "1 month", value: "1m" },
+                { label: "3 months", value: "3m" },
+                { label: "Custom", value: "custom" },
+              ]}
+            />
+            {preset === "custom" && (
+              <DatePickerInput
+                type="range"
+                placeholder="Pick date range"
+                value={customRange}
+                onChange={setCustomRange}
+                clearable
+              />
+            )}
+          </Group>
+        </Stack>
 
         {error && (
           <Paper withBorder p="md" bg="red.0">
@@ -163,10 +234,10 @@ export function Receipts() {
             <Stack gap="md">
               {loading ? (
                 <Text c="dimmed">Loading receipts...</Text>
-              ) : receipts.length === 0 ? (
-                <Text c="dimmed">No receipts found for this household.</Text>
+              ) : visibleReceipts.length === 0 ? (
+                <Text c="dimmed">No receipts found for this period.</Text>
               ) : (
-                receipts.map(receipt => (
+                visibleReceipts.map(receipt => (
                   <ReceiptListItem
                     key={receipt.id}
                     receipt={receipt}
