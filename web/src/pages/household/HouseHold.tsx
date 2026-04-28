@@ -2,13 +2,19 @@ import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import {Button, Group, Text, Modal, Stack, Title, Code, CopyButton,ActionIcon, 
     ThemeIcon, Container, SimpleGrid, Card, TextInput,NumberInput, Alert, Loader,} from "@mantine/core"
-import {IconEdit, IconDoorExit, IconCheck, IconCopy, IconLink,
-        IconPlus, IconUserPlus,} from "@tabler/icons-react"
+import {IconEdit, IconDoorExit, IconCheck, IconCopy, IconLink, IconPlus, IconUserPlus,} from "@tabler/icons-react"
 import { createHousehold, getHouseholds, joinHousehold, updateHousehold, leaveHousehold, getHouseholdMembers } from "../../api/household"
 import type { Household } from "../../api/schema"
 import { notifications } from "@mantine/notifications"
+import type { User } from "@supabase/supabase-js"
 
-export function HouseHold() {
+export interface HouseHoldProps {
+    user: User;
+}
+
+export function HouseHold(props: HouseHoldProps) {
+    const {user} = props;
+
     const navigate = useNavigate()
     const [households, setHouseholds] = useState<Household[]>([])
     const [showCreateModal, setShowCreateModal] = useState(false)
@@ -55,7 +61,6 @@ export function HouseHold() {
         }
     }
 
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     useEffect(() => { void fetchHouseholds() }, [])
 
     const handleCreate = async () => {
@@ -145,7 +150,7 @@ export function HouseHold() {
     const handleLeave = async (householdId: string) => {
         setLeaving(true)
         try {
-            const { error } = await leaveHousehold(householdId)
+            const { error } = await leaveHousehold(user.id, householdId)
             if (error) { setError("Could not leave: " + error.message); return }
             setLeavingId(null)
             void fetchHouseholds()

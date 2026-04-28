@@ -22,9 +22,11 @@ export interface Household {
 
 export type InsertHousehold = OmitOnInsert<Household>;
 
+export type FoodRestrictionCategory = "diet" | "intolerance";
+
 export interface FoodRestriction {
     id: string;
-    category: string;
+    category: FoodRestrictionCategory;
     name: string;
 }
 

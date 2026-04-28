@@ -1,14 +1,18 @@
 import { ActionIcon, Badge, Button, Card, Checkbox, Group, Menu, Modal, NumberInput, Paper, SegmentedControl,
   Select, SimpleGrid, Stack, Table, Text, TextInput, Title } from "@mantine/core";
-import { IconArrowLeft, IconGridDots, IconList, IconPlus, IconSearch, IconTrash } from "@tabler/icons-react";
+import { IconArrowLeft, IconGridDots, IconList, IconPlus, IconSearch, IconShoppingCart, IconTrash } from "@tabler/icons-react";
+import { AddToShoppingListModal } from "../../components/AddToShoppingListModal";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
-import { searchRecipes } from "../../lib/searchRecipes";
+import { searchRecipes } from "../../api/recipe";
 import { supabase } from "../../supabase";
 import { RecipeSearchModal } from "../../components/RecipeSearchModal";
 import type { User } from "@supabase/supabase-js";
 import { getExpirationDateBounds, getDaysUntilExpiry, formatOptionalDate, formatExpiry,
   getExpiryLabel} from "../../utils/date";
+import { insertReceipt } from "../../api/receipt";
+import { insertProductWithSpecs } from "../../api/product";
+import type { ProductSizeUnit } from "../../api/schema";
 
 type PantryViewMode = "grid" | "list";
 type ExpiryStatusFilter = "all" | "expired" | "critical" | "warning" | "fresh" | "no-date";
@@ -109,6 +113,7 @@ function PantryGrid({
   onDeleteClick,
   onDeleteConfirm,
   onDeleteCancel,
+  onAddToShoppingList,
 }: {
   products: PantryProduct[];
   selectedProducts: string[];
@@ -117,6 +122,7 @@ function PantryGrid({
   onDeleteClick: (id: string) => void;
   onDeleteConfirm: (id: string) => void;
   onDeleteCancel: () => void;
+  onAddToShoppingList: (product: PantryProduct) => void;
 }) {
   if (!products.length) {
     return (
@@ -161,22 +167,33 @@ function PantryGrid({
               <Group justify="space-between" align="center">
                 {renderGridStatusTag(daysUntilExpiry)}
 
-                {confirmDeleteId === product.id ? (
-                  <Group gap={6}>
-                    <Text size="xs" c="dimmed">Are you sure?</Text>
-                    <Button size="xs" variant="subtle" onClick={onDeleteCancel}>Cancel</Button>
-                    <Button size="xs" color="red" onClick={() => onDeleteConfirm(product.id)}>Delete</Button>
-                  </Group>
-                ) : (
-                  <ActionIcon
-                    variant="subtle"
-                    color="red"
-                    aria-label={`Delete ${product.name}`}
-                    onClick={() => onDeleteClick(product.id)}
+                <Group gap={4}>
+                  <Button
+                    size="compact-xs"
+                    variant="light"
+                    leftSection={<IconShoppingCart size={10} />}
+                    onClick={() => onAddToShoppingList(product)}
                   >
-                    <IconTrash size={16} />
-                  </ActionIcon>
-                )}
+                    Add to shopping list
+                  </Button>
+
+                  {confirmDeleteId === product.id ? (
+                    <Group gap={6}>
+                      <Text size="xs" c="dimmed">Are you sure?</Text>
+                      <Button size="xs" variant="subtle" onClick={onDeleteCancel}>Cancel</Button>
+                      <Button size="xs" color="red" onClick={() => onDeleteConfirm(product.id)}>Delete</Button>
+                    </Group>
+                  ) : (
+                    <ActionIcon
+                      variant="subtle"
+                      color="red"
+                      aria-label={`Delete ${product.name}`}
+                      onClick={() => onDeleteClick(product.id)}
+                    >
+                      <IconTrash size={16} />
+                    </ActionIcon>
+                  )}
+                </Group>
               </Group>
             </Stack>
           </Card>
@@ -195,6 +212,7 @@ function PantryAllProductsList({
   onDeleteClick,
   onDeleteConfirm,
   onDeleteCancel,
+  onAddToShoppingList,
 }: {
   products: PantryProduct[];
   selectedProducts: string[];
@@ -203,6 +221,7 @@ function PantryAllProductsList({
   onDeleteClick: (id: string) => void;
   onDeleteConfirm: (id: string) => void;
   onDeleteCancel: () => void;
+  onAddToShoppingList: (product: PantryProduct) => void;
 }) {
   if (!products.length) {
     return (
@@ -234,6 +253,16 @@ function PantryAllProductsList({
         <Table.Td>{product.size ?? "-"}</Table.Td>
         <Table.Td>{product.unit ?? "-"}</Table.Td>
         <Table.Td>{renderExpiryBadge(daysUntilExpiry)}</Table.Td>
+        <Table.Td>
+          <Button
+            size="xs"
+            variant="light"
+            leftSection={<IconShoppingCart size={12} />}
+            onClick={() => onAddToShoppingList(product)}
+          >
+            Add to shopping list
+          </Button>
+        </Table.Td>
         <Table.Td>
           {confirmDeleteId === product.id ? (
             <Group gap={6} wrap="nowrap">
@@ -272,6 +301,7 @@ function PantryAllProductsList({
             <Table.Th>Size</Table.Th>
             <Table.Th>Unit</Table.Th>
             <Table.Th>Status</Table.Th>
+            <Table.Th>Shopping list</Table.Th>
             <Table.Th>Delete</Table.Th>
           </Table.Tr>
         </Table.Thead>
@@ -302,6 +332,7 @@ export function Pantry({ user }: PantryProps) {
 
   const [households, setHouseholds] = useState<{ id: string; house_name: string }[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [shoppingListProduct, setShoppingListProduct] = useState<{ name: string; householdId: string } | null>(null);
   const [creating, setCreating] = useState(false);
   const [modalError, setModalError] = useState<string | null>(null);
   const [newName, setNewName] = useState("");
@@ -346,16 +377,16 @@ export function Pantry({ user }: PantryProps) {
         return;
       }
 
-      const mapped: PantryProduct[] = (data ?? []).map((p: any) => {
+      const mapped: PantryProduct[] = (data ?? []).map(p => {
         const specs = Array.isArray(p.product_specs) ? p.product_specs[0] : p.product_specs;
         return {
-          id: p.id,
-          name: p.name,
-          householdId: p.household_id,
-          quantity: specs?.quantity ?? 1,
-          size: specs?.size ?? null,
-          unit: specs?.unit ?? null,
-          expirationDate: specs?.expiration_date ?? null,
+          id: p.id as string,
+          name: p.name as string,
+          householdId: p.household_id as string,
+          quantity: specs?.quantity as number ?? 1,
+          size: specs?.size as string ?? null,
+          unit: specs?.unit as string ?? null,
+          expirationDate: specs?.expiration_date as string ?? null,
           purchasedOn: null,
           shopName: null,
           boughtBy: null,
@@ -400,45 +431,31 @@ export function Pantry({ user }: PantryProps) {
       const price = newPrice !== "" ? Number(newPrice) : null;
       const purchaseDate = newExpirationDate || new Date().toISOString().split('T')[0];
 
-      const { data: receipt, error: receiptError } = await supabase
-        .from('receipt')
-        .insert({
-          household_id: newHouseholdId,
-          store_name: 'Manual Entry',
-          total: price || 0,
-          purchase_at: purchaseDate,
-          buyer_id: user.id
-        })
-        .select()
-        .single();
-
-      if (receiptError) throw new Error('Could not create receipt: ' + receiptError.message);
-
-      // create product linked to receipt
-      const { data: product, error: productError } = await supabase
-        .from("product")
-      .insert({ name: newName.trim(), household_id: newHouseholdId, receipt_id: receipt.id })
-        .select()
-        .single();
-
-      if (productError) {
-        // to match try/catch pattern to prevent inconsistent state
-        throw new Error("Could not create product: " + productError.message);
-      }
-
-      // create product specs
-      const { error: specsError } = await supabase.from("product_specs").insert({
-        product_id: product.id,
-        quantity: Number(newQuantity) || 1,
-        size: newSize || null,
-        unit: newUnit || null,
-        expiration_date: newExpirationDate || null,
-        price: price, // because we compute it above already
+      const receiptResult = await insertReceipt({
+        household_id: newHouseholdId,
+        store_name: 'Manual Entry',
+        total: price || 0,
+        purchase_at: purchaseDate,
+        buyer_id: user.id
       });
 
-      if (specsError) {
+      if (receiptResult.error) throw new Error('Could not create receipt: ' + receiptResult.error.message);
+
+      const productResult = await insertProductWithSpecs({
+        name: newName.trim(),
+        household_id: newHouseholdId,
+        receipt_id: receiptResult.data.id
+      }, {
+        quantity: Number(newQuantity) || 1,
+        size: newSize || null,
+        unit: newUnit as ProductSizeUnit || null,
+        expiration_date: newExpirationDate || null,
+        price: price, // because we compute it above already
+      })
+
+      if (productResult.error) {
         // to match try/catch pattern to prevent inconsistent state
-        throw new Error("Could not save product specs: " + specsError.message);
+        throw new Error("Could not create product: " + productResult.error.message);
       }
 
       // reset form
@@ -500,8 +517,8 @@ export function Pantry({ user }: PantryProps) {
   // Receives exactly the diets and intolerances the user left checked in the modal.
   const handleProceed = async (diets: string[], intolerances: string[]) => {
     if (!pendingSearch) return;
-    const {recipes, noExactRecipe, matchedIngredients, unmatchedIngredients, } = await searchRecipes(pendingSearch.ingredients, pendingSearch.householdId, diets, intolerances);
-    navigate("/recipes", { state: { recipes, householdId: pendingSearch.householdId, noExactRecipe, matchedIngredients, unmatchedIngredients, } });
+    const result = await searchRecipes(pendingSearch.ingredients, pendingSearch.householdId, diets, intolerances);
+    void navigate("/recipes", { state: { householdId: pendingSearch.householdId, ...result } });
   };
 
   /* Memoized list of products after applying search, filter and expiry ordering. */
@@ -681,6 +698,7 @@ export function Pantry({ user }: PantryProps) {
               onDeleteClick={setConfirmDeleteId}
               onDeleteConfirm={(id) => { setConfirmDeleteId(null); void handleDelete(id); }}
               onDeleteCancel={() => setConfirmDeleteId(null)}
+              onAddToShoppingList={(p) => setShoppingListProduct({ name: p.name, householdId: p.householdId })}
             />
           ) : (
             <PantryAllProductsList
@@ -691,6 +709,7 @@ export function Pantry({ user }: PantryProps) {
               onDeleteClick={setConfirmDeleteId}
               onDeleteConfirm={(id) => { setConfirmDeleteId(null); void handleDelete(id); }}
               onDeleteCancel={() => setConfirmDeleteId(null)}
+              onAddToShoppingList={(p) => setShoppingListProduct({ name: p.name, householdId: p.householdId })}
             />
           )}
         </Stack>
@@ -704,6 +723,11 @@ export function Pantry({ user }: PantryProps) {
           userId={user.id}
         />
       )}
+
+      <AddToShoppingListModal
+        product={shoppingListProduct}
+        onClose={() => setShoppingListProduct(null)}
+      />
 
       <Modal
         opened={showCreateModal}
