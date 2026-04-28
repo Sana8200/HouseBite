@@ -4,6 +4,7 @@ import {Button, Group, Text, Modal, Stack, Title, Code, CopyButton, ActionIcon,
     ThemeIcon, Container, SimpleGrid, Card, TextInput, NumberInput, Alert, Loader,} from "@mantine/core"
 import {IconEdit, IconDoorExit, IconCheck, IconCopy, IconLink, IconPlus, IconUserPlus, IconAlertCircle,} from "@tabler/icons-react"
 import { createHousehold, getHouseholds, getHouseholdMemberCount, joinHousehold, updateHousehold, leaveHousehold, getHouseholdMembers } from "../../api/household"
+import { supabase } from "../../supabase"
 import type { Household } from "../../api/schema"
 import { notifications } from "@mantine/notifications"
 import type { User } from "@supabase/supabase-js"
@@ -80,6 +81,7 @@ export function HouseHold(props: HouseHoldProps) {
 
     const [createdHousehold, setCreatedHousehold] = useState<{ name: string; inviteId: string; id: string } | null>(null)
     const [memberCounts, setMemberCounts] = useState<Record<string, number>>({})
+    const [userId, setUserId] = useState<string | null>(null)
 
     const fetchHouseholds = async () => {
         try {
@@ -100,7 +102,10 @@ export function HouseHold(props: HouseHoldProps) {
         }
     }
 
-    useEffect(() => { void fetchHouseholds() }, [])
+    useEffect(() => {
+        void fetchHouseholds()
+        void supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? null))
+    }, [])
 
     const handleCreate = async () => {
         if (!newName.trim()) { setCreateError("Household name is required"); return }
@@ -200,6 +205,11 @@ export function HouseHold(props: HouseHoldProps) {
 
     const handleLeave = async (householdId: string) => {
         const household = households.find(h => h.id === householdId)
+        if (household && household.admin_id === userId && (memberCounts[householdId] ?? 0) > 1) {
+            setError("You are the admin of this household. Transfer admin rights to another member before leaving.")
+            setLeavingId(null)
+            return
+        }
         setLeaving(true)
         try {
             const { error } = await leaveHousehold(user.id, householdId)

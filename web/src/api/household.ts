@@ -76,3 +76,28 @@ export async function joinHousehold(inviteId: string, color: string) {
         p_color: color,
     })
 }
+
+export async function kickMember(householdId: string, memberId: string): Promise<void> {
+    const { error } = await supabase.rpc('kick_member', {
+        p_household_id: householdId,
+        p_member_id: memberId,
+    })
+    if (error) throw new Error(error.message)
+}
+
+export async function kickMemberPermanently(householdId: string, memberId: string): Promise<string> {
+    const { data, error } = await supabase.rpc('kick_member_permanently', {
+        p_household_id: householdId,
+        p_member_id: memberId,
+    })
+    if (error) throw new Error(error.message)
+    return data as string
+}
+
+export async function transferAdmin(householdId: string, newAdminId: string): Promise<void> {
+    const { error } = await supabase.rpc('transfer_admin', {
+        p_household_id: householdId,
+        p_new_admin_id: newAdminId,
+    })
+    if (error) throw new Error(error.message)
+}

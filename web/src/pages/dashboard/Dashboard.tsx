@@ -667,6 +667,18 @@ export default function Dashboard(props: DashboardProps) {
           <HouseholdMembers
             householdId={selectedHouseholdId}
             inviteId={households.find(h => h.id === selectedHouseholdId)?.invite_id ?? undefined}
+            adminId={households.find(h => h.id === selectedHouseholdId)?.admin_id}
+            currentUserId={userId}
+            onInviteIdChange={(newId) => {
+              setHouseholds(prev =>
+                prev.map(h => h.id === selectedHouseholdId ? { ...h, invite_id: newId } : h)
+              )
+            }}
+            onAdminChange={(newAdminId) => {
+              setHouseholds(prev =>
+                prev.map(h => h.id === selectedHouseholdId ? { ...h, admin_id: newAdminId } : h)
+              )
+            }}
           />
         )}
 
