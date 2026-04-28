@@ -14,6 +14,7 @@ import { useEffect, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { Scan } from './pages/scan/Scan';
 import { getSession, onAuthStateChange } from "./api/auth";
+import { Footer } from "./components/Footer";
 
 export function App() {
   const [loaded, setLoaded] = useState(false);
@@ -69,6 +70,7 @@ export function App() {
 
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
+      <Footer/>
     </BrowserRouter>
   )
 }
