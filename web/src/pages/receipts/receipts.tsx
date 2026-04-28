@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
-import { Badge, Box, Divider, Grid, Group, Paper, SegmentedControl, SimpleGrid, Stack, Table, Text, ThemeIcon, Title, UnstyledButton } from "@mantine/core";
+import { Alert, Badge, Box, Divider, Grid, Group, Loader, Paper, SegmentedControl, SimpleGrid, Stack, Table, Text, ThemeIcon, Title, UnstyledButton } from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates";
 import "@mantine/dates/styles.css";
-import { IconCalendarEvent, IconChevronRight, IconReceipt2, IconShoppingBag } from "@tabler/icons-react";
+import { IconAlertCircle, IconCalendarEvent, IconChevronRight, IconReceipt2, IconShoppingBag } from "@tabler/icons-react";
 import { fetchReceiptsByHousehold } from "../../api/receipt";
 import { formatCurrency, formatDate } from "../../utils/date";
 
@@ -108,7 +108,7 @@ export function Receipts() {
     const { data, error: fetchError } = await fetchReceiptsByHousehold(householdId);
 
     if (fetchError) {
-      setError("Could not load receipts");
+      setError(fetchError.message || "Could not load receipts");
       setLoading(false);
       return;
     }
@@ -223,9 +223,17 @@ export function Receipts() {
         </Stack>
 
         {error && (
-          <Paper withBorder p="md" bg="red.0">
-            <Text c="red">{error}</Text>
-          </Paper>
+          <Alert
+            variant="light"
+            color="red"
+            radius="md"
+            icon={<IconAlertCircle size={18} />}
+            title="Couldn't load receipts"
+            withCloseButton
+            onClose={() => setError(null)}
+          >
+            {error}
+          </Alert>
         )}
 
         {/* Main split layout: list on the left, detail on the right */}
@@ -233,7 +241,7 @@ export function Receipts() {
           <Grid.Col span={{ base: 12, lg: 5 }}>
             <Stack gap="md">
               {loading ? (
-                <Text c="dimmed">Loading receipts...</Text>
+                <Group justify="center" py="md"><Loader size="sm" /></Group>
               ) : visibleReceipts.length === 0 ? (
                 <Text c="dimmed">No receipts found for this period.</Text>
               ) : (
