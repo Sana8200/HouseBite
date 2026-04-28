@@ -1,5 +1,5 @@
 .header {
-  padding: var(--space-3) var(--space-6);
+  padding: var(--space-4) var(--space-6);
   background: #00572E;
   border-bottom: 1px solid rgba(0, 0, 0, 0.12);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.10);
@@ -73,7 +73,7 @@
 
 .logout-link {
   margin-left: var(--space-2);
-  color: #ed9e9e;
+  color: #facfcf;
   border-color: rgba(253, 224, 224, 0.28);
 }
 
