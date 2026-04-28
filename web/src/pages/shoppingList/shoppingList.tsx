@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { KeyboardEvent } from "react";
 import { ActionIcon, Alert, Button, Card, Checkbox, Container, Grid, Group, Loader, Paper, Stack, Table, Text, TextInput, Title } from "@mantine/core";
-import { IconArrowLeft, IconCheck, IconShoppingCart, IconPlus, IconTrash } from "@tabler/icons-react";
+import { IconArrowLeft, IconCheck, IconDeviceFloppy, IconPlus, IconShoppingCart, IconTrash, IconX } from "@tabler/icons-react";
 import { Link, useLocation } from "react-router";
 import { addShoppingListItem, deleteShoppingItem, getShoppingItems, toggleShoppingItem, type ShoppingListItemView, } from "../../api/shoppingList";
 import "./shoppingList.css";
@@ -25,6 +26,7 @@ export function ShoppingList() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const notesInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     if (!householdId) {
@@ -95,7 +97,19 @@ export function ShoppingList() {
     void createItem(householdId);
   };
 
-  // Reset the temporary form state when the user cancels.
+  const handleNameInputKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key !== "Enter") return;
+    event.preventDefault();
+    notesInputRef.current?.focus();
+  };
+
+  const handleNotesInputKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key !== "Enter") return;
+    event.preventDefault();
+    handleAddItem();
+  };
+
+  // Reset the temporary row state when the user cancels.
   const handleCancelAdd = () => {
     setNewItemName("");
     setNewItemNotes("");
@@ -268,53 +282,6 @@ export function ShoppingList() {
           </Grid.Col>
         </Grid>
 
-        {/* Add-item area stays hidden until the user opens the form. */}
-        <Stack gap="md">
-          <Button
-            leftSection={<IconPlus size={16} />}
-            disabled={!householdId}
-            onClick={() => setIsAddingItem((currentValue) => !currentValue)}
-          >
-            {isAddingItem ? "Hide form" : "Add item"}
-          </Button>
-
-          <div className={`shopping-list-add-panel${isAddingItem ? " is-open" : ""}`}>
-            <Paper withBorder radius="lg" p="lg">
-              <Stack gap="md">
-                {/* Only the fields already visible in the requested mockup. */}
-                <Grid>
-                  <Grid.Col span={{ base: 12, md: 6 }}>
-                    <TextInput
-                      label="Product name"
-                      placeholder="E.g: Pineapple, Cheese"
-                      value={newItemName}
-                      onChange={(event) => setNewItemName(event.currentTarget.value)}
-                    />
-                  </Grid.Col>
-
-                  <Grid.Col span={{ base: 12, md: 6 }}>
-                    <TextInput
-                      label="Notes"
-                      placeholder="E.g: 500 g, low stock, brand preference"
-                      value={newItemNotes}
-                      onChange={(event) => setNewItemNotes(event.currentTarget.value)}
-                    />
-                  </Grid.Col>
-                </Grid>
-
-                <Group justify="flex-end">
-                  <Button variant="default" onClick={handleCancelAdd}>
-                    Cancel
-                  </Button>
-                  <Button onClick={handleAddItem} loading={submitting}>
-                    Add
-                  </Button>
-                </Group>
-              </Stack>
-            </Paper>
-          </div>
-        </Stack>
-
         {loading ? (
           <Group justify="center" py="xl">
             <Loader />
@@ -332,7 +299,75 @@ export function ShoppingList() {
                       <Table.Th className="shopping-list-table__action-column">Delete</Table.Th>
                     </Table.Tr>
                   </Table.Thead>
-                  <Table.Tbody>{sortedItems.map(renderTableRow)}</Table.Tbody>
+                  <Table.Tbody>
+                    {!isAddingItem && householdId && (
+                      <Table.Tr
+                        className="shopping-list-table__row shopping-list-table__row--add-action"
+                        onClick={() => setIsAddingItem(true)}
+                      >
+                        <Table.Td colSpan={4}>
+                          <Group gap="sm" justify="center" wrap="nowrap">
+                            <IconPlus size={16} />
+                            <Text fw={600}>Add new item</Text>
+                            <Text size="sm" c="dimmed">
+                              Add a new product and save it to the shopping list
+                            </Text>
+                          </Group>
+                        </Table.Td>
+                      </Table.Tr>
+                    )}
+                    {isAddingItem && (
+                      <Table.Tr className="shopping-list-table__row shopping-list-table__row--draft">
+                        <Table.Td className="shopping-list-table__checkbox-column">
+                          <div className="shopping-list-checkbox-shell">
+                            <Checkbox checked={false} readOnly radius="xs" classNames={{
+                              input: "shopping-list-checkbox-input",
+                              icon: "shopping-list-checkbox-icon",
+                            }} />
+                          </div>
+                        </Table.Td>
+                        <Table.Td>
+                          <TextInput
+                            placeholder="E.g: Pineapple, Cheese"
+                            value={newItemName}
+                            onChange={(event) => setNewItemName(event.currentTarget.value)}
+                            onKeyDown={handleNameInputKeyDown}
+                          />
+                        </Table.Td>
+                        <Table.Td>
+                            <TextInput
+                              placeholder="E.g: 500 g, low stock, brand preference"
+                              value={newItemNotes}
+                              onChange={(event) => setNewItemNotes(event.currentTarget.value)}
+                              onKeyDown={handleNotesInputKeyDown}
+                              ref={notesInputRef}
+                            />
+                        </Table.Td>
+                        <Table.Td className="shopping-list-table__action-column">
+                          <Group justify="center" gap={6} wrap="nowrap">
+                            <ActionIcon
+                              variant="light"
+                              color="green"
+                              aria-label="Save shopping list item"
+                              onClick={handleAddItem}
+                              loading={submitting}
+                            >
+                              <IconDeviceFloppy size={16} />
+                            </ActionIcon>
+                            <ActionIcon
+                              variant="subtle"
+                              color="gray"
+                              aria-label="Cancel new shopping list row"
+                              onClick={handleCancelAdd}
+                            >
+                              <IconX size={16} />
+                            </ActionIcon>
+                          </Group>
+                        </Table.Td>
+                      </Table.Tr>
+                    )}
+                    {sortedItems.map(renderTableRow)}
+                  </Table.Tbody>
                 </Table>
               </div>
             ) : (

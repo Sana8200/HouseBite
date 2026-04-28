@@ -1,22 +1,3 @@
-.shopping-list-add-panel {
-  overflow: hidden;
-  max-height: 0;
-  opacity: 0;
-  transform: translateY(-8px);
-  pointer-events: none;
-  transition:
-    max-height 220ms ease,
-    opacity 180ms ease,
-    transform 220ms ease;
-}
-
-.shopping-list-add-panel.is-open {
-  max-height: 280px;
-  opacity: 1;
-  transform: translateY(0);
-  pointer-events: auto;
-}
-
 .shopping-list-table-panel {
   overflow: hidden;
 }
@@ -76,6 +57,32 @@
       rgba(64, 145, 108, 0.08) 0%,
       rgba(64, 145, 108, 0.18) 100%
     );
+}
+
+.shopping-list-table__row--draft {
+  background: var(--mantine-color-yellow-0);
+}
+
+.shopping-list-table__row--add-action {
+  cursor: pointer;
+  background: linear-gradient(
+    90deg,
+    rgba(64, 145, 108, 0.08) 0%,
+    rgba(64, 145, 108, 0.02) 100%
+  );
+}
+
+.shopping-list-table__row--add-action td {
+  border-style: dashed;
+  color: var(--mantine-color-green-8);
+}
+
+.shopping-list-table__row--add-action:hover {
+  background: linear-gradient(
+    90deg,
+    rgba(64, 145, 108, 0.14) 0%,
+    rgba(64, 145, 108, 0.04) 100%
+  );
 }
 
 .shopping-list-table__row.is-first-purchased td {
