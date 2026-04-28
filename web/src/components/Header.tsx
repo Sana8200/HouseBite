@@ -1,12 +1,12 @@
-import { Flex, Menu, Space, useMantineTheme } from "@mantine/core";
+import { Group, Menu, UnstyledButton, useMantineTheme } from "@mantine/core";
 import { useEffect, useState } from "react";
-import { NavLink, useLocation, useNavigate } from "react-router"
-import "./Header.css"
+import { NavLink, useLocation, useNavigate } from "react-router";
+import "./Header.css";
 import type { User } from "@supabase/supabase-js";
 import { getHouseholds } from "../api/household";
 import { signOut } from "../api/auth";
 import { useMediaQuery } from "@mantine/hooks";
-import { IconLogout, IconUser, IconCamera, IconDeviceTabletStar, IconHome } from "@tabler/icons-react";
+import { IconLogout, IconUser, IconCamera, IconDeviceTabletStar, IconHome, IconChevronDown } from "@tabler/icons-react";
 import type { Household } from "../api/schema";
 import IconHouseBite from "../assets/icon.svg";
 import { supabase } from "../supabase";
@@ -16,7 +16,7 @@ export interface HeaderProps {
 }
 
 export function Header(props: HeaderProps) {
-    const {user} = props;
+    const { user } = props;
     const navigate = useNavigate();
     const location = useLocation();
     const [households, setHouseholds] = useState<Household[]>([]);
@@ -25,8 +25,7 @@ export function Header(props: HeaderProps) {
 
     const isMobile = useMediaQuery(`(max-width: ${theme.breakpoints.sm})`);
 
-    const logout = async (e: React.MouseEvent) => {
-        e.preventDefault();
+    const logout = async () => {
         await signOut();
         await navigate("/");
     };
@@ -63,7 +62,7 @@ export function Header(props: HeaderProps) {
             cancel = true;
             setHouseholds([]);
             void channel.unsubscribe();
-        }
+        };
     }, [user]);
 
     const authenticatedLinks = [
@@ -72,37 +71,40 @@ export function Header(props: HeaderProps) {
         { to: "/account", label: "Account", icon: IconUser },
     ];
 
-    return (
-        <Flex component="nav" align="center" className="header" wrap="wrap">
+    const householdsActive = location.pathname === "/household" || location.pathname === "/dashboard";
 
-            <NavLink to="/" className="header-logo">
-                { isMobile ? <img src={IconHouseBite} width={32}/> : "HouseBite" }
+    return (
+        <Group component="nav" justify="space-between" align="center" className="header" wrap="nowrap">
+            <NavLink to="/" className="header-logo" aria-label="HouseBite home">
+                {isMobile ? <img src={IconHouseBite} width={32} alt="HouseBite" /> : "HouseBite"}
             </NavLink>
 
-            <Space flex={1}/>
-
             {user && (
-                <>
+                <Group gap={4} wrap="nowrap">
                     <Menu
                         shadow="md"
                         width={260}
-                        position="bottom-start"
+                        position="bottom-end"
                         offset={8}
-                        trigger="hover"
+                        trigger="click-hover"
                         openDelay={80}
                         closeDelay={120}
                     >
                         <Menu.Target>
-                            <NavLink
-                                to="/household"
-                                className={`nav-link header-households-trigger${
-                                    location.pathname === "/household" || location.pathname === "/dashboard"
-                                        ? " active"
-                                        : ""
-                                }`}
+                            <UnstyledButton
+                                className={`nav-link header-households-trigger${householdsActive ? " active" : ""}`}
+                                onClick={() => void navigate("/household")}
+                                aria-label="Households"
                             >
-                                {isMobile ? <IconHome/> : "Households" }
-                            </NavLink>
+                                {isMobile ? (
+                                    <IconHome size={20} />
+                                ) : (
+                                    <Group gap={4} wrap="nowrap" component="span">
+                                        <span>Households</span>
+                                        <IconChevronDown size={14} stroke={2.5} />
+                                    </Group>
+                                )}
+                            </UnstyledButton>
                         </Menu.Target>
 
                         <Menu.Dropdown className="header-households-menu">
@@ -131,16 +133,26 @@ export function Header(props: HeaderProps) {
                             key={link.to}
                             to={link.to}
                             className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}
+                            aria-label={link.label}
                         >
-                            {isMobile ? <link.icon/> : link.label}
+                            {isMobile ? <link.icon size={20} /> : link.label}
                         </NavLink>
                     ))}
 
-                    <a href="/" onClick={e => void(logout(e))} className="nav-link logout-link">
-                        {isMobile ? <IconLogout/> : "Logout"}
-                    </a>
-                </>
+                    <UnstyledButton
+                        onClick={() => void logout()}
+                        className="nav-link logout-link"
+                        aria-label="Logout"
+                    >
+                        {isMobile ? <IconLogout size={20} /> : (
+                            <Group gap={4} wrap="nowrap" component="span">
+                                <IconLogout size={16} />
+                                <span>Logout</span>
+                            </Group>
+                        )}
+                    </UnstyledButton>
+                </Group>
             )}
-        </Flex>
-    )
+        </Group>
+    );
 }
