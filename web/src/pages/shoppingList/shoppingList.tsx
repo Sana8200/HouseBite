@@ -172,7 +172,7 @@ export function ShoppingList() {
           <div className={checkboxShellClassName}>
             <Checkbox
               checked={item.purchased}
-              onChange={() => handleToggleItem(item.id)}
+              onChange={() => void handleToggleItem(item.id)}
               color={item.purchased ? "green" : "gray"}
               size="md"
               iconColor={item.purchased ? "white" : "transparent"}
