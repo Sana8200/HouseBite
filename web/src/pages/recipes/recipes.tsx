@@ -1,258 +1,383 @@
-import { useEffect, useState } from "react";
-import { useLocation } from "react-router-dom";
-import { Badge, Box, Divider, Grid, Group, Paper, SimpleGrid, Stack, Table, Text, ThemeIcon, Title, UnstyledButton } from "@mantine/core";
-import { IconCalendarEvent, IconChevronRight, IconReceipt2, IconShoppingBag } from "@tabler/icons-react";
-import { fetchReceiptsByHousehold } from "../../api/receipt";
-import { formatCurrency, formatDate } from "../../utils/date";
+import { useEffect, useRef, useState } from "react"
+import { useLocation } from "react-router-dom"
+import { supabase } from "../../supabase"
+import "./recipes.css"
+import { Paper, Text, SimpleGrid, Stack, ActionIcon, Button, Group, Popover, Title, Container, Loader, Card, Divider, Collapse } from "@mantine/core"
+import { IconX, IconUsers, IconClock, IconChevronLeft, IconChevronRight, IconChefHat } from "@tabler/icons-react"
+import { getRecipes, saveRecipe, type SearchRecipe, type SearchRecipesResult } from "../../api/recipe"
+import type { Recipe } from "../../api/schema"
+import { notifications } from "@mantine/notifications";
 
-type ReceiptItem = {
-  id: string;
-  name: string;
-  quantity: number;
-  price: string;
-};
-
-type ReceiptSummary = {
-  id: string;
-  storeName: string;
-  date: string;
-  itemCount: number;
-  total: string;
-  items: ReceiptItem[];
-};
-
-type ReceiptsLocationState = {
-  householdId?: string;
-  householdName?: string;
-};
-
-function ReceiptListItem({ receipt, selected, onSelect }: { receipt: ReceiptSummary; selected: boolean; onSelect: () => void; }) {
-  return (
-    /* One selectable receipt card in the left column. */
-    <UnstyledButton onClick={onSelect} style={{ width: "100%" }}>
-      <Paper
-        withBorder
-        radius="xl"
-        p="lg"
-        bg={selected ? "brand.7" : "white"}
-        style={{
-          borderColor: selected ? "transparent" : "var(--color-border)",
-          color: selected ? "var(--color-white)" : "var(--color-text)",
-          transition: "background-color 140ms ease, color 140ms ease, border-color 140ms ease",
-        }}
-      >
-        <Group justify="space-between" align="center" wrap="nowrap">
-          <Stack gap="xs" style={{ flex: 1, minWidth: 0 }}>
-            <Text fw={700} size="xl" truncate>
-              {receipt.storeName}
-            </Text>
-
-            <SimpleGrid cols={2} spacing="xs" verticalSpacing="xs">
-              <Group gap={8} wrap="nowrap">
-                <IconCalendarEvent size={18} stroke={1.8} />
-                <Text size="sm">{receipt.date}</Text>
-              </Group>
-
-              <Group gap={8} wrap="nowrap">
-                <IconShoppingBag size={18} stroke={1.8} />
-                <Text size="sm">
-                  {receipt.itemCount} item{receipt.itemCount === 1 ? "" : "s"}
-                </Text>
-              </Group>
-            </SimpleGrid>
-          </Stack>
-
-          <Group gap="md" wrap="nowrap">
-            <Text fw={700} size="xl">
-              {receipt.total}
-            </Text>
-            <IconChevronRight size={20} stroke={1.8} />
-          </Group>
-        </Group>
-      </Paper>
-    </UnstyledButton>
-  );
+function parseDescription(description: string | null): { nutrition: string; ingredients: string; steps: string } {
+  if (!description) return { nutrition: "", ingredients: "", steps: "" }
+  const [nutrition = "", ingredients = "", ...rest] = description.split("\n\n")
+  return { nutrition, ingredients, steps: rest.join("\n\n") }
 }
 
-export function Receipts() {
-  const location = useLocation();
-
-  // Optional route state. The page still works if no household info is passed in navigation.
-  const { householdId, householdName } = (location.state as ReceiptsLocationState | null) ?? {};
-
-  const [receipts, setReceipts] = useState<ReceiptSummary[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  // Tracks which receipt is currently shown in the detail panel.
-  const [selectedReceiptId, setSelectedReceiptId] = useState<string>("");
-
-  useEffect(() => {
-    void fetchReceipts();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [householdId]);
-
-  const fetchReceipts = async () => {
-    setLoading(true);
-    setError(null);
-
-    const { data, error: fetchError } = await fetchReceiptsByHousehold(householdId);
-
-    if (fetchError) {
-      setError("Could not load receipts");
-      setLoading(false);
-      return;
-    }
-
-    const mapped: ReceiptSummary[] = (data ?? []).map(r => ({
-      id: r.id,
-      storeName: r.store_name ?? "Unknown Store",
-      date: formatDate(r.purchase_at),
-      itemCount: r.products.length,
-      total: formatCurrency(r.total),
-      items: r.products.map(p => ({
-        id: p.id,
-        name: p.name,
-        quantity: p.quantity,
-        price: formatCurrency(p.price),
-      })),
-    }));
-
-    setReceipts(mapped);
-    setSelectedReceiptId(mapped[0]?.id ?? "");
-    setLoading(false);
-  };
-
-  // Fallback to the first receipt so the detail area is never empty on initial load.
-  const selectedReceipt =
-    receipts.find(receipt => receipt.id === selectedReceiptId) ?? receipts[0] ?? null;
+export function RecipeCard({
+  recipe,
+  isOpen,
+  onToggle,
+  action,
+  onDelete,
+}: {
+  recipe: SearchRecipe | Recipe
+  isOpen: boolean
+  onToggle: () => void
+  action?: React.ReactNode
+  onDelete?: () => void
+}) {
+  const { nutrition, ingredients, steps } = parseDescription(recipe.description)
 
   return (
-    <Box px={{ base: "md", sm: "xl", lg: 48 }} py={{ base: "xl", lg: 40 }}>
-      <Stack gap="xl">
-        {/* Page title and context */}
-        <Stack gap={6}>
-          <Title order={1} size="h1">
-            Scanned receipts for {householdName ?? "Household_name"}
-          </Title>
-          <Text c="dimmed" size="lg">
-            View and manage your shopping receipts
-          </Text>
+    <Card
+      withBorder
+      shadow="sm"
+      radius="md"
+      padding="md"
+      onClick={onToggle}
+      className="recipe-card"
+      style={{ cursor: "pointer", minWidth: 280, maxWidth: 280, flexShrink: 0 }}
+    >
+      <Stack gap="sm" h="100%">
+        <Stack gap={4}>
+          <Group gap="xs" wrap="nowrap" align="flex-start">
+            <IconChefHat size={18} style={{ flexShrink: 0, marginTop: 2 }} color="var(--mantine-color-brand-6)" />
+            <Title order={5} lineClamp={2} style={{ flex: 1 }}>{recipe.title}</Title>
+          </Group>
+          <Group gap="md" pl={26}>
+            <Group gap={4}>
+              <IconUsers size={14} color="var(--mantine-color-gray-6)" />
+              <Text size="xs" c="dimmed">{recipe.servings ?? "?"}</Text>
+            </Group>
+            <Group gap={4}>
+              <IconClock size={14} color="var(--mantine-color-gray-6)" />
+              <Text size="xs" c="dimmed">{recipe.prep_time ?? "?"} min</Text>
+            </Group>
+          </Group>
         </Stack>
 
-        {/* Section title for the receipts browser */}
-        <Group gap="sm" align="center">
-          <ThemeIcon size={48} radius="md" variant="light" color="brand">
-            <IconReceipt2 size={28} stroke={1.8} />
-          </ThemeIcon>
-          <Title order={2}>All receipts</Title>
-          <Badge variant="light" color="brand" size="lg">
-            {receipts.length}
-          </Badge>
-        </Group>
-
-        {error && (
-          <Paper withBorder p="md" bg="red.0">
-            <Text c="red">{error}</Text>
-          </Paper>
+        {nutrition && (
+          <Text size="xs" c="dimmed" lineClamp={isOpen ? undefined : 3} style={{ lineHeight: 1.5 }}>
+            {nutrition}
+          </Text>
         )}
 
-        {/* Main split layout: list on the left, detail on the right */}
-        <Grid align="start">
-          <Grid.Col span={{ base: 12, lg: 5 }}>
-            <Stack gap="md">
-              {loading ? (
-                <Text c="dimmed">Loading receipts...</Text>
-              ) : receipts.length === 0 ? (
-                <Text c="dimmed">No receipts found for this household.</Text>
-              ) : (
-                receipts.map(receipt => (
-                  <ReceiptListItem
-                    key={receipt.id}
-                    receipt={receipt}
-                    selected={receipt.id === selectedReceipt?.id}
-                    onSelect={() => setSelectedReceiptId(receipt.id)}
-                  />
-                ))
-              )}
-            </Stack>
-          </Grid.Col>
+        <Collapse expanded={isOpen}>
+          <Stack gap="sm" onClick={e => e.stopPropagation()}>
+            <Divider />
+            {ingredients && (
+              <div>
+                <Text fw={600} size="sm" mb={4}>Ingredients</Text>
+                <Text size="sm" style={{ whiteSpace: "pre-wrap", lineHeight: 1.6 }}>{ingredients}</Text>
+              </div>
+            )}
+            {steps && (
+              <div>
+                <Text fw={600} size="sm" mb={4}>Instructions</Text>
+                <Text size="sm" style={{ whiteSpace: "pre-wrap", lineHeight: 1.6 }}>{steps}</Text>
+              </div>
+            )}
+            {onDelete && (
+              <Button color="red" variant="outline" size="sm" fullWidth onClick={onDelete}>
+                Remove from favourites
+              </Button>
+            )}
+          </Stack>
+        </Collapse>
 
-          <Grid.Col span={{ base: 12, lg: 7 }}>
-            <Paper withBorder radius="xl" p={{ base: "lg", sm: "xl" }} shadow="sm">
-              {selectedReceipt ? (
-                <Stack gap="xl">
-                  {/* Header of the selected receipt */}
-                  <Stack gap="xs">
-                    <Title order={3} c="brand.7">
-                      {selectedReceipt.storeName}
-                    </Title>
-
-                    <Group gap="xs" c="dimmed">
-                      <IconCalendarEvent size={18} stroke={1.8} />
-                      <Text>{selectedReceipt.date}</Text>
-                    </Group>
-                  </Stack>
-
-                  {/* Items that belong to the selected receipt */}
-                  <Table
-                    verticalSpacing="md"
-                    horizontalSpacing="sm"
-                    highlightOnHover={false}
-                    withRowBorders={false}
-                  >
-                    <Table.Thead>
-                      <Table.Tr>
-                        <Table.Th>Product</Table.Th>
-                        <Table.Th ta="center">Qty</Table.Th>
-                        <Table.Th ta="right">Price</Table.Th>
-                      </Table.Tr>
-                    </Table.Thead>
-                    <Table.Tbody>
-                      {selectedReceipt.items.map(item => (
-                        <Table.Tr key={item.id}>
-                          <Table.Td>
-                            <Text fw={500}>{item.name}</Text>
-                          </Table.Td>
-                          <Table.Td ta="center">
-                            <Text c="dimmed" fw={600}>
-                              {item.quantity}
-                            </Text>
-                          </Table.Td>
-                          <Table.Td ta="right">
-                            <Text fw={500}>{item.price}</Text>
-                          </Table.Td>
-                        </Table.Tr>
-                      ))}
-                    </Table.Tbody>
-                  </Table>
-
-                  {/* Summary footer with the total amount */}
-                  <Divider />
-
-                  <Group justify="space-between" align="center">
-                    <Group gap="sm">
-                      <ThemeIcon size={34} radius="xl" variant="light" color="brand">
-                        <IconReceipt2 size={18} stroke={1.8} />
-                      </ThemeIcon>
-                      <Text fw={700} size="xl">
-                        Total
-                      </Text>
-                    </Group>
-
-                    <Text fw={800} size="2rem" c="brand.7">
-                      {selectedReceipt.total}
-                    </Text>
-                  </Group>
-                </Stack>
-              ) : (
-                /* Empty state in case there is no receipt data. */
-                <Text c="dimmed">No receipts available.</Text>
-              )}
-            </Paper>
-          </Grid.Col>
-        </Grid>
+        {action && (
+          <div onClick={e => e.stopPropagation()} style={{ marginTop: "auto" }}>
+            {action}
+          </div>
+        )}
       </Stack>
-    </Box>
-  );
+    </Card>
+  )
 }
+
+export function RecipeCarousel({ children }: { children: React.ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null)
+  const scroll = (dir: number) => ref.current?.scrollBy({ left: dir * 300, behavior: "smooth" })
+
+  return (
+    <Group gap="sm" wrap="nowrap" align="center">
+      <ActionIcon variant="default" radius="xl" size="lg" onClick={() => scroll(-1)}>
+        <IconChevronLeft size={18} />
+      </ActionIcon>
+      <div className="recipe-carousel" ref={ref}>{children}</div>
+      <ActionIcon variant="default" radius="xl" size="lg" onClick={() => scroll(1)}>
+        <IconChevronRight size={18} />
+      </ActionIcon>
+    </Group>
+  )
+}
+
+export interface RecipesParams extends Partial<SearchRecipesResult> {
+  householdId?: string;
+  openRecipeId?: string;
+}
+
+export function Recipes() {
+  const location = useLocation()
+  const locationState = location.state as RecipesParams;
+  const searchResults = locationState?.recipes ?? []
+  // const householdId = locationState?.householdId
+  const openRecipeId = locationState?.openRecipeId
+
+  const [saved, setSaved] = useState<Set<number>>(new Set())
+  const [saving, setSaving] = useState<number | null>(null)
+  const [favourites, setFavourites] = useState<Recipe[]>([])
+  const [loadingFavourites, setLoadingFavourites] = useState(true)
+  const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null)
+  const noExactRecipe = locationState?.noExactRecipe ?? false
+  const matchedIngredients = locationState?.matchedIngredients ?? []
+  const unmatchedIngredients = locationState?.unmatchedIngredients ?? []
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+
+  // tracks which card is open: "fav-{id}" or "search-{index}"
+  const [openId, setOpenId] = useState<string | null>(openRecipeId ? `fav-${openRecipeId}` : null)
+
+  const toggle = (key: string) => setOpenId(prev => prev === key ? null : key)
+
+  const fetchFavourites = async () => {
+    try {
+      const { data } = await getRecipes();
+      const list = data ?? []
+      setFavourites(list)
+      if (openRecipeId) {
+        const match = list.find(r => r.id === openRecipeId)
+        if (match) setSelectedRecipe(match)
+      }
+    } catch (e) {
+      notifications.show({
+        color: "red",
+        title: "Could not load favourites",
+        message: e instanceof Error ? e.message : "Please try again.",
+      });
+    } finally {
+      setLoadingFavourites(false)
+    }
+  }
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { void fetchFavourites() }, [])
+
+  const handleDelete = async (id: string) => {
+    const { error } = await supabase.from("recipe").delete().eq("id", id);
+    if (error) {
+      notifications.show({
+        color: "red",
+        title: "Could not remove favourite",
+        message: error.message,
+      });
+      return;
+    }
+    setFavourites(prev => prev.filter(r => r.id !== id));
+    setOpenId(null);
+    notifications.show({
+      color: "orange",
+      title: "Removed",
+      message: "Recipe removed from favourites.",
+    });
+  };
+
+  const handleSave = async (recipe: SearchRecipe, index: number) => {
+    if (favourites.some(f => f.title === recipe.title)) {
+      setSaved(prev => new Set(prev).add(index))
+      return
+    }
+    setSaving(index)
+    try {
+      const result = await saveRecipe(recipe);
+      if (result.error) {
+        notifications.show({
+          color: "red",
+          title: "Could not save recipe",
+          message: result.error instanceof Error ? result.error.message : "Please try again.",
+        });
+        return;
+      }
+      setSaved(prev => new Set(prev).add(index))
+      void fetchFavourites()
+      notifications.show({
+        color: "green",
+        title: "Saved",
+        message: `${recipe.title} added to favourites.`,
+      });
+    } catch (e) {
+      notifications.show({
+        color: "red",
+        title: "Could not save recipe",
+        message: e instanceof Error ? e.message : "Please try again.",
+      });
+    } finally {
+      setSaving(null)
+    }
+  }
+
+  return (
+      <Container size="xl" py="xl">
+        {searchResults.length > 0 ? (
+          <Stack gap="md" mb="xl">
+            <Title order={1}>{noExactRecipe ? "No recipe found" : "Search Results"}</Title>
+
+            <Text>
+              {unmatchedIngredients.length > 0 ? (
+                <>
+                  No recipes found for: <Text span fw={700}>{unmatchedIngredients.join(", ")}</Text>.
+                  {matchedIngredients.length > 0 && (
+                    <> Showing recipes for <Text span fw={700}>{matchedIngredients.join(", ")}</Text>.</>
+                  )}
+                </>
+              ) : (
+                "Click a recipe to see instructions. Add it to favourites to save it."
+              )}
+            </Text>
+
+            <RecipeCarousel>
+              {searchResults.map((r, i) => (
+                <RecipeCard
+                  key={i}
+                  recipe={r}
+                  isOpen={openId === `search-${i}`}
+                  onToggle={() => toggle(`search-${i}`)}
+                  action={
+                    <Button
+                      disabled={saved.has(i) || saving === i || favourites.some(f => f.title === r.title)}
+                      onClick={() => void handleSave(r, i)}
+                    >
+                      {saved.has(i) || favourites.some(f => f.title === r.title) ? "Already in favourites" : saving === i ? "Saving..." : "Add to favourites"}
+                    </Button>
+                  }
+                />
+              ))}
+            </RecipeCarousel>
+          </Stack>
+        ) : (
+          <Stack gap="md" mb="xl">
+            <Title order={1}>No recipe found</Title>
+            <Text>No recipe found.</Text>
+          </Stack>
+        )}
+
+        <Title order={1} mb="md">Favourites</Title>
+        {loadingFavourites ? (
+          <Group justify="center" py="md"><Loader size="sm" /></Group>
+        ) : favourites.length === 0 ? (
+          <Text c="dimmed">No favourites yet. Search for recipes and add some.</Text>
+        ) : (
+          <div style={{ display: "flex", gap: "20px", alignItems: "stretch" }}>
+
+            {/* LEFT - GRID */}
+            <div style={{ flex: 1.5 }}>
+              <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }}>
+                {favourites.map(r => (
+                  <Paper
+                    key={r.id}
+                    p="md"
+                    radius="md"
+                    withBorder
+                    shadow="sm"
+                    style={{ cursor: "pointer", position: "relative" }}
+                    onClick={() => setSelectedRecipe(r)}
+                  >
+                    <Stack gap="xs">
+                      <Text fw={600} pr={32}>{r.title}</Text>
+
+                      <Text size="sm" c="dimmed">
+                        Servings: {r.servings ?? "?"} · Prep: {r.prep_time ?? "?"} min
+                      </Text>
+
+                      <Text size="xs" c="dimmed">
+                        {r.description?.split("\n\n")[0] ?? ""}
+                      </Text>
+                    </Stack>
+
+                    <Popover
+                      opened={confirmDeleteId === r.id}
+                      onClose={() => setConfirmDeleteId(null)}
+                      position="bottom-end"
+                      withArrow
+                      shadow="md"
+                    >
+                      <Popover.Target>
+                        <ActionIcon
+                          variant="subtle"
+                          color="red"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setConfirmDeleteId(prev => prev === r.id ? null : r.id);
+                          }}
+                          style={{ position: "absolute", top: 8, right: 8 }}
+                        >
+                          <IconX size={16} />
+                        </ActionIcon>
+                      </Popover.Target>
+                      <Popover.Dropdown onClick={(e) => e.stopPropagation()}>
+                        <Stack gap="xs">
+                          <Text size="sm">Remove from favourites?</Text>
+                          <Group gap="xs" justify="flex-end">
+                            <Button
+                              size="xs"
+                              variant="default"
+                              onClick={() => setConfirmDeleteId(null)}
+                            >
+                              Cancel
+                            </Button>
+                            <Button
+                              size="xs"
+                              color="red"
+                              onClick={() => {
+                                setConfirmDeleteId(null);
+                                void handleDelete(r.id);
+                              }}
+                            >
+                              Remove
+                            </Button>
+                          </Group>
+                        </Stack>
+                      </Popover.Dropdown>
+                    </Popover>
+                  </Paper>
+                ))}
+              </SimpleGrid>
+            </div>
+
+            {/* RIGHT - DETAIL PANEL (ONLY FAVOURITES) */}
+            <div style={{ flex: 1 }}>
+              {selectedRecipe ? (
+                <Paper p="lg" radius="md" withBorder shadow="md">
+                  <Stack>
+
+                    <Button
+                      variant="subtle"
+                      size="xs"
+                      onClick={() => setSelectedRecipe(null)}
+                    >
+                      Close
+                    </Button>
+
+                    <Text fw={700} size="lg">
+                      {selectedRecipe.title}
+                    </Text>
+
+                    <Text size="sm" c="dimmed">
+                      Servings: {selectedRecipe.servings ?? "?"} · Prep: {selectedRecipe.prep_time ?? "?"} min
+                    </Text>
+
+                    <Text size="sm" style={{ whiteSpace: "pre-wrap" }}>
+                      {selectedRecipe.description}
+                    </Text>
+                  </Stack>
+                </Paper>
+              ) : (
+                <Text c="dimmed">Select a recipe to see details</Text>
+              )}
+            </div>
+
+          </div>
+        )}
+      </Container>
+    )
+  }
