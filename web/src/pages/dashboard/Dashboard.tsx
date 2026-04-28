@@ -1,7 +1,7 @@
 import './Dashboard.css';
-import React, { useState, useEffect} from 'react';
-import { ActionIcon, Alert, Badge, Button, Card, Checkbox, Container, Group, Loader, Modal, NumberInput, Paper, Select, SimpleGrid, Stack, Text, TextInput, Title } from '@mantine/core';
-import { IconLayoutGrid, IconReceiptEuro, IconPlus, IconShoppingCart, IconTrash, IconToolsKitchen2Off, IconChefHat, IconUsers, IconClock } from '@tabler/icons-react';
+import React, { useState, useEffect } from 'react';
+import { ActionIcon, Alert, Badge, Button, Card, Checkbox, Container, Group, Loader, Modal, NumberInput, Paper, Popover, Select, SimpleGrid, Stack, Text, TextInput, Title } from '@mantine/core';
+import { IconLayoutGrid, IconReceiptEuro, IconPlus, IconShoppingCart, IconTrash, IconToolsKitchen2Off, IconChefHat, IconUsers, IconClock, IconAlertCircle } from '@tabler/icons-react';
 import { AddToShoppingListModal } from "../../components/AddToShoppingListModal";
 import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../../supabase';
@@ -14,9 +14,11 @@ import { HouseholdBudgetSummary } from '../../components/budget_summary/Househol
 import type { User } from '@supabase/supabase-js';
 import { getHouseholds } from '../../api/household';
 import type { Household, ProductSizeUnit } from '../../api/schema';
-import {getExpirationDateBounds, getDaysUntilExpiry, formatExpiry} from "../../utils/date";
+import { getExpirationDateBounds, getDaysUntilExpiry, formatExpiry } from "../../utils/date";
 import { insertReceipt } from '../../api/receipt';
 import { insertProductWithSpecs } from '../../api/product';
+import { notifications } from "@mantine/notifications";
+
 
 // Types
 interface Product {
@@ -86,8 +88,9 @@ const dashboardNavCards: DashboardNavCards[] = [
 // Products in Danger Component
 const ProductsInDanger: React.FC<{
   products: Product[];
-  onDelete: (id: string) => Promise<void>; 
-  userId: string; }> = ({ products, onDelete, userId }) => {
+  onDelete: (id: string) => Promise<void>;
+  userId: string;
+}> = ({ products, onDelete, userId }) => {
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [showRecipeModal, setShowRecipeModal] = useState(false);
@@ -121,8 +124,8 @@ const ProductsInDanger: React.FC<{
   // Receives exactly the diets and intolerances the user left checked in the modal.
   const handleProceed = async (diets: string[], intolerances: string[]) => {
     if (!pendingSearch) return;
-    const result  = await searchRecipes(pendingSearch.ingredients, pendingSearch.householdId, diets, intolerances);
-    void navigate('/recipes', { state: { householdId: pendingSearch.householdId, ...result} });
+    const result = await searchRecipes(pendingSearch.ingredients, pendingSearch.householdId, diets, intolerances);
+    void navigate('/recipes', { state: { householdId: pendingSearch.householdId, ...result } });
   };
 
   if (!products.length) {
@@ -183,30 +186,48 @@ const ProductsInDanger: React.FC<{
                       Add to shopping list
                     </Button>
 
-                    {confirmDeleteId === product.id ? (
-                      <Group gap={6}>
-                        <Text size="xs" c="dimmed">Are you sure?</Text>
-                        <Button size="xs" variant="subtle" onClick={() => setConfirmDeleteId(null)}>
-                          Cancel
-                        </Button>
-                        <Button
-                          size="xs"
+                    <Popover
+                      opened={confirmDeleteId === product.id}
+                      onClose={() => setConfirmDeleteId(null)}
+                      position="bottom-end"
+                      withArrow
+                      shadow="md"
+                    >
+                      <Popover.Target>
+                        <ActionIcon
+                          variant="subtle"
                           color="red"
-                          onClick={() => { setConfirmDeleteId(null); void onDelete(product.id); }}
+                          aria-label={`Delete ${product.name}`}
+                          onClick={() => setConfirmDeleteId(prev => prev === product.id ? null : product.id)}
                         >
-                          Delete
-                        </Button>
-                      </Group>
-                    ) : (
-                      <ActionIcon
-                        variant="subtle"
-                        color="red"
-                        aria-label={`Delete ${product.name}`}
-                        onClick={() => setConfirmDeleteId(product.id)}
-                      >
-                        <IconTrash size={16} />
-                      </ActionIcon>
-                    )}
+                          <IconTrash size={16} />
+                        </ActionIcon>
+                      </Popover.Target>
+                      <Popover.Dropdown>
+                        <Stack gap="xs">
+                          <Text size="sm">Remove this product?</Text>
+                          <Group gap="xs" justify="flex-end">
+                            <Button
+                              size="xs"
+                              variant="default"
+                              onClick={() => setConfirmDeleteId(null)}
+                            >
+                              Cancel
+                            </Button>
+                            <Button
+                              size="xs"
+                              color="red"
+                              onClick={() => {
+                                setConfirmDeleteId(null);
+                                void onDelete(product.id);
+                              }}
+                            >
+                              Delete
+                            </Button>
+                          </Group>
+                        </Stack>
+                      </Popover.Dropdown>
+                    </Popover>
                   </Group>
                 </Stack>
               </Stack>
@@ -352,8 +373,8 @@ export default function Dashboard(props: DashboardProps) {
       setSelectedHouseholdId(locationState.householdId);
       setSelectedHouseholdName(
         locationState.householdName
-          ?? households.find((household) => household.id === locationState.householdId)?.house_name
-          ?? null
+        ?? households.find((household) => household.id === locationState.householdId)?.house_name
+        ?? null
       );
       return;
     }
@@ -380,8 +401,12 @@ export default function Dashboard(props: DashboardProps) {
       try {
         const { data } = await getHouseholds();
         setHouseholds(data ?? []);
-      } catch (error) {
-        console.log(error);
+      } catch (e) {
+        notifications.show({
+          color: "red",
+          title: "Could not load households",
+          message: e instanceof Error ? e.message : "Please try again.",
+        });
       }
     }
   }, []);
@@ -420,7 +445,7 @@ export default function Dashboard(props: DashboardProps) {
           name: p.name as string,
           expiryDate: specs?.expiration_date as string ?? null,
           quantity: (specs?.quantity as number || null) ?? 1,
-          householdName: (p.household as unknown as {house_name: string})?.house_name ?? 'Unknown',
+          householdName: (p.household as unknown as { house_name: string })?.house_name ?? 'Unknown',
           householdId: p.household_id as string,
         };
       });
@@ -484,9 +509,14 @@ export default function Dashboard(props: DashboardProps) {
         return;
       }
 
-    setNewName(''); setNewHouseholdId(''); setNewQuantity('1');
-    setNewSize(''); setNewUnit(''); setNewExpirationDate(''); setNewPrice('');
+      setNewName(''); setNewHouseholdId(''); setNewQuantity('1');
+      setNewSize(''); setNewUnit(''); setNewExpirationDate(''); setNewPrice('');
       setShowCreateModal(false);
+      notifications.show({
+        color: "green",
+        title: "Added",
+        message: `${newName.trim()} added to pantry.`,
+      });
 
       // refresh data
       await fetchProducts(selectedHouseholdId);
@@ -499,26 +529,53 @@ export default function Dashboard(props: DashboardProps) {
   };
 
   const handleDelete = async (productId: string) => {
+    const product = products.find(p => p.id === productId);
     const { error } = await supabase
       .from('product')
       .delete()
       .eq('id', productId);
-
     if (error) {
-      setError('Could not delete product: ' + error.message);
+      notifications.show({
+        color: "red",
+        title: "Could not delete product",
+        message: error.message,
+      });
       return;
     }
     setProducts(prev => prev.filter(p => p.id !== productId));
+    notifications.show({
+      color: "orange",
+      title: "Removed",
+      message: `${product?.name ?? "Product"} removed from pantry.`,
+    });
   };
 
   const [favouriteRecipes, setFavouriteRecipes] = useState<FavRecipe[]>([]);
 
   useEffect(() => {
-    void supabase
-      .from('recipe')
-      .select('id, title, description, servings, prep_time')
-      .order('created_at', { ascending: false })
-      .then(({ data }) => setFavouriteRecipes(data ?? []));
+    void (async () => {
+      try {
+        const { data, error } = await supabase
+          .from('recipe')
+          .select('id, title, description, servings, prep_time')
+          .order('created_at', { ascending: false });
+        if (error) {
+          notifications.show({
+            color: "red",
+            title: "Could not load favourite recipes",
+            message: error.message,
+          });
+          return;
+        }
+        setFavouriteRecipes(data ?? []);
+      } catch (e) {
+        notifications.show({
+          color: "red",
+          title: "Could not load favourite recipes",
+          message: e instanceof Error ? e.message : "Please try again.",
+        });
+      }
+    })();
   }, []);
 
   return (
@@ -539,7 +596,15 @@ export default function Dashboard(props: DashboardProps) {
         </Group>
 
         {error && (
-          <Alert color="red" withCloseButton onClose={() => setError(null)}>
+          <Alert
+            variant="light"
+            color="red"
+            radius="md"
+            icon={<IconAlertCircle size={18} />}
+            title="Couldn't load dashboard"
+            withCloseButton
+            onClose={() => setError(null)}
+          >
             {error}
           </Alert>
         )}
@@ -628,7 +693,15 @@ export default function Dashboard(props: DashboardProps) {
         centered radius="lg" title={<Title order={3}>Add Product</Title>}>
         <Stack gap="md">
           {modalError && (
-            <Alert color="red" withCloseButton onClose={() => setModalError(null)}>
+            <Alert
+              variant="light"
+              color="red"
+              radius="md"
+              icon={<IconAlertCircle size={18} />}
+              title="Couldn't add product"
+              withCloseButton
+              onClose={() => setModalError(null)}
+            >
               {modalError}
             </Alert>
           )}
