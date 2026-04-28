@@ -1,0 +1,144 @@
+.shopping-list-add-panel {
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  transform: translateY(-8px);
+  pointer-events: none;
+  transition:
+    max-height 220ms ease,
+    opacity 180ms ease,
+    transform 220ms ease;
+}
+
+.shopping-list-add-panel.is-open {
+  max-height: 280px;
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.shopping-list-table-panel {
+  overflow: hidden;
+}
+
+.shopping-list-table-scroll {
+  overflow-x: auto;
+}
+
+.shopping-list-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.shopping-list-table th,
+.shopping-list-table td {
+  padding: 16px 18px;
+  border: 1px solid var(--mantine-color-gray-3);
+  vertical-align: middle;
+}
+
+.shopping-list-table thead th {
+  background: var(--mantine-color-gray-0);
+  text-align: left;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--mantine-color-gray-7);
+}
+
+.shopping-list-table__checkbox-column {
+  width: 90px;
+  text-align: center;
+}
+
+.shopping-list-table__action-column {
+  width: 90px;
+  text-align: center;
+}
+
+.shopping-list-table__row {
+  transition:
+    background-color 180ms ease,
+    transform 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.shopping-list-table__row.is-purchased {
+  background: var(--mantine-color-green-0);
+}
+
+.shopping-list-table__row.is-highlighted {
+  background:
+    linear-gradient(
+      90deg,
+      rgba(64, 145, 108, 0.08) 0%,
+      rgba(64, 145, 108, 0.18) 100%
+    );
+}
+
+.shopping-list-table__row.is-first-purchased td {
+  border-top: 4px solid var(--mantine-color-green-5);
+}
+
+.shopping-list-checkbox-shell {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  border-radius: 6px;
+  background-color: transparent;
+  transition:
+    background-color 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms ease;
+}
+
+.shopping-list-checkbox-shell.is-purchased {
+  background-color: rgba(64, 145, 108, 0.12);
+}
+
+.shopping-list-checkbox-shell.is-highlighted {
+  transform: scale(1.08);
+  box-shadow: 0 0 0 6px rgba(64, 145, 108, 0.12);
+}
+
+.shopping-list-checkbox-input {
+  cursor: pointer;
+  transition:
+    transform 180ms ease,
+    background-color 180ms ease,
+    border-color 180ms ease;
+  border-width: 2px;
+  border-radius: 6px;
+  border-color: var(--mantine-color-gray-5);
+  background-color: white;
+}
+
+.shopping-list-checkbox-shell.is-purchased .shopping-list-checkbox-input {
+  border-width: 1px;
+  border-color: var(--mantine-color-green-6);
+  background-color: var(--mantine-color-green-6);
+}
+
+.shopping-list-checkbox-shell.is-highlighted .shopping-list-checkbox-input {
+  transform: scale(1.05);
+}
+
+.shopping-list-checkbox-icon {
+  transition:
+    transform 180ms ease,
+    opacity 180ms ease;
+  transform: scale(0.72);
+  opacity: 0;
+}
+
+.shopping-list-checkbox-shell.is-purchased .shopping-list-checkbox-icon {
+  transform: scale(1.02);
+  opacity: 1;
+}
+
+.shopping-list-table-empty {
+  padding: 28px 24px;
+}
