@@ -9,8 +9,7 @@ import { searchRecipes } from "../../api/recipe";
 import { supabase } from "../../supabase";
 import { RecipeSearchModal } from "../../components/RecipeSearchModal";
 import type { User } from "@supabase/supabase-js";
-import { getExpirationDateBounds, getDaysUntilExpiry, formatOptionalDate, formatExpiry,
-  getExpiryLabel} from "../../utils/date";
+import { getExpirationDateBounds, getDaysUntilExpiry, formatOptionalDate, formatExpiry,getExpiryLabel} from "../../utils/date";
 import { insertReceipt } from "../../api/receipt";
 import { insertProductWithSpecs } from "../../api/product";
 import type { ProductSizeUnit } from "../../api/schema";
