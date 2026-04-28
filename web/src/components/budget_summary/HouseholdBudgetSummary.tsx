@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Paper, Title, Text, Stack, Group, Progress, Table, Badge, SimpleGrid, Box, Tooltip } from '@mantine/core';
+import { Paper, Title, Text, Stack, Group, Progress, Table, Badge, SimpleGrid, Box, Tooltip, Alert } from '@mantine/core';
+import { IconAlertTriangle } from '@tabler/icons-react';
+import { notifications } from '@mantine/notifications';
 import { supabase } from '../../supabase';
 import type { PostgrestSingleResponse } from '@supabase/supabase-js';
 
@@ -58,8 +60,12 @@ export function HouseholdBudgetSummary({ householdId, userId }: HouseholdBudgetS
         fetchHouseholdInfo(),
         fetchMemberSpending(),
       ]);
-    } catch (error) {
-      console.error('Error fetching data:', error);
+    } catch (e) {
+      notifications.show({
+        color: 'red',
+        title: 'Could not load budget summary',
+        message: e instanceof Error ? e.message : 'Please try again.',
+      });
     } finally {
       setLoading(false);
     }
@@ -71,40 +77,38 @@ export function HouseholdBudgetSummary({ householdId, userId }: HouseholdBudgetS
       .select('house_name, monthly_budget')
       .eq('id', householdId)
       .single();
-    
+
     if (error) {
-      console.error('Error fetching household info:', error);
+      notifications.show({
+        color: 'red',
+        title: 'Could not load household info',
+        message: error.message,
+      });
       return;
     }
-    
+
     if (data) {
       setHouseholdBudget(data.monthly_budget as number | null);
     }
   };
 
   const fetchMemberSpending = async () => {
-    console.log('Fetching member spending for household:', householdId);
-    
     const { data, error } = await supabase
       .rpc('get_household_member_spending', {
         p_household_id: householdId
         // Don't pass p_month - let it default to current month
       }) as PostgrestSingleResponse<MemberSpending[]>;
 
-    console.log('Member spending response:', { data, error });
-
     if (error) {
-      console.error('Error fetching member spending:', error);
+      notifications.show({
+        color: 'red',
+        title: 'Could not load member spending',
+        message: error.message,
+      });
       return;
     }
-    
-    if (data && data.length > 0) {
-      console.log('Setting member spending:', data);
-      setMemberSpending(data);
-    } else {
-      console.log('No member spending data received');
-      setMemberSpending([]);
-    }
+
+    setMemberSpending(data ?? []);
   };
 
   const formatCurrency = (amount: number) => {
@@ -306,9 +310,16 @@ export function HouseholdBudgetSummary({ householdId, userId }: HouseholdBudgetS
           </Box>
 
           {householdBudget && budgetUsed > 100 && (
-            <Text c="red" size="sm" mt="md">
-              Warning: You have exceeded your monthly budget by {formatCurrency(totalSpent - householdBudget)}!
-            </Text>
+            <Alert
+              variant="light"
+              color="red"
+              radius="md"
+              mt="md"
+              icon={<IconAlertTriangle size={18} />}
+              title="Monthly budget exceeded"
+            >
+              You have exceeded your monthly budget by {formatCurrency(totalSpent - householdBudget)}.
+            </Alert>
           )}
         </Paper>
       </Stack>
