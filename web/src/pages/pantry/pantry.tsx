@@ -1,5 +1,6 @@
 import { ActionIcon, Badge, Button, Card, Checkbox, Group, Menu, Modal, NumberInput, Paper, SegmentedControl,
-  Select, SimpleGrid, Stack, Table, Text, TextInput, Title } from "@mantine/core";
+  Select, SimpleGrid, Stack, Table, Text, TextInput, Title, 
+  useMantineTheme} from "@mantine/core";
 import { IconArrowLeft, IconGridDots, IconList, IconPlus, IconSearch, IconShoppingCart, IconTrash } from "@tabler/icons-react";
 import { AddToShoppingListModal } from "../../components/AddToShoppingListModal";
 import { Link, useLocation, useNavigate } from "react-router-dom";
@@ -13,6 +14,7 @@ import { getExpirationDateBounds, getDaysUntilExpiry, formatOptionalDate, format
 import { insertReceipt } from "../../api/receipt";
 import { insertProductWithSpecs } from "../../api/product";
 import type { ProductSizeUnit } from "../../api/schema";
+import { useMediaQuery } from "@mantine/hooks";
 
 type PantryViewMode = "grid" | "list";
 type ExpiryStatusFilter = "all" | "expired" | "critical" | "warning" | "fresh" | "no-date";
@@ -286,7 +288,7 @@ function PantryAllProductsList({
   });
 
   return (
-    <Paper withBorder radius="md" p="md">
+    <Paper withBorder radius="md" p="md" style={{overflow: "auto"}}>
       <Table highlightOnHover stickyHeader>
         <Table.Thead>
           <Table.Tr>
@@ -313,6 +315,9 @@ function PantryAllProductsList({
 
 /* Main pantry page component. */
 export function Pantry({ user }: PantryProps) {
+  const theme = useMantineTheme();
+  const isMobile = useMediaQuery(`(max-width: ${theme.breakpoints.sm})`);
+
   const expirationDateBounds = getExpirationDateBounds();
   const location = useLocation();
   const navigate = useNavigate();
@@ -322,7 +327,8 @@ export function Pantry({ user }: PantryProps) {
   const [products, setProducts] = useState<PantryProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<PantryViewMode>("list");
+  const [_viewMode, setViewMode] = useState<PantryViewMode>("list");
+  const viewMode: PantryViewMode = isMobile ? "grid" : _viewMode;
   const [statusFilter, setStatusFilter] = useState<ExpiryStatusFilter>("all");
   const [searchValue, setSearchValue] = useState("");
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
@@ -606,8 +612,7 @@ export function Pantry({ user }: PantryProps) {
         </Paper>
       )}
 
-      <Group justify="space-between" align="center" wrap="nowrap">
-        <div style={{ flex: 1 }} />
+      <Group justify="flex-end" align="center" wrap="nowrap">
         <TextInput
           value={searchValue}
           onChange={(event) => setSearchValue(event.currentTarget.value)}
@@ -643,35 +648,38 @@ export function Pantry({ user }: PantryProps) {
           style={{ flex: "0 1 420px" }}
         />
         <Button
+          flex="0 0 auto"
           disabled={selectedProducts.length === 0}
           onClick={() => handleFindRecipes()}
         >
           Find recipes
         </Button>
-        <SegmentedControl
-          value={viewMode}
-          onChange={(value) => setViewMode(value as PantryViewMode)}
-          data={[
-            {
-              label: (
-                <Group gap={6} wrap="nowrap">
-                  <IconGridDots size={14} />
-                  <span>Grid</span>
-                </Group>
-              ),
-              value: "grid",
-            },
-            {
-              label: (
-                <Group gap={6} wrap="nowrap">
-                  <IconList size={14} />
-                  <span>List</span>
-                </Group>
-              ),
-              value: "list",
-            },
-          ]}
-        />
+        { !isMobile &&
+          <SegmentedControl
+            value={viewMode}
+            onChange={(value) => setViewMode(value as PantryViewMode)}
+            data={[
+              {
+                label: (
+                  <Group gap={6} wrap="nowrap">
+                    <IconGridDots size={14} />
+                    <span>Grid</span>
+                  </Group>
+                ),
+                value: "grid",
+              },
+              {
+                label: (
+                  <Group gap={6} wrap="nowrap">
+                    <IconList size={14} />
+                    <span>List</span>
+                  </Group>
+                ),
+                value: "list",
+              },
+            ]}
+          />
+        }
       </Group>
 
       <Paper withBorder radius="md" p="lg">
