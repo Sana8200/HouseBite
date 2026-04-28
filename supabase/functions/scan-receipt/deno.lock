@@ -8,8 +8,10 @@
     "npm:@supabase/postgrest-js@2.104.0": "2.104.0",
     "npm:@supabase/realtime-js@2.104.0": "2.104.0",
     "npm:@supabase/storage-js@2.104.0": "2.104.0",
-    "npm:openai@^4.52.5": "4.104.0",
-    "npm:openai@^6.34.0": "6.34.0"
+    "npm:openai@^4.52.5": "4.104.0_zod@4.3.6",
+    "npm:openai@^6.34.0": "6.34.0_zod@4.3.6",
+    "npm:postgres@^3.4.9": "3.4.9",
+    "npm:zod@^4.3.6": "4.3.6"
   },
   "jsr": {
     "@supabase/functions-js@0.0.0-jsr-test.1": {
@@ -243,7 +245,7 @@
         "whatwg-url"
       ]
     },
-    "openai@4.104.0": {
+    "openai@4.104.0_zod@4.3.6": {
       "integrity": "sha512-p99EFNsA/yX6UhVO93f5kJsDRLAg+CTA2RBqdHK4RtK8u5IJw32Hyb2dTGKbnnFmnuoBv5r7Z2CURI9sGZpSuA==",
       "dependencies": [
         "@types/node",
@@ -252,13 +254,26 @@
         "agentkeepalive",
         "form-data-encoder",
         "formdata-node",
-        "node-fetch"
+        "node-fetch",
+        "zod"
+      ],
+      "optionalPeers": [
+        "zod"
       ],
       "bin": true
     },
-    "openai@6.34.0": {
+    "openai@6.34.0_zod@4.3.6": {
       "integrity": "sha512-yEr2jdGf4tVFYG6ohmr3pF6VJuveP0EA/sS8TBx+4Eq5NT10alu5zg2dmxMXMgqpihRDQlFGpRt2XwsGj+Fyxw==",
+      "dependencies": [
+        "zod"
+      ],
+      "optionalPeers": [
+        "zod"
+      ],
       "bin": true
+    },
+    "postgres@3.4.9": {
+      "integrity": "sha512-GD3qdB0x1z9xgFI6cdRD6xu2Sp2WCOEoe3mtnyB5Ee0XrrL5Pe+e4CCnJrRMnL1zYtRDZmQQVbvOttLnKDLnaw=="
     },
     "tr46@0.0.3": {
       "integrity": "sha512-N3WMsuqV66lT30CrXNbEjx4GEwlow3v6rr4mCcv6prnfwhS01rkgyFdjPNBYd9br7LpXV1+Emh01fHnq2Gdgrw=="
@@ -284,6 +299,9 @@
     },
     "ws@8.20.0": {
       "integrity": "sha512-sAt8BhgNbzCtgGbt2OxmpuryO63ZoDk/sqaB/znQm94T4fCEsy/yV+7CdC1kJhOU9lboAEU7R3kquuycDoibVA=="
+    },
+    "zod@4.3.6": {
+      "integrity": "sha512-rftlrkhHZOcjDwkGlnUtZZkvaPHCsDATp4pGpuOOMDaTdDDXF91wuVDJoWoPsKX/3YPQ5fHuF3STjcYyKr+Qhg=="
     }
   },
   "workspace": {
@@ -291,6 +309,7 @@
       "jsr:@supabase/functions-js@2",
       "jsr:@supabase/supabase-js@2",
       "npm:openai@^6.34.0",
+      "npm:postgres@^3.4.9",
       "npm:zod@^4.3.6"
     ]
   }

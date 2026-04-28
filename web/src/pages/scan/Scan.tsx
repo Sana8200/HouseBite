@@ -216,7 +216,9 @@ function ScanProcessing(props: ScanProcessingProps) {
 
                 if (cancel) return;
 
-                if (result.error) {
+                if (result.response?.status == 429) {
+                    setState({state: "error", error: new Error("Please try again later")});
+                } else if (result.error) {
                     setState({state: "error", error: result.error as Error});
                 } else {
                     const data: EditReceiptData = {
