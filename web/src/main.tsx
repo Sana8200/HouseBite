@@ -45,7 +45,7 @@ const theme = createTheme({
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <MantineProvider theme={theme}>
-      <Notifications position='top-right' />   {/* We can change the position of notifications*/}
+      <Notifications position='top-right' />  
         <App />
     </MantineProvider>
   </StrictMode>,
