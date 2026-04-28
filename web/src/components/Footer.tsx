@@ -1,13 +1,23 @@
-import { Box, Divider, Flex, Text } from "@mantine/core";
+import { Box, Group, Text } from "@mantine/core";
+import "./Footer.css";
 
 export function Footer() {
     return (
-        <Box mt="xl">
-            <Divider/>
-            <Flex p="xl" justify="center" wrap="wrap" gap="xl">
-                <Text c="dimmed">© HouseBite, KTH II1305 Riebnes</Text>
-                <Text c="gray.7" component="a" href="https://arpega75.github.io/houseBite/" target="_blank">About</Text>
-            </Flex>
+        <Box component="footer" className="footer">
+            <Group justify="space-between" align="center" wrap="wrap" gap="md">
+                <Text className="footer-text">
+                    © 2026 HouseBite · KTH II1305 Riebnes
+                </Text>
+
+                <a
+                    className="footer-link"
+                    href="https://arpega75.github.io/houseBite/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                >
+                    About
+                </a>
+            </Group>
         </Box>
     );
 }

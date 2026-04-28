@@ -63,13 +63,15 @@ export function App() {
   return (
     <BrowserRouter>
       <Header user={user}/>
-      <Routes>
-        <Route index element={<Landing user={user} />} />
+      <main className="app-content">
+        <Routes>
+          <Route index element={<Landing user={user} />} />
 
-        {routes}
+          {routes}
 
-        <Route path="*" element={<Navigate to="/" />} />
-      </Routes>
+          <Route path="*" element={<Navigate to="/" />} />
+        </Routes>
+      </main>
       <Footer/>
     </BrowserRouter>
   )
