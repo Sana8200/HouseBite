@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, type Dispatch, type SetStateAction, useCal
 import "./Scan.css";
 import { Alert, Box, Button, Card, Center, Checkbox, Container, Flex, Grid, Loader, NumberInput, Paper, Select, Stack, Text, TextInput, Title } from "@mantine/core";
 import { Dropzone, IMAGE_MIME_TYPE, type FileWithPath } from "@mantine/dropzone";
-import { IconReceipt } from "@tabler/icons-react";
+import { IconReceipt, IconAlertCircle } from "@tabler/icons-react";
 import { scanReceipt, type ReceiptData, type ReceiptItemData } from "../../api/scan";
 import { getHouseholds } from "../../api/household";
 import { insertProductWithSpecs } from "../../api/product.ts";
@@ -10,7 +10,7 @@ import { insertReceipt } from "../../api/receipt.ts";
 import type { Household, InsertProduct, InsertProductSpecs, InsertReceipt, ProductSizeUnit } from "../../api/schema.ts";
 import type { User } from "@supabase/supabase-js";
 import { useNavigate } from "react-router";
-//import { notifications } from "@mantine/notifications";
+import { notifications } from "@mantine/notifications";
 
 const IMG_SIZE = 2000;
 
@@ -54,7 +54,7 @@ export interface ScanProps {
 export function Scan(props: ScanProps) {
     const { user } = props;
 
-    const [state, setState] = useState<ScanState>({state: "ready"});
+    const [state, setState] = useState<ScanState>({ state: "ready" });
 
     const [households, setHouseholds] = useState<Household[]>([]);
 
@@ -63,7 +63,7 @@ export function Scan(props: ScanProps) {
         async function load() {
             const result = await getHouseholds();
             if (result.error) {
-                setState({state: "error", error: result.error});
+                setState({ state: "error", error: result.error });
             } else {
                 setHouseholds(result.data);
             }
@@ -73,10 +73,10 @@ export function Scan(props: ScanProps) {
     return (
         <Container size="md" p="md">
             <Paper shadow="md" p="md">
-                {state.state == "ready"      && <ScanReady      state={state} setState={setState} />}
+                {state.state == "ready" && <ScanReady state={state} setState={setState} />}
                 {state.state == "processing" && <ScanProcessing state={state} setState={setState} />}
-                {state.state == "finished"   && <ScanFinished   state={state} setState={setState} households={households} user={user} />}
-                {state.state == "error"      && <ScanError      state={state} setState={setState} />}
+                {state.state == "finished" && <ScanFinished state={state} setState={setState} households={households} user={user} />}
+                {state.state == "error" && <ScanError state={state} setState={setState} />}
             </Paper>
         </Container>
     );
@@ -87,8 +87,16 @@ interface ScanReadyProps {
     setState: Dispatch<SetStateAction<ScanState>>;
 }
 
+function friendlyScanError(err: Error): string {
+    const msg = err.message ?? "";
+    if (msg.toLowerCase().includes("network") || msg.toLowerCase().includes("fetch")) {
+        return "Couldn't reach the server. Check your connection.";
+    }
+    return msg || "Something went wrong while reading the receipt.";
+}
+
 function ScanReady(props: ScanReadyProps) {
-    const {setState} = props;
+    const { setState } = props;
 
     const [camera, setCamera] = useState(false);
 
@@ -99,7 +107,7 @@ function ScanReady(props: ScanReadyProps) {
         let cancel = false;
         let mediaStream: MediaStream | null = null;
 
-        void(load());
+        void (load());
 
         async function load() {
             try {
@@ -140,19 +148,19 @@ function ScanReady(props: ScanReadyProps) {
         context.drawImage(videoOutput, 0, 0, canvas.width, canvas.height);
 
         canvas.toBlob(file => {
-            if (file) setState({state: "processing", bitmap: window.createImageBitmap(file)});
+            if (file) setState({ state: "processing", bitmap: window.createImageBitmap(file) });
         });
     };
 
     const onDrop = (files: FileWithPath[]) => {
         const file = files[0];
         if (!file) return;
-        setState({state: "processing", bitmap: window.createImageBitmap(file)});
+        setState({ state: "processing", bitmap: window.createImageBitmap(file) });
     };
 
     return (
         <>
-            <Center pos="relative" style={camera ? {} : {display: "none"}}>
+            <Center pos="relative" style={camera ? {} : { display: "none" }}>
                 <video className="scan-video" ref={videoOutputRef}>Video stream not available.</video>
                 <Button pos="absolute" bottom={20} size="lg" onClick={takePhoto}>Scan</Button>
             </Center>
@@ -169,7 +177,7 @@ function ScanReady(props: ScanReadyProps) {
                 mt="md">
 
                 <Stack align="center" p="md">
-                    <IconReceipt size={54}/>
+                    <IconReceipt size={54} />
                     <Text>Drag and drop a receipt image, or click to select</Text>
                 </Stack>
 
@@ -184,7 +192,7 @@ interface ScanProcessingProps {
 }
 
 function ScanProcessing(props: ScanProcessingProps) {
-    const {state, setState} = props;
+    const { state, setState } = props;
 
     useEffect(() => {
         let cancel = false;
@@ -196,7 +204,7 @@ function ScanProcessing(props: ScanProcessingProps) {
                 const bitmap = await state.bitmap;
 
                 if (cancel) return;
-                
+
                 const canvas = document.createElement("canvas");
                 const aspectRatio = bitmap.width / bitmap.height;
 
@@ -217,9 +225,9 @@ function ScanProcessing(props: ScanProcessingProps) {
                 if (cancel) return;
 
                 if (result.response?.status == 429) {
-                    setState({state: "error", error: new Error("Please try again later")});
+                    setState({ state: "error", error: new Error("Please try again later") });
                 } else if (result.error) {
-                    setState({state: "error", error: result.error as Error});
+                    setState({ state: "error", error: result.error as Error });
                 } else {
                     const data: EditReceiptData = {
                         ...result.data!,
@@ -242,10 +250,10 @@ function ScanProcessing(props: ScanProcessingProps) {
                         })
                     };
 
-                    setState({state: "finished", image, data});
+                    setState({ state: "finished", image, data });
                 }
             } catch (error) {
-                setState({state: "error", error: error as Error});
+                setState({ state: "error", error: error as Error });
             }
         }
 
@@ -257,7 +265,7 @@ function ScanProcessing(props: ScanProcessingProps) {
     return (
         <>
             <Stack align="center">
-                <Loader size="lg" mt="md"/>
+                <Loader size="lg" mt="md" />
                 <Text mt="md">Reading your receipt...</Text>
             </Stack>
         </>
@@ -272,7 +280,7 @@ interface ScanFinishedProps {
 }
 
 function ScanFinished(props: ScanFinishedProps) {
-    const {state, setState, households, user} = props;
+    const { state, setState, households, user } = props;
 
     const navigate = useNavigate();
 
@@ -395,6 +403,12 @@ function ScanFinished(props: ScanFinishedProps) {
                 if (result.error) throw result.error;
             }));
 
+            const savedCount = items.length;
+            notifications.show({
+                color: "green",
+                title: "Receipt saved",
+                message: `Added ${savedCount} product${savedCount === 1 ? "" : "s"} to your pantry.`,
+            });
             void navigate("/pantry", {
                 state: {
                     householdId: selectedHousehold,
@@ -402,8 +416,11 @@ function ScanFinished(props: ScanFinishedProps) {
                 }
             });
         } catch (error) {
-            console.error("Scan handleSave failed", error)
-            setState({state: "error", error: error as Error});
+            notifications.show({
+                color: "red",
+                title: "Could not save receipt",
+                message: friendlyScanError(error as Error)
+            });
         } finally {
             setSaving(false);
         }
@@ -414,22 +431,22 @@ function ScanFinished(props: ScanFinishedProps) {
     return (
         <>
             <Center>
-                <Button size="lg" onClick={() => setState({state: "ready"})}>New scan</Button>
+                <Button size="lg" onClick={() => setState({ state: "ready" })}>New scan</Button>
             </Center>
 
             <Grid mt="md">
-                <Grid.Col span={{base: 12, md: 5}}>
+                <Grid.Col span={{ base: 12, md: 5 }}>
                     <Title order={4}>1. Your Receipt</Title>
                     <Box component="img" src={state.image} alt="Receipt" bdrs="md" mt="md" pos="sticky" top={20} />
                 </Grid.Col>
 
-                <Grid.Col span={{base: 12, md: 7}}>
+                <Grid.Col span={{ base: 12, md: 7 }}>
                     <Title order={4}>2. Identified products</Title>
                     <Text c="dimmed">Pre filled expiration dates are estimates.</Text>
 
                     <Stack gap="sm" mt="md">
                         {state.data.items.map(p => (
-                            <ProductCard key={p.key} item={p} setItem={setItem}/>
+                            <ProductCard key={p.key} item={p} setItem={setItem} />
                         ))}
 
                         <Center>
@@ -437,7 +454,7 @@ function ScanFinished(props: ScanFinishedProps) {
                                 Add missing product
                             </Button>
                         </Center>
-                        
+
                         <Title order={4}>3. Save receipt and selected products</Title>
 
                         <Card shadow="none" withBorder>
@@ -449,13 +466,13 @@ function ScanFinished(props: ScanFinishedProps) {
                                 value={selectedHousehold}
                                 onChange={setSelectedHousehold}
                                 mt="xs"
-                                />
+                            />
 
                             <TextInput label="Store name"
                                 value={state.data.storeName ?? ""}
                                 onChange={e => setStoreName(e.target.value)}
                                 mt="xs"
-                                />
+                            />
 
                             <Flex gap="sm" mt="xs">
                                 <TextInput
@@ -464,7 +481,7 @@ function ScanFinished(props: ScanFinishedProps) {
                                     value={state.data.purchaseDate ?? ""}
                                     onChange={(e) => setPurchaseDate(e.target.value || null)}
                                     flex={1}
-                                    />
+                                />
 
                                 <NumberInput label="Total price"
                                     value={state.data.totalPrice ?? ""}
@@ -472,9 +489,9 @@ function ScanFinished(props: ScanFinishedProps) {
                                     decimalScale={2}
                                     fixedDecimalScale
                                     flex={1}
-                                    />
+                                />
                             </Flex>
-                            
+
                             <Flex justify="end" mt="md">
                                 <Button disabled={disabled} loading={saving} onClick={() => void handleSave()}>Save</Button>
                             </Flex>
@@ -494,16 +511,20 @@ interface ScanErrorProps {
 function ScanError(props: ScanErrorProps) {
     const {state, setState} = props;
     return (
-        <>
-            <Alert variant="light" color="red" mt="md">
-                <Center>
-                    {state.error.message}
-                </Center>
+        <Stack gap="md" mt="md">
+            <Alert
+                variant="light"
+                color="red"
+                radius="md"
+                icon={<IconAlertCircle size={18} />}
+                title="Couldn't read your receipt"
+            >
+                {friendlyScanError(state.error)}
             </Alert>
             <Center>
-                <Button size="lg" onClick={() => setState({state: "ready"})}>Retry</Button>
+                <Button size="lg" onClick={() => setState({state: "ready"})}>Try again</Button>
             </Center>
-        </>
+        </Stack>
     );
 }
 
@@ -513,39 +534,39 @@ interface ProductCardProps {
 }
 
 function ProductCard(props: ProductCardProps) {
-    const { item, setItem } = props;   
-    
+    const { item, setItem } = props;
+
     return (
         <Card shadow="none" withBorder pos="relative">
 
             <TextInput label="Name"
                 required
                 value={item.name ?? ""}
-                onChange={e => setItem({...item, name: e.target.value})}
-                />
+                onChange={e => setItem({ ...item, name: e.target.value })}
+            />
 
             <Checkbox
                 checked={item.enabled && !!item.name}
                 disabled={!item.name}
-                onChange={e => setItem({...item, enabled: e.target.checked})}
+                onChange={e => setItem({ ...item, enabled: e.target.checked })}
                 pos="absolute" right={8} top={8} size="md"
-                />
-            
+            />
+
             <Flex gap="sm" mt="xs">
                 <NumberInput label="Quantity"
                     value={item.quantity ?? ""}
-                    onChange={val => setItem({...item, quantity: typeof val == "number" ? val : null})}
+                    onChange={val => setItem({ ...item, quantity: typeof val == "number" ? val : null })}
                     allowDecimal={false}
                     flex={1}
-                    />
+                />
 
                 <NumberInput label="Size"
                     value={item.weight ?? ""}
-                    onChange={val => setItem({...item, weight: typeof val == "number" ? val : null})}
+                    onChange={val => setItem({ ...item, weight: typeof val == "number" ? val : null })}
                     decimalScale={2}
                     fixedDecimalScale
                     flex={1}
-                    />
+                />
 
                 <Select
                     label="Unit"
@@ -553,9 +574,9 @@ function ProductCard(props: ProductCardProps) {
                     clearable
                     data={["gr", "ml", "kg", "L"]}
                     value={item.unit}
-                    onChange={val => setItem({...item, unit: val})}
+                    onChange={val => setItem({ ...item, unit: val })}
                     flex={1}
-                    />
+                />
             </Flex>
 
             <Flex gap="sm" mt="xs">
@@ -563,17 +584,17 @@ function ProductCard(props: ProductCardProps) {
                     label="Expiration date"
                     type="date"
                     value={item.expirationDate || ""}
-                    onChange={(e) => setItem({...item, expirationDate: e.target.value})}
+                    onChange={(e) => setItem({ ...item, expirationDate: e.target.value })}
                     flex={3}
-                    />
-                
+                />
+
                 <NumberInput label="Price"
                     value={item.totalPrice ?? ""}
-                    onChange={val => setItem({...item, totalPrice: typeof val == "number" ? val : null})}
+                    onChange={val => setItem({ ...item, totalPrice: typeof val == "number" ? val : null })}
                     decimalScale={2}
                     fixedDecimalScale
                     flex={2}
-                    />
+                />
             </Flex>
         </Card>
     );

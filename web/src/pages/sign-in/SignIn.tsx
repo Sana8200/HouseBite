@@ -1,4 +1,5 @@
 import "./SignIn.css";
+import { IconAlertCircle } from "@tabler/icons-react";
 import { useRef, useState } from "react";
 import { Alert, Button, Center, Container, Paper, PasswordInput, Stack, Text, TextInput } from "@mantine/core";
 import { signIn, signUp, turnstileSiteKey } from "../../api/auth";
@@ -11,10 +12,17 @@ export interface SignInProps {
     defaultTab?: AuthTab;
 }
 
+function AuthError(err: Error): string {
+  const msg = err.message ?? "";
+  if (msg.includes("User already registered")) return "An account with this email already exists. Try signing in instead.";
+  if (msg.includes("Invalid login credentials")) return "Wrong email or password.";
+  if (msg.toLowerCase().includes("email")) return msg; // email format errors etc — keep raw
+  if (msg.toLowerCase().includes("network") || msg.toLowerCase().includes("fetch")) return "Couldn't reach the server. Check your connection.";
+  return msg || "Something went wrong. Please try again.";
+}
+
 export function SignIn(props: SignInProps) {
-    const {
-        defaultTab = "signIn"
-    } = props;
+    const { defaultTab = "signIn"} = props;
     const [activeTab, setActiveTab] = useState<AuthTab>(defaultTab);
 
     const [error, setError] = useState<Error | null>(null);
@@ -47,9 +55,14 @@ export function SignIn(props: SignInProps) {
                 await signIn(email, password, captchaToken);
             } else {
                 await signUp(email, password, displayName, captchaToken);
+                notifications.show({
+                  color:"green",
+                  title:"Account created",
+                  message: `Welcome, ${displayName}! You're now signed in.`,
+                });
             }
-        } catch (error) {
-            setError(error as Error);
+        } catch (e) {
+            setError(new Error(AuthError(e as Error)));
             resetCaptcha();
         } finally {
             setLoading(false);
@@ -82,13 +95,19 @@ export function SignIn(props: SignInProps) {
                 <div className="auth-content">
                     <form className="auth-form" onSubmit={e => void(onSubmit(e))}>
                         <Stack gap="md">
-                            { error &&
-                                <Alert variant="light" color="red">
-                                        <Center>
-                                                <Text>{error.message}</Text>
-                                        </Center>
+                            {error && (
+                                <Alert
+                                    variant="light"
+                                    color="red"
+                                    radius="md"
+                                    icon={<IconAlertCircle size={18} />}
+                                    title={activeTab === "signIn" ? "Couldn't sign in" : "Couldn't create account"}
+                                    withCloseButton
+                                    onClose={() => setError(null)}
+                                >
+                                    {error.message}
                                 </Alert>
-                            }
+                            )}
 
                             { activeTab == "signUp" &&
                                 <TextInput
