@@ -1,8 +1,8 @@
 import "./SignIn.css";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Alert, Button, Center, Container, Paper, PasswordInput, Stack, Text, TextInput } from "@mantine/core";
 import { signIn, signUp, turnstileSiteKey } from "../../api/auth";
-import { Turnstile } from "@marsidev/react-turnstile";
+import { Turnstile, type TurnstileInstance } from "@marsidev/react-turnstile";
 import { notifications } from "@mantine/notifications";
 
 export type AuthTab = "signIn" | "signUp";
@@ -25,8 +25,14 @@ export function SignIn(props: SignInProps) {
     const [displayName, setDisplayName] = useState("");
 
     const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+    const turnstileRef = useRef<TurnstileInstance>(null);
 
-    const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    const resetCaptcha = () => {
+        setCaptchaToken(null);
+        turnstileRef.current?.reset();
+    }
+
+    const onSubmit = async (e: React.SubmitEvent) => {
         e.preventDefault();
         setLoading(true);
         setError(null);
@@ -44,6 +50,7 @@ export function SignIn(props: SignInProps) {
             }
         } catch (error) {
             setError(error as Error);
+            resetCaptcha();
         } finally {
             setLoading(false);
         }
@@ -107,7 +114,7 @@ export function SignIn(props: SignInProps) {
                                 onChange={(e) => setPassword(e.target.value)}
                             />
 
-                            <Turnstile siteKey={turnstileSiteKey} onSuccess={setCaptchaToken} />
+                            <Turnstile ref={turnstileRef} siteKey={turnstileSiteKey} onSuccess={setCaptchaToken} />
 
                             <Button type="submit" variant="primary" disabled={disabled} loading={loading}>
                                 {activeTab == "signIn" ? "Sign in" : "Sign up" }
