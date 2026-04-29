@@ -149,6 +149,10 @@ export function Account(props: AccountProps) {
             setNameError("Username cannot be empty")
             return
         }
+        if (trimmed.length > 25) {
+            setNameError("Username must be 25 characters or fewer")
+            return
+        }
         setSavingName(true)
         setNameError(null)
         try {
@@ -182,6 +186,10 @@ export function Account(props: AccountProps) {
     const handleSavePassword = async () => {
         if (newPassword.length < 6) {
             setPasswordError("Password must be at least 6 characters")
+            return
+        }
+        if (newPassword.length > 50) {
+            setPasswordError("Password must be 50 characters or fewer")
             return
         }
         if (newPassword !== confirmPassword) {
@@ -278,7 +286,7 @@ export function Account(props: AccountProps) {
                                     {nameError}
                                 </Alert>
                             )}
-                            
+
                             <Stack gap="xs" mt="md">
                                 <Flex>
                                     <Text c="dimmed">Username</Text>
@@ -302,6 +310,8 @@ export function Account(props: AccountProps) {
                                             disabled={savingName}
                                             loading={savingName}
                                             autoFocus
+                                            maxLength={25}
+                                            error={nameError}
                                             rightSectionPointerEvents="auto"
                                             rightSection={
                                                 <>
@@ -430,7 +440,8 @@ export function Account(props: AccountProps) {
                     value={newPassword}
                     onChange={e => setNewPassword(e.target.value)}
                     disabled={savingPassword}
-                    mt="sm" />
+                    maxLength={50}
+                    mt="sm"/>
 
                 <TextInput
                     label="Confirm password"
@@ -438,7 +449,8 @@ export function Account(props: AccountProps) {
                     value={confirmPassword}
                     onChange={e => setConfirmPassword(e.target.value)}
                     disabled={savingPassword}
-                    mt="sm" />
+                    maxLength={50}
+                    mt="sm"/>
 
                 <Flex justify="end" gap="md" mt="sm">
                     <Button

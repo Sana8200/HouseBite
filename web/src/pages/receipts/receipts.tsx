@@ -12,7 +12,7 @@ import { formatCurrency, formatDate } from "../../utils/date";
 type ReceiptItem = {
   id: string;
   name: string;
-  quantity: number;
+  bought_quantity: number;
   price: string;
 };
 
@@ -126,7 +126,7 @@ export function Receipts() {
       items: r.products.map(p => ({
         id: p.id,
         name: p.name,
-        quantity: p.quantity,
+        bought_quantity: p.bought_quantity,
         price: formatCurrency(p.price),
       })),
     }));
@@ -359,7 +359,7 @@ export function Receipts() {
                           </Table.Td>
                           <Table.Td ta="center">
                             <Text c="dimmed" fw={600}>
-                              {item.quantity}
+                              {item.bought_quantity}
                             </Text>
                           </Table.Td>
                           <Table.Td ta="right">
