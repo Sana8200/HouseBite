@@ -1,7 +1,7 @@
 import "./SignIn.css";
 import { IconAlertCircle } from "@tabler/icons-react";
 import { useRef, useState } from "react";
-import { Alert, Button, Center, Container, Paper, PasswordInput, Stack, Text, TextInput } from "@mantine/core";
+import { Alert, Button, Container, Paper, PasswordInput, Stack, TextInput } from "@mantine/core";
 import { signIn, signUp, turnstileSiteKey } from "../../api/auth";
 import { Turnstile, type TurnstileInstance } from "@marsidev/react-turnstile";
 import { notifications } from "@mantine/notifications";

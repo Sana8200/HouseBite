@@ -97,7 +97,7 @@ export function Receipts() {
 
   // Filter state
   const [preset, setPreset] = useState<Preset>("all");
-  const [customRange, setCustomRange] = useState<[Date | null, Date | null]>([null, null]);
+  const [customRange, setCustomRange] = useState<[Date | string | null, Date | string | null]>([null, null]);
 
   useEffect(() => {
     void fetchReceipts();
@@ -139,8 +139,8 @@ export function Receipts() {
   const visibleReceipts = useMemo(() => {
     const now = new Date();
 
-    let from: Date | null = null;
-    let to: Date | null = null;
+    let from: Date | string | null = null;
+    let to: Date | string | null = null;
 
     if (preset === "7d") {
       from = new Date(now);
