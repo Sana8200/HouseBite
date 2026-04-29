@@ -362,9 +362,7 @@ interface ScanReviewProps {
 }
 
 function ScanReview(props: ScanReviewProps) {
-    const { state, setState, households, setActiveStep } = props;
-
-    const [selectedHousehold, setSelectedHousehold] = useState<string | null>(null);
+    const { state, setState, setActiveStep } = props;
 
     const setItem = useCallback((newItem: EditReceiptItemData) => setState(s => {
         const oldState = s as FinishedState;
@@ -399,20 +397,7 @@ function ScanReview(props: ScanReviewProps) {
         }
     });
 
-    const setStoreName = (newName: string) => setState(s => {
-        const oldState = s as FinishedState;
-        return { ...oldState, data: { ...oldState.data, storeName: newName } }
-    });
 
-    const setPurchaseDate = (newPurchaseDate: string | null) => setState(s => {
-        const oldState = s as FinishedState;
-        return { ...oldState, data: { ...oldState.data, purchaseDate: newPurchaseDate } }
-    });
-
-    const setTotalPrice = (newTotalPrice: number | null) => setState(s => {
-        const oldState = s as FinishedState;
-        return { ...oldState, data: { ...oldState.data, totalPrice: newTotalPrice } }
-    });
 
     return (
         <>
@@ -433,42 +418,6 @@ function ScanReview(props: ScanReviewProps) {
                 </Grid.Col>
 
                 <Grid.Col span={{ base: 12, md: 7 }}>
-            <Card shadow="none" withBorder mb="md">
-                <Select
-                    label="Household"
-                    placeholder="Select household"
-                    required
-                    data={households.map((h) => ({ value: h.id, label: h.house_name }))}
-                    value={selectedHousehold}
-                    onChange={setSelectedHousehold}
-                />
-
-                <TextInput 
-                    label="Store name"
-                    value={state.data.storeName ?? ""}
-                    onChange={e => setStoreName(e.target.value)}
-                    mt="xs"
-                />
-
-                <Flex gap="sm" mt="xs">
-                    <TextInput
-                        label="Purchase date"
-                        type="date"
-                        value={state.data.purchaseDate ?? ""}
-                        onChange={(e) => setPurchaseDate(e.target.value || null)}
-                        flex={1}
-                    />
-
-                    <NumberInput 
-                        label="Total price"
-                        value={state.data.totalPrice ?? ""}
-                        onChange={val => setTotalPrice(typeof val == "number" ? val : null)}
-                        decimalScale={2}
-                        fixedDecimalScale
-                        flex={1}
-                    />
-                </Flex>
-            </Card>
 
             <Title order={4}>Products</Title>
             <Stack gap="sm" mt="xs">
@@ -488,7 +437,7 @@ function ScanReview(props: ScanReviewProps) {
 
             <Group justify="center" mt="xl">
                 <Button variant="default" onClick={() => setActiveStep(1)}>Back</Button>
-                <Button onClick={() => setActiveStep(3)} disabled={!selectedHousehold}>
+                <Button onClick={() => setActiveStep(3)}>
                     Continue to Save
                 </Button>
             </Group>
@@ -508,6 +457,11 @@ function ScanSave(props: ScanSaveProps) {
     const navigate = useNavigate();
     const [saving, setSaving] = useState(false);
     const [selectedHousehold, setSelectedHousehold] = useState<string | null>(null);
+    
+    // Local state for editable fields
+    const [storeName, setStoreName] = useState(state.data.storeName ?? "");
+    const [purchaseDate, setPurchaseDate] = useState(state.data.purchaseDate ?? "");
+    const [totalPrice, setTotalPrice] = useState<number | null>(state.data.totalPrice ?? null);
 
     const handleSave = async () => {
         if (!selectedHousehold) return;
@@ -517,9 +471,9 @@ function ScanSave(props: ScanSaveProps) {
 
             const receipt: InsertReceipt = {
                 household_id: selectedHousehold,
-                store_name: state.data.storeName ?? "Unknown Store",
-                total: state.data.totalPrice ?? 0,
-                purchase_at: state.data.purchaseDate ?? new Date().toISOString().split("T")[0],
+                store_name: storeName || "Unknown Store",
+                total: totalPrice ?? 0,
+                purchase_at: purchaseDate || new Date().toISOString().split("T")[0],
                 buyer_id: user.id,
             };
 
@@ -581,40 +535,84 @@ function ScanSave(props: ScanSaveProps) {
     return (
         <>
             <Title order={3}>Confirm and save</Title>
-            
-            <Card shadow="none" withBorder mb="md">
-                
-                <Text fw={500} mt="md">Receipt Summary:</Text>
-                <Text size="sm">Store: {state.data.storeName || "Not specified"}</Text>
-                <Text size="sm">Purchase Date: {state.data.purchaseDate || "Not specified"}</Text>
-                <Text size="sm">Total: ${state.data.totalPrice?.toFixed(2) ?? "0.00"}</Text>
-                
-                <Text fw={500} mt="md">Products to save ({totalProducts}):</Text>
-                {enabledItems.map((item, idx) => (
-                    <Text key={idx} size="sm">
-                        • {item.name} - Qty: {item.quantity ?? 1} - ${item.totalPrice?.toFixed(2) ?? "0.00"}
-                        {item.expirationDate && ` (Exp: ${item.expirationDate})`}
-                    </Text>
-                ))}
-                
-                {totalProducts === 0 && (
-                    <Text c="red" size="sm">No products selected to save!</Text>
-                )}
-                
-                <Text fw={500} mt="md">Total value: ${totalValue.toFixed(2)}</Text>
-            </Card>
+            <Grid>
+                <Grid.Col span={{ base: 12, md: 5 }}>
+                    <Card shadow="sm" withBorder p="sm">
+                        <Box 
+                            component="img" 
+                            src={state.image} 
+                            alt="Receipt" 
+                            style={{ width: "100%", height: "auto", borderRadius: "8px" }}
+                        />
+                    </Card>
+                </Grid.Col>
 
-            <Group justify="center" mt="xl">
-                <Button variant="default" onClick={() => setActiveStep(2)}>Back to Edit</Button>
-                <Button 
-                    onClick={() => void handleSave()} 
-                    loading={saving} 
-                    disabled={saving || !selectedHousehold || totalProducts === 0}
-                    color="green"
-                >
-                    Save to Pantry
-                </Button>
-            </Group>
+                <Grid.Col span={{ base: 12, md: 7 }}>
+                    
+                    <Card shadow="none" withBorder mb="md">
+                        <Select
+                            label="Household"
+                            placeholder="Select household"
+                            required
+                            data={households.map((h) => ({ value: h.id, label: h.house_name }))}
+                            value={selectedHousehold}
+                            onChange={setSelectedHousehold}
+                        />
+
+                        <TextInput 
+                            label="Store name"
+                            value={storeName}
+                            onChange={e => setStoreName(e.target.value)}
+                            mt="xs"
+                        />
+
+                        <Flex gap="sm" mt="xs">
+                            <TextInput
+                                label="Purchase date"
+                                type="date"
+                                value={purchaseDate}
+                                onChange={(e) => setPurchaseDate(e.target.value)}
+                                flex={1}
+                            />
+
+                            <NumberInput 
+                                label="Total price"
+                                value={totalPrice ?? ""}
+                                onChange={val => setTotalPrice(typeof val == "number" ? val : null)}
+                                decimalScale={2}
+                                fixedDecimalScale
+                                flex={1}
+                            />
+                        </Flex>
+                    </Card>
+
+                    <Text fw={500} mt="md">Products to save ({totalProducts}):</Text>
+                    {enabledItems.map((item, idx) => (
+                        <Text key={idx} size="sm">
+                            • {item.name} - Qty: {item.quantity ?? 1} - ${item.totalPrice?.toFixed(2) ?? "0.00"}
+                            {item.expirationDate && ` (Exp: ${item.expirationDate})`}
+                        </Text>
+                    ))}
+                    
+                    {totalProducts === 0 && (
+                        <Text c="red" size="sm">No products selected to save!</Text>
+                    )}
+                    
+                    <Text fw={500} mt="md">Total value: ${totalValue.toFixed(2)}</Text>
+
+                    <Group justify="center" mt="xl">
+                        <Button variant="default" onClick={() => setActiveStep(2)}>Back to Edit</Button>
+                        <Button 
+                            onClick={() => void handleSave()} 
+                            loading={saving} 
+                            disabled={saving || !selectedHousehold || totalProducts === 0}
+                            color="green"
+                        >
+                            Save to Pantry
+                        </Button>
+                    </Group>
+                </Grid.Col>
+            </Grid>
         </>
     );
 }
