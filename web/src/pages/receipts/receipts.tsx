@@ -181,7 +181,7 @@ export function Receipts() {
       Store: r.storeName,
       Date: r.date,
       Product: item.name,
-      Quantity: item.quantity,
+      Quantity: item.bought_quantity,
       Price: item.price,
     }))
   );

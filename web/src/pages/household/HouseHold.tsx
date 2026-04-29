@@ -80,7 +80,7 @@ export function HouseHold(props: HouseHoldProps) {
     const [confirmName, setConfirmName] = useState("")
     const [checkingMembers, setCheckingMembers] = useState<string | null>(null)
 
-    const [createdHousehold, setCreatedHousehold] = useState<{ name: string; inviteId: string; id: string } | null>(null)
+    const [createdHousehold, setCreatedHousehold] = useState<{ name: string; inviteId: string | null; id: string } | null>(null)
     const [memberCounts, setMemberCounts] = useState<Record<string, number>>({})
     const [userId, setUserId] = useState<string | null>(null)
 
@@ -127,7 +127,7 @@ export function HouseHold(props: HouseHoldProps) {
             const { data, error } = await createHousehold(newName.trim(), budget, newColor)
             if (error) { setCreateError(error.message); return }
 
-            const result = (Array.isArray(data) ? data[0] : data) as { id: string; house_name: string; invite_id: string } | null
+            const result = (Array.isArray(data) ? data[0] : data)
             setNewName("")
             setNewBudget("")
             setNewColor(HOUSEHOLD_COLORS[0])
@@ -510,7 +510,7 @@ export function HouseHold(props: HouseHoldProps) {
                                 <IconLink size={16} color="var(--color-primary-700)" />
                                 <Text size="sm" fw={700} c="var(--color-primary-700)">Your invite code</Text>
                             </Group>
-                            <CopyButton value={createdHousehold.inviteId} timeout={4000}>
+                            <CopyButton value={createdHousehold.inviteId ?? ""} timeout={4000}>
                                 {({ copied, copy }) => (
                                     <Stack gap="xs">
                                         <Group gap="sm" p="sm" style={{
