@@ -35,7 +35,10 @@ export const searchRecipes = async (
     },
   })
 
-  if (result.error) throw result.error
+  if (result.response?.status == 404) {
+    throw new Error((await result.response?.json() as {error: string}).error)
+  } 
+  else if (result.error) throw result.error
   const recipes = result.data ?? []
 
   const matchedIngredients = ingredients.filter((ing) =>
