@@ -41,7 +41,7 @@ export interface HouseholdMember {
     email: string | null
 }
 
-export async function getHouseholdMembers(householdId: string): Promise<PostgrestSingleResponse<HouseholdMember[]>> {
+export async function getHouseholdMembers(householdId: string): Promise<{ data: HouseholdMember[] | null; error: { message: string } | null }> {
     return supabase.rpc('get_household_members', {
         p_household_id: householdId
     })
@@ -62,7 +62,7 @@ export async function updateHousehold(id: string, name: string, budget: number |
         .eq("id", id)
 }
 
-export async function leaveHousehold(userId: string, householdId: string): Promise<PostgrestSingleResponse<null>> {
+export async function leaveHousehold(userId: string, householdId: string): Promise<{ data: null; error: { message: string } | null }> {
     return supabase
         .from("allocations")
         .delete()

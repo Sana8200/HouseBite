@@ -23,11 +23,11 @@ export function HouseholdMembers({ householdId, inviteId, adminId, currentUserId
     const [loading, setLoading] = useState(true)
     const [showInvite, setShowInvite] = useState(false)
 
-    const [kickTarget, setKickTarget] = useState<{ member: Member; permanent: boolean } | null>(null)
+    const [kickTarget, setKickTarget] = useState<{ member: HouseholdMember; permanent: boolean } | null>(null)
     const [kicking, setKicking] = useState(false)
     const [kickError, setKickError] = useState<string | null>(null)
 
-    const [transferTarget, setTransferTarget] = useState<Member | null>(null)
+    const [transferTarget, setTransferTarget] = useState<HouseholdMember | null>(null)
     const [transferring, setTransferring] = useState(false)
     const [transferError, setTransferError] = useState<string | null>(null)
 
