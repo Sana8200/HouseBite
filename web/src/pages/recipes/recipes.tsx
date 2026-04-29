@@ -119,15 +119,48 @@ export function RecipeCard({
 
 export function RecipeCarousel({ children }: { children: React.ReactNode }) {
   const ref = useRef<HTMLDivElement>(null)
+  const [canLeft, setCanLeft] = useState(false)
+  const [canRight, setCanRight] = useState(false)
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const update = () => {
+      setCanLeft(el.scrollLeft > 0)
+      setCanRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 1)
+    }
+    update()
+    el.addEventListener("scroll", update, { passive: true })
+    const ro = new ResizeObserver(update)
+    ro.observe(el)
+    Array.from(el.children).forEach(c => ro.observe(c))
+    return () => {
+      el.removeEventListener("scroll", update)
+      ro.disconnect()
+    }
+  }, [children])
+
   const scroll = (dir: number) => ref.current?.scrollBy({ left: dir * 300, behavior: "smooth" })
 
   return (
     <Group gap="sm" wrap="nowrap" align="stretch">
-      <ActionIcon variant="default" radius="xl" size="lg" onClick={() => scroll(-1)}>
+      <ActionIcon
+        variant="default"
+        radius="xl"
+        size="lg"
+        onClick={() => scroll(-1)}
+        style={{ visibility: canLeft ? "visible" : "hidden" }}
+      >
         <IconChevronLeft size={18} />
       </ActionIcon>
       <div className="recipe-carousel" ref={ref}>{children}</div>
-      <ActionIcon variant="default" radius="xl" size="lg" onClick={() => scroll(1)}>
+      <ActionIcon
+        variant="default"
+        radius="xl"
+        size="lg"
+        onClick={() => scroll(1)}
+        style={{ visibility: canRight ? "visible" : "hidden" }}
+      >
         <IconChevronRight size={18} />
       </ActionIcon>
     </Group>
@@ -362,16 +395,17 @@ export function Recipes() {
         ) : favourites.length === 0 ? (
           <Text c="dimmed">No favourites yet. Search for recipes and add some.</Text>
         ) : (
-          <SimpleGrid cols={{ base: 1, sm: 2, md: 3, lg: 4 }} spacing="md">
+          <div className="recipe-grid">
             {favourites.map(r => (
-              <RecipeCard
-                key={r.id}
-                recipe={r}
-                onOpen={() => setModalRecipe({ kind: "fav", recipe: r })}
-                onDelete={() => void handleDelete(r.id)}
-              />
+              <div key={r.id} className="recipe-carousel-item">
+                <RecipeCard
+                  recipe={r}
+                  onOpen={() => setModalRecipe({ kind: "fav", recipe: r })}
+                  onDelete={() => void handleDelete(r.id)}
+                />
+              </div>
             ))}
-          </SimpleGrid>
+          </div>
         )}
 
         <Modal
