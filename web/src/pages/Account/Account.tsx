@@ -67,7 +67,7 @@ export function Account(props: AccountProps) {
                     notifications.show({
                         color: "red",
                         title: "Could not load total spent",
-                        message: totalResult.error.message
+                        message: String(totalResult.error.message ?? "Please try again.")
                     });
                 }
                 else setTotalSpent(totalResult.total);
@@ -85,7 +85,9 @@ export function Account(props: AccountProps) {
                     notifications.show({
                         color: "red",
                         title: "Could not load your restrictions",
-                        message: userRestrictionsResult.error.message
+                        message: userRestrictionsResult.error instanceof Error
+                            ? userRestrictionsResult.error.message
+                            : "Please try again."
                     })
                 }
                 else setUserRestrictions(new Set((userRestrictionsResult.data ?? []).map(m => m.restriction_id)));
