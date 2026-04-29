@@ -18,6 +18,8 @@ export interface Household {
     monthly_budget: number | null;
     created_at: string | null;
     invite_id: string | null;
+    admin_id: string | null;
+    household_color: string;
 }
 
 export type InsertHousehold = OmitOnInsert<Household>;
@@ -80,8 +82,9 @@ export interface Receipt {
 export type InsertReceipt = OmitOnInsert<Receipt>;
 
 export interface Allocations {
-    restriction_id: string;
     member_id: string;
+    household_id: string;
+    household_color: string;
 }
 
 export interface MemberRecipes {
@@ -112,7 +115,8 @@ export type ProductSizeUnit = "gr" | "ml" | "kg" | "L";
 export interface ProductSpecs {
     product_id: string;
     size: string | null;
-    quantity: number;
+    bought_quantity: number;
+    current_quantity: number;
     unit: ProductSizeUnit | null;
     expiration_date: string | null;
     price: number | null;

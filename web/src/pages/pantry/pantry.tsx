@@ -23,7 +23,7 @@ interface PantryProduct {
   id: string;
   name: string;
   householdId: string;
-  quantity: number;
+  current_quantity: number;
   size: string | null;
   unit: string | null;
   expirationDate: string | null;
@@ -42,8 +42,8 @@ interface PantryProps {
 
 /* Helper for formatting the amount of a product. */
 function formatAmount(product: PantryProduct): string {
-  if (!product.size || !product.unit) return `${product.quantity}`;
-  return `${product.quantity} x ${product.size} ${product.unit}`;
+  if (!product.size || !product.unit) return `${product.current_quantity}`;
+  return `${product.current_quantity} x ${product.size} ${product.unit}`;
 }
 
 /* Helper for getting the expiring status for a product. */
@@ -261,7 +261,7 @@ function PantryAllProductsList({
         <Table.Td>{formatOptionalDate(product.purchasedOn)}</Table.Td>
         <Table.Td>{product.shopName ?? "-"}</Table.Td>
         <Table.Td>{product.boughtBy ?? "-"}</Table.Td>
-        <Table.Td>{product.quantity}</Table.Td>
+        <Table.Td>{product.current_quantity}</Table.Td>
         <Table.Td>{product.size ?? "-"}</Table.Td>
         <Table.Td>{product.unit ?? "-"}</Table.Td>
         <Table.Td>{renderExpiryBadge(daysUntilExpiry)}</Table.Td>
@@ -390,7 +390,7 @@ export function Pantry({ user }: PantryProps) {
           id,
           name,
           household_id,
-          product_specs(quantity, size, unit, expiration_date)
+          product_specs(current_quantity, bought_quantity, size, unit, expiration_date)
         `);
 
       if (householdId) {
@@ -408,9 +408,9 @@ export function Pantry({ user }: PantryProps) {
         const specs = Array.isArray(p.product_specs) ? p.product_specs[0] : p.product_specs;
         return {
           id: p.id as string,
-          name: p.name as string,
+          name: p.name as string ,
           householdId: p.household_id as string,
-          quantity: specs?.quantity as number ?? 1,
+          current_quantity: specs?.current_quantity as number ?? 1,
           size: specs?.size as string ?? null,
           unit: specs?.unit as string ?? null,
           expirationDate: specs?.expiration_date as string ?? null,
@@ -489,7 +489,8 @@ export function Pantry({ user }: PantryProps) {
         household_id: newHouseholdId,
         receipt_id: receiptResult.data.id
       }, {
-        quantity: Number(newQuantity) || 1,
+        bought_quantity: Number(newQuantity) || 1,
+        current_quantity: Number(newQuantity) || 1,
         size: newSize || null,
         unit: newUnit as ProductSizeUnit || null,
         expiration_date: newExpirationDate || null,

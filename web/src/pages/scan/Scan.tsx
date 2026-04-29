@@ -61,11 +61,11 @@ export function Scan(props: ScanProps) {
     useEffect(() => {
         void load();
         async function load() {
-            const result = await getHouseholds();
-            if (result.error) {
-                setState({ state: "error", error: result.error });
+            const householdsResult = await getHouseholds();
+            if (householdsResult.error) {
+                setState({ state: "error", error: householdsResult.error });
             } else {
-                setHouseholds(result.data);
+                setHouseholds(householdsResult.data ?? []);
             }
         }
     }, []);
@@ -389,7 +389,8 @@ function ScanFinished(props: ScanFinishedProps) {
                         receipt_id: receipt_res.data.id,
                     },
                     {
-                        quantity: item.quantity ?? 1,
+                        bought_quantity: item.quantity ?? 1,
+                        current_quantity: item.quantity ?? 1,
                         price: item.totalPrice,
                         size: item.weight?.toString() ?? null,
                         expiration_date: item.expirationDate,
