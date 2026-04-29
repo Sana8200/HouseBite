@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, type Dispatch, type SetStateAction, useCallback } from "react";
 import "./Scan.css";
-import { Alert, Button, Card, Center, Checkbox, Flex, Loader, NumberInput, Paper, Select, Stack, Text, TextInput, Title, Stepper, Group, Accordion } from "@mantine/core";
+import { Alert, Button, Card, Center, Checkbox, Flex, Loader, NumberInput, Paper, Select, Stack, Text, TextInput, Title, Stepper, Group, Accordion, Grid, Box } from "@mantine/core";
 import { Dropzone, IMAGE_MIME_TYPE, type FileWithPath } from "@mantine/dropzone";
 import { IconReceipt, IconAlertCircle } from "@tabler/icons-react";
 import { scanReceipt, type ReceiptData, type ReceiptItemData } from "../../api/scan";
@@ -225,30 +225,30 @@ function ScanReady(props: ScanReadyProps) {
 
     return (
         <>
-            <Center pos="relative" style={camera ? {} : { display: "none" }}>
-                <video className="scan-video" ref={videoOutputRef}>Video stream not available.</video>
-                <Button pos="absolute" bottom={20} size="lg" onClick={takePhoto}>Scan</Button>
-            </Center>
+            <Flex direction={{ base: "column", md: "row" }} gap="md" align="stretch">
+                {camera && (
+                    <Flex direction="column" style={{ flex: 1 }}>
+                        <Center pos="relative">
+                            <video className="scan-video" ref={videoOutputRef}>Video stream not available.</video>
+                            <Button pos="absolute" bottom={20} size="lg" onClick={takePhoto}>Scan</Button>
+                        </Center>
+                    </Flex>
+                )}
 
-            <Flex direction="column" gap="md">
-            
-                {camera &&
-                    <Center mt="md">
-                        <Text size="lg">Or upload an image</Text>
-                    </Center>
-                }
+                <Flex direction="column" style={{ flex: 1 }}>
+                    {camera && (
+                        <Center mt="md">
+                            <Text size="lg">Or upload an image</Text>
+                        </Center>
+                    )}
 
-                <Dropzone
-                    onDrop={onDrop}
-                    accept={IMAGE_MIME_TYPE}
-                    mt="md">
-
-                    <Stack align="center" p="md">
-                        <IconReceipt size={54} />
-                        <Text>Drag and drop a receipt image, or click to select</Text>
-                    </Stack>
-
-                </Dropzone>
+                    <Dropzone onDrop={onDrop} accept={IMAGE_MIME_TYPE}>
+                        <Stack align="center" p="md">
+                            <IconReceipt size={54} />
+                            <Text>Drag and drop a receipt image, or click to select</Text>
+                        </Stack>
+                    </Dropzone>
+                </Flex>
             </Flex>
         </>
     );
@@ -419,6 +419,20 @@ function ScanReview(props: ScanReviewProps) {
             <Title order={3}>Review & edit receipt</Title>
             <Text c="dimmed" mb="md">Pre-filled expiration dates are estimates! Please check on your product for the actual expiration date.</Text>
 
+            <Grid>
+                <Grid.Col span={{ base: 12, md: 5 }}>
+                <Card shadow="sm" withBorder p="sm">
+                    <Box 
+                        component="img" 
+                        src={state.image} 
+                        alt="Receipt" 
+                        style={{ width: "100%", height: "auto", borderRadius: "8px" }}
+                    />
+                </Card>
+
+                </Grid.Col>
+
+                <Grid.Col span={{ base: 12, md: 7 }}>
             <Card shadow="none" withBorder mb="md">
                 <Select
                     label="Household"
@@ -468,6 +482,9 @@ function ScanReview(props: ScanReviewProps) {
                     </Button>
                 </Center>
             </Stack>
+
+                </Grid.Col>
+            </Grid>
 
             <Group justify="center" mt="xl">
                 <Button variant="default" onClick={() => setActiveStep(1)}>Back</Button>
