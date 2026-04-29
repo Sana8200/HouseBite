@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, type Dispatch, type SetStateAction, useCallback } from "react";
 import "./Scan.css";
-import { Alert, Button, Card, Center, Checkbox, Flex, Loader, NumberInput, Paper, Select, Stack, Text, TextInput, Title, Stepper, Group, Accordion, Grid, Box } from "@mantine/core";
+import { Alert, Button, Card, Center, Checkbox, Flex, Loader, NumberInput, Paper, Select, Stack, Text, TextInput, Title, Stepper, Group, Accordion, Grid, Box, Table, Divider, ThemeIcon, Tooltip } from "@mantine/core";
 import { Dropzone, IMAGE_MIME_TYPE, type FileWithPath } from "@mantine/dropzone";
 import { IconReceipt, IconAlertCircle } from "@tabler/icons-react";
 import { scanReceipt, type ReceiptData, type ReceiptItemData } from "../../api/scan";
@@ -419,7 +419,6 @@ function ScanReview(props: ScanReviewProps) {
 
                 <Grid.Col span={{ base: 12, md: 7 }}>
 
-            <Title order={4}>Products</Title>
             <Stack gap="sm" mt="xs">
                 {state.data.items.map(p => (
                     <ProductCard key={p.key} item={p} setItem={setItem} />
@@ -535,7 +534,6 @@ function ScanSave(props: ScanSaveProps) {
 
     return (
         <>
-            <Title order={3}>Confirm and save</Title>
             <Grid>
                 <Grid.Col span={{ base: 12, md: 5 }}>
                     <Card shadow="sm" withBorder p="sm">
@@ -549,69 +547,120 @@ function ScanSave(props: ScanSaveProps) {
                 </Grid.Col>
 
                 <Grid.Col span={{ base: 12, md: 7 }}>
-                    
-                    <Card shadow="none" withBorder mb="md">
-                        <Select
-                            label="Household"
-                            placeholder="Select household"
-                            required
-                            data={households.map((h) => ({ value: h.id, label: h.house_name }))}
-                            value={selectedHousehold}
-                            onChange={setSelectedHousehold}
-                        />
+                    <Paper withBorder radius="md" p="lg" shadow="sm">
+                        <Stack gap="md">
+                            {/* Receipt Header */}
+                            <Stack gap="xs">
+                                <TextInput 
+                                    label="Store name"
+                                    value={storeName}
+                                    onChange={e => setStoreName(e.target.value)}
+                                    size="sm"
+                                />
 
-                        <TextInput 
-                            label="Store name"
-                            value={storeName}
-                            onChange={e => setStoreName(e.target.value)}
-                            mt="xs"
-                        />
+                                <TextInput
+                                    label="Purchase date"
+                                    type="date"
+                                    value={purchaseDate}
+                                    onChange={(e) => setPurchaseDate(e.target.value)}
+                                    size="sm"
+                                />
+                            </Stack>
 
-                        <Flex gap="sm" mt="xs">
-                            <TextInput
-                                label="Purchase date"
-                                type="date"
-                                value={purchaseDate}
-                                onChange={(e) => setPurchaseDate(e.target.value)}
-                                flex={1}
+                            {/* Products Table */}
+                            <Table verticalSpacing="sm" horizontalSpacing="sm">
+                                <Table.Thead>
+                                    <Table.Tr>
+                                        <Table.Th>Product</Table.Th>
+                                        <Table.Th ta="center">Qty</Table.Th>
+                                        <Table.Th ta="right">Price</Table.Th>
+                                    </Table.Tr>
+                                </Table.Thead>
+                                <Table.Tbody>
+                                    {enabledItems.map((item) => (
+                                        <Table.Tr key={item.key}>
+                                            <Table.Td>
+                                                <Text fw={500} size="sm">{item.name}</Text>
+                                            </Table.Td>
+                                            <Table.Td ta="center">
+                                                <Text c="dimmed" size="sm">{item.quantity ?? 1}</Text>
+                                            </Table.Td>
+                                            <Table.Td ta="right">
+                                                <Text fw={500} size="sm">${item.totalPrice?.toFixed(2) ?? "0.00"}</Text>
+                                            </Table.Td>
+                                        </Table.Tr>
+                                    ))}
+                                </Table.Tbody>
+                            </Table>
+
+                            {totalProducts === 0 && (
+                                <Text c="red" size="sm" ta="center">No products selected to save!</Text>
+                            )}
+
+                            {/* Summary Footer */}
+                            <Divider />
+
+                            <Group justify="space-between" align="center">
+                                <Group gap="sm">
+                                    <ThemeIcon size={30} radius="xl" variant="light" color="brand">
+                                        <IconReceipt size={16} stroke={1.8} />
+                                    </ThemeIcon>
+                                    <Text fw={700} size="lg">Total</Text>
+                                </Group>
+
+                                <Stack gap={4} align="flex-end">
+                                    <Text fw={800} size="xl" c="brand.7">
+                                        ${totalValue.toFixed(2)}
+                                    </Text>
+                                    <NumberInput 
+                                        label="Or edit total"
+                                        value={totalPrice ?? ""}
+                                        onChange={val => setTotalPrice(typeof val == "number" ? val : null)}
+                                        decimalScale={2}
+                                        fixedDecimalScale
+                                        size="xs"
+                                        w={120}
+                                    />
+                                </Stack>
+                            </Group>
+
+                            {/* Household Selection */}
+                            <Divider />
+
+                            <Select
+                                label="Household"
+                                placeholder="Select household"
+                                required
+                                data={households.map((h) => ({ value: h.id, label: h.house_name }))}
+                                value={selectedHousehold}
+                                onChange={setSelectedHousehold}
                             />
 
-                            <NumberInput 
-                                label="Total price"
-                                value={totalPrice ?? ""}
-                                onChange={val => setTotalPrice(typeof val == "number" ? val : null)}
-                                decimalScale={2}
-                                fixedDecimalScale
-                                flex={1}
-                            />
-                        </Flex>
-                    </Card>
-
-                    <Text fw={500} mt="md">Products to save ({totalProducts}):</Text>
-                    {enabledItems.map((item, idx) => (
-                        <Text key={idx} size="sm">
-                            • {item.name} - Qty: {item.quantity ?? 1} - ${item.totalPrice?.toFixed(2) ?? "0.00"}
-                            {item.expirationDate && ` (Exp: ${item.expirationDate})`}
-                        </Text>
-                    ))}
-                    
-                    {totalProducts === 0 && (
-                        <Text c="red" size="sm">No products selected to save!</Text>
-                    )}
-                    
-                    <Text fw={500} mt="md">Total value: ${totalValue.toFixed(2)}</Text>
-
-                    <Group justify="center" mt="xl">
-                        <Button variant="default" onClick={() => setActiveStep(2)}>Back to Edit</Button>
-                        <Button 
-                            onClick={() => void handleSave()} 
-                            loading={saving} 
-                            disabled={saving || !selectedHousehold || totalProducts === 0}
-                            color="green"
-                        >
-                            Save to Pantry
-                        </Button>
-                    </Group>
+                            {/* Navigation Buttons */}
+                            <Group justify="center" mt="md">
+                                <Button variant="default" onClick={() => setActiveStep(2)} size="sm">
+                                    Back to Edit
+                                </Button>
+                                <Tooltip 
+                                    label="Please select a household first"
+                                    position="bottom"
+                                    disabled={!!selectedHousehold}
+                                >
+                                    <span>
+                                        <Button 
+                                            onClick={() => void handleSave()} 
+                                            loading={saving} 
+                                            disabled={saving || !selectedHousehold || totalProducts === 0}
+                                            color="green"
+                                            size="sm"
+                                        >
+                                            Save to Pantry
+                                        </Button>
+                                    </span>
+                                </Tooltip>
+                            </Group>
+                        </Stack>
+                    </Paper>
                 </Grid.Col>
             </Grid>
         </>
