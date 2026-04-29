@@ -15,6 +15,17 @@
 .recipe-carousel::-webkit-scrollbar-thumb { background: var(--mantine-color-gray-4); border-radius: 10px; }
 .recipe-carousel::-webkit-scrollbar-thumb:hover { background: var(--mantine-color-gray-5); }
 
+.recipe-carousel-item {
+  min-width: 280px;
+  max-width: 280px;
+  flex-shrink: 0;
+  display: flex;
+}
+
+.recipe-carousel-item > * {
+  width: 100%;
+}
+
 .recipe-card {
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
@@ -25,7 +36,7 @@
 }
 
 @media (max-width: 768px) {
-  .recipe-card {
+  .recipe-carousel-item {
     min-width: 240px;
     max-width: 240px;
   }
