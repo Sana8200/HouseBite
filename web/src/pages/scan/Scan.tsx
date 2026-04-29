@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, type Dispatch, type SetStateAction, useCallback } from "react";
 import "./Scan.css";
-import { Alert, Button, Card, Center, Checkbox, Flex, Loader, NumberInput, Paper, Select, Stack, Text, TextInput, Title, Stepper, Group, Accordion, Grid, Box, Table, Divider, ThemeIcon, Tooltip } from "@mantine/core";
+import { Alert, Button, Card, Center, Checkbox, Flex, Loader, NumberInput, Paper, Select, Stack, Text, TextInput, Title, Stepper, Group, Accordion, Grid, Box, Table, Divider, ThemeIcon, Tooltip, Progress } from "@mantine/core";
 import { Dropzone, IMAGE_MIME_TYPE, type FileWithPath } from "@mantine/dropzone";
 import { IconReceipt, IconAlertCircle } from "@tabler/icons-react";
 import { scanReceipt, type ReceiptData, type ReceiptItemData } from "../../api/scan";
@@ -102,7 +102,7 @@ export function Scan(props: ScanProps) {
                 </Stepper>
             </Paper>
 
-            <Accordion variant="filled" radius="lg" chevronIconSize={17}>
+            <Accordion variant="filled" chevronPosition="left" radius="lg" chevronIconSize={17}>
                 <Accordion.Item value="how-it-works">
                     <Accordion.Control>Curious about how it works?</Accordion.Control>
                     <Accordion.Panel>
@@ -225,20 +225,25 @@ function ScanReady(props: ScanReadyProps) {
 
     return (
         <>
-            <Flex direction={{ base: "column", md: "row" }} gap="md" align="stretch">
-                {camera && (
-                    <Flex direction="column" style={{ flex: 1 }}>
-                        <Center pos="relative">
-                            <video className="scan-video" ref={videoOutputRef}>Video stream not available.</video>
-                            <Button pos="absolute" bottom={20} size="lg" onClick={takePhoto}>Scan</Button>
-                        </Center>
-                    </Flex>
+        <Flex direction={{ base: "column", md: "row" }} gap="md" align="stretch">
+            <Flex direction="column" style={{ flex: 1 }}>
+                <Center pos="relative" style={{ display: camera ? "flex" : "none" }}>
+                    <video className="scan-video" ref={videoOutputRef}>Video stream not available.</video>
+                    <Button pos="absolute" bottom={20} size="lg" onClick={takePhoto}>Scan</Button>
+                </Center>
+                
+                {!camera && (
+                    <Paper withBorder p="xl" ta="center" style={{ width: "100%" }}>
+                        <Loader size="sm" mb="md" />
+                        <Text size="sm" c="dimmed">Requesting camera access...</Text>
+                    </Paper>
                 )}
+            </Flex>
 
                 <Flex direction="column" style={{ flex: 1 }}>
                     {camera && (
                         <Center mt="md">
-                            <Text size="lg">Or upload an image</Text>
+                            <Text size="lg">or upload an image</Text>
                         </Center>
                     )}
 
@@ -249,7 +254,7 @@ function ScanReady(props: ScanReadyProps) {
                         </Stack>
                     </Dropzone>
                 </Flex>
-            </Flex>
+        </Flex>
         </>
     );
 }
@@ -364,6 +369,9 @@ interface ScanReviewProps {
 function ScanReview(props: ScanReviewProps) {
     const { state, setState, setActiveStep } = props;
 
+    const [currentProductIndex, setCurrentProductIndex] = useState(0);
+    const currentProduct = state.data.items[currentProductIndex];
+
     const setItem = useCallback((newItem: EditReceiptItemData) => setState(s => {
         const oldState = s as FinishedState;
         const data: EditReceiptData = {
@@ -375,29 +383,29 @@ function ScanReview(props: ScanReviewProps) {
 
     const addItem = () => setState(s => {
         const oldState = s as FinishedState;
+        const newItem = {
+            enabled: true,
+            name: "",
+            estimatedExpirationDays: null,
+            expirationDate: null,
+            quantity: 1,
+            totalPrice: null,
+            unit: null,
+            weight: null,
+            key: oldState.data.items.length,
+        };
+        const newItems = [...oldState.data.items, newItem];
+        
+        setCurrentProductIndex(newItems.length - 1);
+        
         return {
             ...oldState,
             data: {
                 ...oldState.data,
-                items: [
-                    ...oldState.data.items,
-                    {
-                        enabled: false,
-                        name: null,
-                        estimatedExpirationDays: null,
-                        expirationDate: null,
-                        quantity: null,
-                        totalPrice: null,
-                        unit: null,
-                        weight: null,
-                        key: oldState.data.items.length,
-                    }
-                ]
+                items: newItems,
             }
-        }
+        };
     });
-
-
 
     return (
         <>
@@ -406,39 +414,115 @@ function ScanReview(props: ScanReviewProps) {
 
             <Grid>
                 <Grid.Col span={{ base: 12, md: 5 }}>
-                <Card shadow="sm" withBorder p="sm">
-                    <Box 
-                        component="img" 
-                        src={state.image} 
-                        alt="Receipt" 
-                        style={{ width: "100%", height: "auto", borderRadius: "8px" }}
-                    />
-                </Card>
-
+                    <Card shadow="sm" withBorder p="sm">
+                        <Box 
+                            component="img" 
+                            src={state.image} 
+                            alt="Receipt" 
+                            style={{ width: "100%", height: "auto", borderRadius: "8px" }}
+                        />
+                    </Card>
                 </Grid.Col>
 
                 <Grid.Col span={{ base: 12, md: 7 }}>
+                    {/* Progress Bar */}
+                    <Stack gap="xs" mb="lg">
+                        <Group justify="space-between">
+                           <Text size="sm" fw={500}>Product {currentProductIndex + 1} of {state.data.items.length}</Text>
+                            <Text size="sm" c="dimmed">{Math.round(((currentProductIndex + 1) / state.data.items.length) * 100)}%</Text>
+                        </Group>
+                        <Progress value={((currentProductIndex + 1) / state.data.items.length) * 100} size="lg" radius="xl" />
+                    </Stack>
 
-            <Stack gap="sm" mt="xs">
-                {state.data.items.map(p => (
-                    <ProductCard key={p.key} item={p} setItem={setItem} />
-                ))}
+                    {/* Single Product Card */}
+                    {currentProduct && (
+                        <ProductCard 
+                            key={currentProduct.key} 
+                            item={currentProduct} 
+                            setItem={(updatedItem) => {
+                                const newItems = [...state.data.items];
+                                newItems[currentProductIndex] = updatedItem;
+                                setState(s => {
+                                    const oldState = s as FinishedState;
+                                    return {
+                                        ...oldState,
+                                        data: { ...oldState.data, items: newItems }
+                                    };
+                                });
+                            }} 
+                        />
+                    )}
 
-                <Center>
-                    <Button variant="subtle" onClick={addItem}>
-                        Add missing product
-                    </Button>
-                </Center>
-            </Stack>
+                    <Group justify="space-between" mt="xl">
+                        <Button 
+                            variant="default" 
+                            onClick={() => setCurrentProductIndex(prev => Math.max(0, prev - 1))}
+                            disabled={currentProductIndex === 0}
+                        >
+                            Previous product
+                        </Button>
+                        
+                        <Group gap="sm">
+                            {/* Don't include button */}
+                            {currentProduct && (
+                                <Button 
+                                    variant="outline" 
+                                    color="red"
+                                    onClick={() => {
+                                        const newItems = [...state.data.items];
+                                        newItems[currentProductIndex] = { 
+                                            ...currentProduct, 
+                                            enabled: false,
+                                            name: currentProduct.name
+                                        };
+                                        setState(s => {
+                                            const oldState = s as FinishedState;
+                                            return {
+                                                ...oldState,
+                                                data: { ...oldState.data, items: newItems }
+                                            };
+                                        });
+                                        
+                                        if (currentProductIndex < state.data.items.length - 1) {
+                                            setCurrentProductIndex(prev => prev + 1);
+                                        }
+                                    }}
+                                    disabled={!currentProduct?.name || !currentProduct.enabled}
+                                >
+                                    Don't include this product
+                                </Button>
+                            )}
+                            
+                            {currentProductIndex < state.data.items.length - 1 ? (
+                                <Button 
+                                    onClick={() => setCurrentProductIndex(prev => prev + 1)}
+                                    disabled={!currentProduct?.name}
+                                >
+                                    Next Product
+                                </Button>
+                            ) : (
+                                <Button 
+                                    onClick={() => setActiveStep(3)}
+                                    color="green"
+                                >
+                                    Continue to Save
+                                </Button>
+                            )}
+                        </Group>
+                    </Group>
 
+                    {/* Add missing product button */}
+                    <Center mt="md">
+                        <Button variant="subtle" onClick={addItem} size="sm">
+                            + Add missing product
+                        </Button>
+                    </Center>
                 </Grid.Col>
             </Grid>
 
+            {/* Back button */}
             <Group justify="center" mt="xl">
-                <Button variant="default" onClick={() => setActiveStep(1)}>Back</Button>
-                <Button onClick={() => setActiveStep(3)}>
-                    Continue to Save
-                </Button>
+                <Button variant="default" onClick={() => setActiveStep(1)}>Back to Upload</Button>
             </Group>
         </>
     );
@@ -586,7 +670,7 @@ function ScanSave(props: ScanSaveProps) {
                                                 <Text c="dimmed" size="sm">{item.quantity ?? 1}</Text>
                                             </Table.Td>
                                             <Table.Td ta="right">
-                                                <Text fw={500} size="sm">${item.totalPrice?.toFixed(2) ?? "0.00"}</Text>
+                                                <Text fw={500} size="sm">{item.totalPrice?.toFixed(2) ?? "0.00"}kr</Text>
                                             </Table.Td>
                                         </Table.Tr>
                                     ))}
@@ -610,7 +694,7 @@ function ScanSave(props: ScanSaveProps) {
 
                                 <Stack gap={4} align="flex-end">
                                     <Text fw={800} size="xl" c="brand.7">
-                                        ${totalValue.toFixed(2)}
+                                        {totalValue.toFixed(2)}kr
                                     </Text>
                                     <NumberInput 
                                         label="Or edit total"
@@ -639,7 +723,7 @@ function ScanSave(props: ScanSaveProps) {
                             {/* Navigation Buttons */}
                             <Group justify="center" mt="md">
                                 <Button variant="default" onClick={() => setActiveStep(2)} size="sm">
-                                    Back to Edit
+                                    Back to Review
                                 </Button>
                                 <Tooltip 
                                     label="Please select a household first"
@@ -682,13 +766,6 @@ function ProductCard(props: ProductCardProps) {
                 required
                 value={item.name ?? ""}
                 onChange={e => setItem({ ...item, name: e.target.value })}
-            />
-
-            <Checkbox
-                checked={item.enabled && !!item.name}
-                disabled={!item.name}
-                onChange={e => setItem({ ...item, enabled: e.target.checked })}
-                pos="absolute" right={8} top={8} size="md"
             />
 
             <Flex gap="sm" mt="xs">
