@@ -63,7 +63,7 @@ export function Scan(props: ScanProps) {
         async function load() {
             const householdsResult = await getHouseholds();
             if (householdsResult.error) {
-                setState({ state: "error", error: householdsResult.error instanceof Error ? householdsResult.error : new Error(String(householdsResult.error)) });
+                setState({ state: "error", error: householdsResult.error });
             } else {
                 setHouseholds(householdsResult.data ?? []);
             }
