@@ -2,4 +2,5 @@
   display: block;
   overflow: hidden;
   border-radius: var(--radius-md);
+  max-width: 100%;
 }

@@ -3,7 +3,7 @@ import { supabase } from "../supabase";
 import type { InsertReceipt, Product, ProductSpecs, Receipt } from "./schema";
 
 
-export type ReceiptProduct = Pick<Product, "id" |"name"> & Pick<ProductSpecs, "quantity" | "price">
+export type ReceiptProduct = Pick<Product, "id" | "name"> & Pick<ProductSpecs, "bought_quantity" | "price">
 
 export interface ReceiptWithProducts extends Pick<Receipt, "id" | "household_id" | "store_name" | "total" | "purchase_at"> {
     products: ReceiptProduct[];
@@ -29,7 +29,7 @@ export async function fetchReceiptsByHousehold(householdId?: string): Promise<Po
             product(
                 id,
                 name,
-                product_specs(quantity, price)
+                product_specs(bought_quantity, price)
             )
         `)
         .order("purchase_at", { ascending: false });
@@ -50,9 +50,9 @@ export async function fetchReceiptsByHousehold(householdId?: string): Promise<Po
             const specs = Array.isArray(p.product_specs) ? p.product_specs[0] : p.product_specs;
             return {
                 id: p.id as string,
-                name: p.name as string,
-                quantity: (specs?.quantity as number | null) ?? 1,
-                price: (specs?.price as number | null) ?? null,
+                name: p.name as string ,
+                bought_quantity: specs?.bought_quantity as number ?? 1,
+                price: specs?.price as number ?? null,
             };
         }),
     }));

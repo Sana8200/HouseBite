@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
-import {Button, Group, Text, Modal, Stack, Title, Code, CopyButton,ActionIcon,
-    ThemeIcon, Container, SimpleGrid, Card, TextInput,NumberInput, Alert, Loader,} from "@mantine/core"
+import {Button, Group, Text, Modal, Stack, Title, Code, CopyButton, ActionIcon,
+    ThemeIcon, Container, SimpleGrid, Card, TextInput, NumberInput, Alert, Loader,} from "@mantine/core"
 import {IconEdit, IconDoorExit, IconCheck, IconCopy, IconLink, IconPlus, IconUserPlus, IconAlertCircle,} from "@tabler/icons-react"
-import { createHousehold, getHouseholds, joinHousehold, updateHousehold, leaveHousehold, getHouseholdMembers } from "../../api/household"
+import { createHousehold, getHouseholds, getHouseholdMemberCount, joinHousehold, updateHousehold, leaveHousehold, getHouseholdMembers } from "../../api/household"
+import { supabase } from "../../supabase"
 import type { Household } from "../../api/schema"
 import { notifications } from "@mantine/notifications"
 import type { User } from "@supabase/supabase-js"
@@ -12,22 +13,58 @@ export interface HouseHoldProps {
     user: User;
 }
 
+const HOUSEHOLD_COLORS = [
+    '#228be6', // blue
+    '#40c057', // green
+    '#fab005', // yellow
+    '#fd7e14', // orange
+    '#e64980', // pink
+    '#be4bdb', // purple
+    '#f03e3e', // red
+    '#12b886', // teal
+    '#5c7cfa', // indigo
+    '#20c997', // mint
+]
+
+function ColorPicker({ value, onChange }: { value: string; onChange: (c: string) => void }) {
+    return (
+        <Group gap={6}>
+            {HOUSEHOLD_COLORS.map(color => (
+                <ActionIcon
+                    key={color}
+                    size={28}
+                    radius="xl"
+                    style={{
+                        backgroundColor: color,
+                        border: value === color ? '3px solid white' : '2px solid transparent',
+                        outline: value === color ? `2px solid ${color}` : 'none',
+                    }}
+                    onClick={() => onChange(color)}
+                    aria-label={color}
+                />
+            ))}
+        </Group>
+    )
+}
+
 export function HouseHold(props: HouseHoldProps) {
     const {user} = props;
-
     const navigate = useNavigate()
     const [households, setHouseholds] = useState<Household[]>([])
     const [showCreateModal, setShowCreateModal] = useState(false)
     const [showJoinModal, setShowJoinModal] = useState(false)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
+    const [errorTitle, setErrorTitle] = useState<string>("Couldn't load households")
 
     const [newName, setNewName] = useState("")
     const [newBudget, setNewBudget] = useState<number | string>("")
+    const [newColor, setNewColor] = useState(HOUSEHOLD_COLORS[0])
     const [creating, setCreating] = useState(false)
     const [createError, setCreateError] = useState<string | null>(null)
 
     const [inviteId, setInviteId] = useState("")
+    const [joinColor, setJoinColor] = useState(HOUSEHOLD_COLORS[0])
     const [joining, setJoining] = useState(false)
     const [joinError, setJoinError] = useState<string | null>(null)
 
@@ -43,7 +80,9 @@ export function HouseHold(props: HouseHoldProps) {
     const [confirmName, setConfirmName] = useState("")
     const [checkingMembers, setCheckingMembers] = useState<string | null>(null)
 
-    const [createdHousehold, setCreatedHousehold] = useState<{ name: string; inviteId: string; id: string } | null>(null)
+    const [createdHousehold, setCreatedHousehold] = useState<{ name: string; inviteId: string | null; id: string } | null>(null)
+    const [memberCounts, setMemberCounts] = useState<Record<string, number>>({})
+    const [userId, setUserId] = useState<string | null>(null)
 
     const fetchHouseholds = async () => {
         try {
@@ -52,8 +91,12 @@ export function HouseHold(props: HouseHoldProps) {
                 setError("Could not load households")
                 return
             }
-            setHouseholds(data ?? [])
+            const list = data ?? []
+            setHouseholds(list)
             setError(null)
+            setErrorTitle("Couldn't load households")
+            const counts = await Promise.all(list.map(h => getHouseholdMemberCount(h.id)))
+            setMemberCounts(Object.fromEntries(list.map((h, i) => [h.id, counts[i]])))
         } catch {
             setError("Could not load households")
         } finally {
@@ -61,7 +104,10 @@ export function HouseHold(props: HouseHoldProps) {
         }
     }
 
-    useEffect(() => { void fetchHouseholds() }, [])
+    useEffect(() => {
+        void fetchHouseholds()
+        void supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? null))
+    }, [])
 
     const handleCreate = async () => {
         if (!newName.trim()) { setCreateError("Household name is required"); return }
@@ -78,12 +124,13 @@ export function HouseHold(props: HouseHoldProps) {
         setCreating(true)
         setCreateError(null)
         try {
-            const { data, error } = await createHousehold(newName.trim(), budget)
+            const { data, error } = await createHousehold(newName.trim(), budget, newColor)
             if (error) { setCreateError(error.message); return }
 
-            const result = data as { id: string; house_name: string; invite_id: string } | null
+            const result = (Array.isArray(data) ? data[0] : data)
             setNewName("")
             setNewBudget("")
+            setNewColor(HOUSEHOLD_COLORS[0])
             setShowCreateModal(false)
             setCreatedHousehold(result ? { name: result.house_name, inviteId: result.invite_id, id: result.id } : null)
             void fetchHouseholds()
@@ -107,9 +154,10 @@ export function HouseHold(props: HouseHoldProps) {
         setJoining(true)
         setJoinError(null)
         try {
-            const { error } = await joinHousehold(inviteId.trim())
+            const { error } = await joinHousehold(inviteId.trim(), joinColor)
             if (error) { setJoinError(error.message); return }
             setInviteId("")
+            setJoinColor(HOUSEHOLD_COLORS[0])
             setShowJoinModal(false)
             void fetchHouseholds()
             notifications.show({
@@ -159,6 +207,12 @@ export function HouseHold(props: HouseHoldProps) {
 
     const handleLeave = async (householdId: string) => {
         const household = households.find(h => h.id === householdId)
+        if (household && household.admin_id === userId && (memberCounts[householdId] ?? 0) > 1) {
+            setErrorTitle("Transfer admin before leaving")
+            setError("You are the admin of this household. Transfer admin rights to another member before leaving.")
+            setLeavingId(null)
+            return
+        }
         setLeaving(true)
         try {
             const { error } = await leaveHousehold(user.id, householdId)
@@ -233,9 +287,9 @@ export function HouseHold(props: HouseHoldProps) {
                         color="red"
                         radius="md"
                         icon={<IconAlertCircle size={18} />}
-                        title="Couldn't load households"
+                        title={errorTitle}
                         withCloseButton
-                        onClose={() => setError(null)}
+                        onClose={() => { setError(null); setErrorTitle("Couldn't load households") }}
                     >
                         {error}
                     </Alert>
@@ -248,7 +302,7 @@ export function HouseHold(props: HouseHoldProps) {
                         Create Household
                     </Button>
                     <Button size="lg" variant="default" leftSection={<IconUserPlus size={20} />}
-                        onClick={() => { setJoinError(null); setShowJoinModal(true) }}
+                        onClick={() => { setJoinError(null); setInviteId(""); setJoinColor(HOUSEHOLD_COLORS[0]); setShowJoinModal(true) }}
                         disabled={households.length >= 5}>
                         Join Household
                     </Button>
@@ -271,13 +325,18 @@ export function HouseHold(props: HouseHoldProps) {
                 ) : (
                     <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
                         {households.map(h => (
-                            <Card key={h.id} withBorder shadow="sm" radius="md" padding="lg">
+                            <Card key={h.id} withBorder shadow="sm" radius="md" padding="lg"
+                                style={{ borderLeft: `4px solid ${h.household_color}` }}>
                                 <Stack gap="sm">
                                     <div>
                                         <Text fw={700} size="lg">{h.house_name}</Text>
                                         {h.monthly_budget != null && (
                                             <Text size="sm" c="dimmed">Budget: {h.monthly_budget} kr/month</Text>
                                         )}
+                                        <Text size="sm" c={memberCounts[h.id] >= 51 ? "red" : "dimmed"}>
+                                            {memberCounts[h.id] ?? "…"}/51 members
+                                            {memberCounts[h.id] >= 51 && " · Household is full"}
+                                        </Text>
                                     </div>
 
                                     <CopyButton value={h.invite_id ?? ""} timeout={3000}>
@@ -342,6 +401,10 @@ export function HouseHold(props: HouseHoldProps) {
                         value={newName} onChange={e => setNewName(e.target.value)} />
                     <NumberInput label="Monthly Budget (optional)" placeholder="e.g. 5000"
                         min={0} value={newBudget} onChange={v => setNewBudget(v)} />
+                    <div>
+                        <Text size="sm" fw={500} mb={6}>Color</Text>
+                        <ColorPicker value={newColor} onChange={setNewColor} />
+                    </div>
                     <Group justify="flex-end" gap="sm">
                         <Button variant="default" onClick={() => setShowCreateModal(false)}>Cancel</Button>
                         <Button onClick={() => void handleCreate()} loading={creating}>Create</Button>
@@ -378,7 +441,7 @@ export function HouseHold(props: HouseHoldProps) {
             </Modal>
 
             {/* Join Modal */}
-            <Modal opened={showJoinModal} onClose={() => setShowJoinModal(false)}
+            <Modal opened={showJoinModal} onClose={() => { setShowJoinModal(false); setInviteId(""); setJoinColor(HOUSEHOLD_COLORS[0]) }}
                 centered radius="lg" title={<Title order={3}>Join a Household</Title>}>
                 <Stack gap="md">
                     <Text size="sm" c="dimmed">Ask a household member for their invite code.</Text>
@@ -397,8 +460,12 @@ export function HouseHold(props: HouseHoldProps) {
                     )}
                     <TextInput label="Invite Code" placeholder="e.g. a1b2c3d4"
                         value={inviteId} onChange={e => setInviteId(e.target.value)} />
+                    <div>
+                        <Text size="sm" fw={500} mb={6}>Color</Text>
+                        <ColorPicker value={joinColor} onChange={setJoinColor} />
+                    </div>
                     <Group justify="flex-end" gap="sm">
-                        <Button variant="default" onClick={() => setShowJoinModal(false)}>Cancel</Button>
+                        <Button variant="default" onClick={() => { setShowJoinModal(false); setInviteId(""); setJoinColor(HOUSEHOLD_COLORS[0]) }}>Cancel</Button>
                         <Button onClick={() => void handleJoin()} loading={joining}>Join</Button>
                     </Group>
                 </Stack>
@@ -443,7 +510,7 @@ export function HouseHold(props: HouseHoldProps) {
                                 <IconLink size={16} color="var(--color-primary-700)" />
                                 <Text size="sm" fw={700} c="var(--color-primary-700)">Your invite code</Text>
                             </Group>
-                            <CopyButton value={createdHousehold.inviteId} timeout={4000}>
+                            <CopyButton value={createdHousehold.inviteId ?? ""} timeout={4000}>
                                 {({ copied, copy }) => (
                                     <Stack gap="xs">
                                         <Group gap="sm" p="sm" style={{

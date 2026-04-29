@@ -124,7 +124,11 @@
     margin-left: var(--space-1);
   }
 
+  .header-logo {
+    filter: brightness(0.5) invert(1);
+  }
+
   .header-logo:hover {
-    filter: brightness(0.9);
+    filter: brightness(0.7) invert(1);
   }
 }
