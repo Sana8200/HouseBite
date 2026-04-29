@@ -9,7 +9,7 @@ interface InviteModalProps {
 
 export function InviteModal({ inviteId, opened, onClose }: InviteModalProps) {
     return (
-        <Modal opened={opened} onClose={onClose} centered radius="lg" size="sm"
+        <Modal opened={opened} onClose={onClose} centered radius="xl" size="sm"
             title={
                 <Group gap="sm">
                     <IconUserPlus size={24} color="var(--color-primary-600)" />
@@ -31,7 +31,7 @@ export function InviteModal({ inviteId, opened, onClose }: InviteModalProps) {
                         >
                             <ActionIcon
                                 variant="subtle"
-                                color={copied ? "green" : "gray"}
+                                color={copied ? "brand" : "gray"}
                                 onClick={copy}
                                 title="Copy to clipboard"
                             >
@@ -42,7 +42,7 @@ export function InviteModal({ inviteId, opened, onClose }: InviteModalProps) {
                             </Code>
                         </Group>
                         {copied && (
-                            <Text size="sm" c="green" ta="center" mt="sm" fw={500}>
+                            <Text size="sm" ta="center" mt="sm" fw={500} style={{ color: "var(--color-success)" }}>
                                 Copied! Send this code to your friend.
                             </Text>
                         )}

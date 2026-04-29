@@ -15,18 +15,18 @@
 .shopping-list-table th,
 .shopping-list-table td {
   padding: 16px 18px;
-  border: 1px solid var(--mantine-color-gray-3);
+  border: 1px solid var(--color-border);
   vertical-align: middle;
 }
 
 .shopping-list-table thead th {
-  background: var(--mantine-color-gray-0);
+  background: var(--color-surface-muted);
   text-align: left;
   font-size: 0.8rem;
   font-weight: 700;
   letter-spacing: 0.03em;
   text-transform: uppercase;
-  color: var(--mantine-color-gray-7);
+  color: var(--color-text-muted);
 }
 
 .shopping-list-table__checkbox-column {
@@ -47,46 +47,46 @@
 }
 
 .shopping-list-table__row.is-purchased {
-  background: var(--mantine-color-green-0);
+  background: rgba(0, 87, 46, 0.06);
 }
 
 .shopping-list-table__row.is-highlighted {
   background:
     linear-gradient(
       90deg,
-      rgba(64, 145, 108, 0.08) 0%,
-      rgba(64, 145, 108, 0.18) 100%
+      rgba(0, 87, 46, 0.08) 0%,
+      rgba(0, 87, 46, 0.18) 100%
     );
 }
 
 .shopping-list-table__row--draft {
-  background: var(--mantine-color-yellow-0);
+  background: rgba(231, 165, 91, 0.12);
 }
 
 .shopping-list-table__row--add-action {
   cursor: pointer;
   background: linear-gradient(
     90deg,
-    rgba(64, 145, 108, 0.08) 0%,
-    rgba(64, 145, 108, 0.02) 100%
+    rgba(0, 87, 46, 0.08) 0%,
+    rgba(0, 87, 46, 0.02) 100%
   );
 }
 
 .shopping-list-table__row--add-action td {
   border-style: dashed;
-  color: var(--mantine-color-green-8);
+  color: var(--color-primary-700);
 }
 
 .shopping-list-table__row--add-action:hover {
   background: linear-gradient(
     90deg,
-    rgba(64, 145, 108, 0.14) 0%,
-    rgba(64, 145, 108, 0.04) 100%
+    rgba(0, 87, 46, 0.14) 0%,
+    rgba(0, 87, 46, 0.04) 100%
   );
 }
 
 .shopping-list-table__row.is-first-purchased td {
-  border-top: 4px solid var(--mantine-color-green-5);
+  border-top: 2px solid var(--color-primary-500);
 }
 
 .shopping-list-checkbox-shell {
@@ -103,12 +103,12 @@
 }
 
 .shopping-list-checkbox-shell.is-purchased {
-  background-color: rgba(64, 145, 108, 0.12);
+  background-color: rgba(0, 87, 46, 0.12);
 }
 
 .shopping-list-checkbox-shell.is-highlighted {
   transform: scale(1.08);
-  box-shadow: 0 0 0 6px rgba(64, 145, 108, 0.12);
+  box-shadow: 0 0 0 6px rgba(0, 87, 46, 0.12);
 }
 
 .shopping-list-checkbox-input {
@@ -119,14 +119,14 @@
     border-color 180ms ease;
   border-width: 2px;
   border-radius: 6px;
-  border-color: var(--mantine-color-gray-5);
-  background-color: white;
+  border-color: var(--color-border);
+  background-color: var(--color-white);
 }
 
 .shopping-list-checkbox-shell.is-purchased .shopping-list-checkbox-input {
   border-width: 1px;
-  border-color: var(--mantine-color-green-6);
-  background-color: var(--mantine-color-green-6);
+  border-color: var(--color-primary-600);
+  background-color: var(--color-primary-600);
 }
 
 .shopping-list-checkbox-shell.is-highlighted .shopping-list-checkbox-input {

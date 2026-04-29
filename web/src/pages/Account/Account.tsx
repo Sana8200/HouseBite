@@ -124,7 +124,7 @@ export function Account(props: AccountProps) {
             }
             setUserRestrictions(next)
             notifications.show({
-                color: has ? "orange" : "green",
+                color: has ? "orange" : "brand",
                 title: has ? "Removed" : "Added",
                 message: `${label} ${has ? "removed from" : "added to"} your restrictions.`,
             })
@@ -164,7 +164,7 @@ export function Account(props: AccountProps) {
             setUsername(trimmed)
             setEditingName(false)
             notifications.show({
-                color: "green",
+                color: "brand",
                 title: "Saved",
                 message: "Username updated.",
             })
@@ -208,7 +208,7 @@ export function Account(props: AccountProps) {
             setConfirmPassword("")
             setShowPasswordModal(false)
             notifications.show({
-                color: "green",
+                color: "brand",
                 title: "Password updated",
                 message: "Your password has been changed.",
             })
@@ -260,7 +260,7 @@ export function Account(props: AccountProps) {
             <Grid mt="md">
                 <Grid.Col span={{ base: 12, md: 5 }}>
                     <Stack>
-                        <Card shadow="md">
+                        <Card shadow="md" radius="xl">
                             <Flex align="center" gap="md">
                                 <Avatar src={avatar} name={username} color="initials" size="xl" />
                                 <div>
@@ -270,7 +270,7 @@ export function Account(props: AccountProps) {
                             </Flex>
                         </Card>
 
-                        <Card shadow="md">
+                        <Card shadow="md" radius="xl">
                             <Title order={4}>Profile</Title>
 
                             {nameError && (
@@ -350,7 +350,7 @@ export function Account(props: AccountProps) {
                 </Grid.Col>
 
                 <Grid.Col span={{ base: 12, md: 7 }}>
-                    <Card shadow="md">
+                    <Card shadow="md" radius="xl">
                         <Title order={4}>Food Preferences & Restrictions</Title>
                         <Text c="dimmed">
                             Add your dietary restrictions to get personalized recipe
@@ -372,15 +372,15 @@ export function Account(props: AccountProps) {
                             </Alert>
                         )}
 
-                        <Card p="md" shadow="none" withBorder mt="md">
+                        <Card p="md" shadow="none" withBorder radius="xl" mt="md">
                             <Text fw={500}>Your selections</Text>
                             <Space h="xs" />
                             {userRestrictions.size === 0 && <Text>None selected</Text>}
-                            <Group>
+                                <Group>
                                 {availableRestrictions
                                     .filter(r => userRestrictions.has(r.id))
                                     .map(r => (
-                                        <Chip key={r.id} checked onClick={() => void toggleRestriction(r.id)}>
+                                        <Chip key={r.id} checked color="brand" onClick={() => void toggleRestriction(r.id)}>
                                             {formatRestriction(r.name)}
                                         </Chip>
                                     ))
@@ -398,7 +398,7 @@ export function Account(props: AccountProps) {
             </Grid>
 
             <Stack mt="md">
-                <Card shadow="md">
+                <Card shadow="md" radius="xl">
                     <div>
                         <Title order={4}>Security</Title>
                         <Button onClick={handleChangePasswordClick} mt="sm">
@@ -407,9 +407,9 @@ export function Account(props: AccountProps) {
                     </div>
                 </Card>
 
-                <Card shadow="md">
+                <Card shadow="md" radius="xl">
                     <div>
-                        <Title order={4} c="red">Danger zone</Title>
+                        <Title order={4} style={{ color: "var(--color-danger)" }}>Danger zone</Title>
                         <Text>Deleting your account is permanent and cannot be undone.</Text>
                         <Button color="red" onClick={() => setShowDeleteModal(true)} mt="sm">
                             Delete account
@@ -511,13 +511,13 @@ function RestrictionCategory(props: RestrictionCategoryProps) {
     const { label, items, togglingId, toggleRestriction, userRestrictions } = props;
 
     return (
-        <Card p="md" shadow="none" withBorder>
+        <Card p="md" shadow="none" withBorder radius="xl">
             <Text fw={500}>{label}</Text>
             <Group wrap="wrap" mt="xs">
                 {items.map(r => {
                     const on = userRestrictions.has(r.id);
                     return (
-                        <Chip key={r.id} checked={on} disabled={togglingId == r.id} onClick={() => void toggleRestriction(r.id)}>
+                        <Chip key={r.id} checked={on} color="brand" disabled={togglingId == r.id} onClick={() => void toggleRestriction(r.id)}>
                             {formatRestriction(r.name)}
                         </Chip>
                     );

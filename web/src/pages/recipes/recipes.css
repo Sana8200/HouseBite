@@ -11,9 +11,9 @@
 }
 
 .recipe-carousel::-webkit-scrollbar { height: 8px; }
-.recipe-carousel::-webkit-scrollbar-track { background: var(--mantine-color-gray-1); border-radius: 10px; }
-.recipe-carousel::-webkit-scrollbar-thumb { background: var(--mantine-color-gray-4); border-radius: 10px; }
-.recipe-carousel::-webkit-scrollbar-thumb:hover { background: var(--mantine-color-gray-5); }
+.recipe-carousel::-webkit-scrollbar-track { background: var(--color-surface-muted); border-radius: 10px; }
+.recipe-carousel::-webkit-scrollbar-thumb { background: #c8bfb0; border-radius: 10px; }
+.recipe-carousel::-webkit-scrollbar-thumb:hover { background: #a89f92; }
 
 .recipe-carousel-item {
   min-width: 280px;
@@ -39,7 +39,7 @@
 
 .recipe-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.10);
+  box-shadow: var(--shadow-md);
 }
 
 @media (max-width: 768px) {

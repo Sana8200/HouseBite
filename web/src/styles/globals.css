@@ -8,7 +8,7 @@ html,
 body,
 #root {
   margin: 0;
-  background-color: var(--color-surface);
+  background-color: var(--color-surface-muted);
   color: var(--color-text);
   font-family: var(--font-family-base);
 }
@@ -30,7 +30,7 @@ body {
 }
 
 body {
-  background: var(--color-surface);
+  background: var(--color-surface-muted);
   color: var(--color-text);
   font-family: var(--font-family-base);
   font-size: var(--font-size-300);
@@ -52,4 +52,35 @@ img {
 a {
   color: inherit;
   text-decoration: none;
+}
+
+/* Use the warm surface as the default background for structural containers.
+   Explicit component bg props still win when a view intentionally needs contrast. */
+.mantine-Card-root,
+.mantine-Paper-root,
+.mantine-Modal-content {
+  background-color: var(--color-surface);
+}
+
+/* Default button/action-icon variant uses surface instead of white */
+.mantine-Button-root[data-variant="default"],
+.mantine-ActionIcon-root[data-variant="default"] {
+  --button-bg: var(--color-surface);
+  --button-hover: var(--color-surface-muted);
+  --button-bd: 1px solid var(--color-border);
+  --button-color: var(--color-text);
+}
+
+/* Unchecked chips use surface */
+.mantine-Chip-label {
+  --chip-bg: var(--color-surface);
+  --chip-bd: 1px solid var(--color-border);
+}
+
+.mantine-Chip-input:checked + .mantine-Chip-label,
+.mantine-Chip-label[data-checked] {
+  --chip-bg: var(--color-primary-600);
+  --chip-hover: var(--color-primary-700);
+  --chip-bd: 1px solid var(--color-primary-600);
+  color: var(--color-white);
 }

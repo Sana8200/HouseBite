@@ -7,3 +7,33 @@
   transform: translateY(-3px);
   box-shadow: var(--shadow-md);
 }
+
+.landing-card--interactive {
+  cursor: pointer;
+  text-align: left;
+  border: 1px solid var(--color-border);
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    border-color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.landing-card--interactive:hover,
+.landing-card--interactive:focus-visible {
+  transform: translateY(-3px);
+  border-color: var(--color-primary-200);
+  background: var(--color-primary-50);
+  box-shadow: var(--shadow-md);
+}
+
+.landing-card--interactive:focus-visible {
+  outline: 2px solid var(--color-primary-600);
+  outline-offset: 3px;
+}
+
+.landing-card--interactive:active {
+  transform: translateY(-1px);
+  border-color: var(--color-primary-300);
+  background: var(--color-primary-100);
+}

@@ -8,6 +8,7 @@ import {  } from "@tabler/icons-react";
 import * as XLSX from "xlsx";
 import { fetchReceiptsByHousehold } from "../../api/receipt";
 import { formatCurrency, formatDate } from "../../utils/date";
+import "./receipts.css";
 
 type ReceiptItem = {
   id: string;
@@ -36,16 +37,23 @@ type Preset = "all" | "7d" | "1m" | "3m" | "custom";
 function ReceiptListItem({ receipt, selected, onSelect }: { receipt: ReceiptSummary; selected: boolean; onSelect: () => void; }) {
   return (
     /* One selectable receipt card in the left column. */
-    <UnstyledButton onClick={onSelect} style={{ width: "100%" }}>
+    <UnstyledButton
+      onClick={onSelect}
+      style={{ width: "100%" }}
+      className="receipt-list-item"
+      data-selected={selected ? "true" : undefined}
+    >
       <Paper
         withBorder
         radius="xl"
         p="lg"
-        bg={selected ? "brand.7" : "white"}
+        bg={selected ? "brand.7" : "var(--color-surface)"}
         style={{
-          borderColor: selected ? "transparent" : "var(--color-border)",
+          borderColor: selected ? "var(--color-primary-700)" : "var(--color-border)",
           color: selected ? "var(--color-white)" : "var(--color-text)",
-          transition: "background-color 140ms ease, color 140ms ease, border-color 140ms ease",
+          transition: "transform 180ms ease, background-color 180ms ease, color 180ms ease, border-color 180ms ease, box-shadow 180ms ease",
+          transform: selected ? "translateY(-2px)" : "translateY(0)",
+          boxShadow: selected ? "var(--shadow-md)" : "var(--shadow-sm)",
         }}
       >
         <Group justify="space-between" align="center" wrap="nowrap">
@@ -262,6 +270,13 @@ export function Receipts() {
                 value={customRange}
                 onChange={setCustomRange}
                 clearable
+                classNames={{
+                  input: "receipts-date-picker__input",
+                  calendarHeader: "receipts-date-picker__header",
+                  calendarHeaderControl: "receipts-date-picker__header-control",
+                  weekday: "receipts-date-picker__weekday",
+                  day: "receipts-date-picker__day",
+                }}
               />
             )}
             <Menu shadow="md" position="bottom-end">

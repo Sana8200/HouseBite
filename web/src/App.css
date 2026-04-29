@@ -1,33 +1,10 @@
-/* 
- * Most of this file will be removed when we switch to the new ui framework.
- * Variables should be put in styles/tokens.css
+/*
+ * Legacy utility classes — being phased out as pages migrate to Mantine components.
  * Global overrides should be put in styles/globals.css
  * Page or component specific styles should be put in a corresponding css file.
+ * All design tokens (colors, spacing, radius, shadows) are defined in main.tsx
+ * via createTheme() and cssVariablesResolver.
  */
-
-:root {
-    --color-primary: #629a65;
-    --color-primary-hover: #539f59;
-    --color-primary-soft: #f3f0ff;
-
-    --color-muted: #666;
-    --color-subtle: #888;
-
-    --color-bg-soft: #f8f9fa;
-
-    --color-danger-soft: #fff0f0;
-    --color-danger-border: #ffcccc;
-
-    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.12);
-    --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.2);
-
-    --space-xs: 6px;
-    --space-sm: 12px;
-    --space-md: 16px;
-    --space-lg: 24px;
-    --space-xl: 32px;
-}
 
 /* Page container */
 .page {
@@ -65,7 +42,7 @@
 }
 
 .btn-secondary {
-    background: #e0e0e0;
+    background: var(--color-border);
     color: var(--color-text);
 }
 
@@ -98,7 +75,7 @@
 .error-banner {
     background: var(--color-danger-soft);
     border: 1px solid var(--color-danger-border);
-    color: #c00;
+    color: var(--color-danger);
     padding: var(--space-sm) var(--space-md);
     border-radius: var(--radius-md);
     margin-bottom: var(--space-md);
@@ -112,7 +89,7 @@
     border: none;
     font-size: 20px;
     cursor: pointer;
-    color: #c00;
+    color: var(--color-danger);
     padding: 0 4px;
 }
 

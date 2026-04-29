@@ -14,6 +14,7 @@ import { insertReceipt } from "../../api/receipt";
 import { insertProductWithSpecs } from "../../api/product";
 import type { ProductSizeUnit } from "../../api/schema";
 import { useMediaQuery } from "@mantine/hooks";
+import "./pantry.css";
 
 type PantryViewMode = "grid" | "list";
 type ExpiryStatusFilter = "all" | "expired" | "critical" | "warning" | "fresh" | "no-date";
@@ -63,7 +64,7 @@ function renderExpiryBadge(daysUntilExpiry: number | null) {
   if (status === "expired") return <Badge color="red">Expired</Badge>;
   if (status === "critical") return <Badge color="orange">Critical</Badge>;
   if (status === "warning") return <Badge color="yellow">Soon</Badge>;
-  return <Badge color="green">Fresh</Badge>;
+  return <Badge color="brand">Fresh</Badge>;
 }
 
 /* Helper for rendering the bottom status tag used in the grid view. */
@@ -99,7 +100,7 @@ function renderGridStatusTag(daysUntilExpiry: number | null) {
   }
 
   return (
-    <Badge color="green" radius="xl" px="md" py={10}>
+    <Badge color="brand" radius="xl" px="md" py={10}>
       {`Expires in ${daysUntilExpiry} day(s)`}
     </Badge>
   );
@@ -139,7 +140,7 @@ function PantryGrid({
         const daysUntilExpiry = getDaysUntilExpiry(product.expirationDate);
 
         return (
-          <Card key={product.id} withBorder shadow="sm" radius="md" padding="lg">
+          <Card key={product.id} withBorder shadow="sm" radius="xl" padding="lg">
             <Stack gap="md">
               <Group justify="space-between" align="flex-start">
                 <div>
@@ -309,7 +310,7 @@ function PantryAllProductsList({
   });
 
   return (
-    <Paper withBorder radius="md" p="md" style={{overflow: "auto"}}>
+    <Paper withBorder radius="xl" p="md" style={{overflow: "auto"}}>
       <Table highlightOnHover stickyHeader>
         <Table.Thead>
           <Table.Tr>
@@ -681,19 +682,29 @@ export function Pantry({ user }: PantryProps) {
           value={searchValue}
           onChange={(event) => setSearchValue(event.currentTarget.value)}
           placeholder="Search products"
+          classNames={{
+            root: "pantry-search",
+            input: "pantry-search__input",
+            section: "pantry-search__section",
+          }}
           leftSection={
             <Menu shadow="md" width={180}>
               <Menu.Target>
-                <ActionIcon variant="subtle" aria-label="Filter products by expiry status">
+                <ActionIcon
+                  variant="subtle"
+                  className="pantry-search__filter-trigger"
+                  aria-label="Filter products by expiry status"
+                >
                   <IconList size={16} />
                 </ActionIcon>
               </Menu.Target>
 
-              <Menu.Dropdown>
-                <Menu.Label>Filter by status</Menu.Label>
+              <Menu.Dropdown className="pantry-filter-menu">
+                <Menu.Label className="pantry-filter-menu__label">Filter by status</Menu.Label>
                 {filterOptions.map((option) => (
                   <Menu.Item
                     key={option.value}
+                    className="pantry-filter-menu__item"
                     onClick={() => setStatusFilter(option.value)}
                     leftSection={
                       <Badge color={option.color} variant="filled" size="xs">
@@ -712,6 +723,7 @@ export function Pantry({ user }: PantryProps) {
           style={{ flex: "0 1 420px" }}
         />
         <Button
+          className="pantry-recipes-button"
           flex="0 0 auto"
           disabled={selectedProducts.length === 0}
           onClick={() => handleFindRecipes()}
@@ -746,7 +758,7 @@ export function Pantry({ user }: PantryProps) {
         }
       </Group>
 
-      <Paper withBorder radius="md" p="lg">
+      <Paper withBorder radius="xl" p="lg" className="pantry-products-panel">
         <Stack gap="lg">
           <Group justify="space-between">
             <div>

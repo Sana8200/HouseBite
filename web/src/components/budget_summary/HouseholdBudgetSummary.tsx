@@ -34,7 +34,7 @@ const MEMBER_COLORS = [
 ];
 
 const getBadgeColor = (percentage: number): string => {
-  if (percentage < 50) return 'green';
+  if (percentage < 50) return 'brand';
   if (percentage < 75) return 'orange';
   if (percentage < 90) return 'orange.7';
   return 'red';
@@ -160,7 +160,7 @@ export function HouseholdBudgetSummary({ householdId, userId }: HouseholdBudgetS
       const isHovered = hoveredMember === 'remaining';
       segments.push({
         value: remainingWidth,
-        color: isHovered ? '#dee2e6' : '#f1f3f5',
+        color: isHovered ? "var(--color-border)" : "var(--color-surface-muted)",
         label: 'Remaining',
         amount: remainingBudget,
         tooltip: `Remaining: ${formatCurrency(remainingBudget)}`
@@ -176,7 +176,7 @@ export function HouseholdBudgetSummary({ householdId, userId }: HouseholdBudgetS
   if (loading) {
     return (
       <Box mt="xl">
-        <Paper withBorder p="md" radius="md">
+        <Paper withBorder p="md" radius="xl">
           <Text ta="center">Loading budget summary...</Text>
         </Paper>
       </Box>
@@ -187,8 +187,8 @@ export function HouseholdBudgetSummary({ householdId, userId }: HouseholdBudgetS
     <Box mt="xl">
       <Stack gap="lg">
         {/* User-specific spending cards */}
-        <Paper withBorder p="md" radius="md">
-          <Title order={3} mb="md">Household monthly spending</Title>   
+        <Paper withBorder p="xl" radius="xl">
+          <Title order={3} mb="md">Household monthly spending</Title>
 
           <Box mt="md">
           <Group justify="space-between" mb="md">
@@ -197,25 +197,25 @@ export function HouseholdBudgetSummary({ householdId, userId }: HouseholdBudgetS
               {budgetUsed.toFixed(1)}% used this month
             </Badge>
           </Group>
-          </Box>  
+          </Box>
 
           <SimpleGrid cols={{ base: 1, md: 3 }} spacing="md">
-            <Paper withBorder p="md" bg="blue.0">
+            <Paper withBorder p="md" radius="lg" style={{ background: "var(--color-surface-muted)" }}>
               <Text size="sm" c="dimmed">Your spending</Text>
               <Text size="xl" fw={700}>{formatCurrency(userTotalSpent)}</Text>
               <Text size="xs">{currentUserSpending?.receipt_count || 0} receipts</Text>
             </Paper>
 
-            <Paper withBorder p="md" bg="gray.0">
+            <Paper withBorder p="md" radius="lg" style={{ background: "var(--color-surface-muted)" }}>
               <Text size="sm" c="dimmed">Household total spending</Text>
               <Text size="xl" fw={700}>{formatCurrency(totalSpent)}</Text>
-              {/*<Text size="xs">Your share: {userPercentage.toFixed(1)}%</Text> might not need, is redundant*/}
             </Paper>
 
             {householdBudget && (
-              <Paper withBorder p="md" bg={remainingBudget < 0 ? 'red.0' : 'yellow.0'}>
+              <Paper withBorder p="md" radius="lg"
+                style={{ background: remainingBudget < 0 ? "var(--color-danger-soft)" : "var(--color-surface-muted)" }}>
                 <Text size="sm" c="dimmed">Remaining budget</Text>
-                <Text size="xl" fw={700} c={remainingBudget < 0 ? 'red' : 'dark'}>
+                <Text size="xl" fw={700} style={{ color: remainingBudget < 0 ? "var(--color-danger)" : "var(--color-text)" }}>
                   {formatCurrency(Math.max(0, remainingBudget))}
                 </Text>
                 <Text size="xs">of {formatCurrency(householdBudget)} total</Text>
@@ -255,7 +255,7 @@ export function HouseholdBudgetSummary({ householdId, userId }: HouseholdBudgetS
                 ))}
                 {remainingBudget > 0 && (
                   <Group gap="xs">
-                    <div style={{ width: 12, height: 12, backgroundColor: '#f1f3f5', borderRadius: 2 }} />
+                    <div style={{ width: 12, height: 12, backgroundColor: 'var(--color-surface-muted)', borderRadius: 2 }} />
                     <Text size="xs">Remaining</Text>
                     <Text size="xs" fw={500}>{formatCurrency(remainingBudget)}</Text>
                   </Group>
@@ -282,7 +282,7 @@ export function HouseholdBudgetSummary({ householdId, userId }: HouseholdBudgetS
                     key={member.member_id}
                     onMouseEnter={() => setHoveredMember(member.member_id)}
                     onMouseLeave={() => setHoveredMember(null)}
-                    style={{ cursor: 'pointer', backgroundColor: hoveredMember === member.member_id ? '#f8f9fa' : 'transparent' }}
+                    style={{ cursor: 'pointer', backgroundColor: hoveredMember === member.member_id ? 'var(--color-surface-muted)' : 'transparent' }}
                   >
                     <Table.Td>
                       <Group gap="xs">

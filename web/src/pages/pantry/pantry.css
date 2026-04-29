@@ -1,0 +1,86 @@
+.pantry-search {
+  flex: 0 1 420px;
+}
+
+.pantry-search__input {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    background-color 0.18s ease;
+}
+
+.pantry-search__input:focus,
+.pantry-search__input:focus-within {
+  border-color: var(--color-primary-300);
+  box-shadow: 0 0 0 3px rgba(0, 87, 46, 0.10);
+}
+
+.pantry-search__section {
+  color: var(--color-text-muted);
+}
+
+.pantry-search__filter-trigger {
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    background-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.pantry-search__filter-trigger:hover,
+.pantry-search__filter-trigger:focus-visible {
+  transform: translateY(-1px);
+  border-color: var(--color-primary-200);
+  background: var(--color-primary-50);
+  color: var(--color-primary-700);
+  box-shadow: var(--shadow-sm);
+}
+
+.pantry-search__filter-trigger:focus-visible {
+  outline: 2px solid var(--color-primary-600);
+  outline-offset: 2px;
+}
+
+.pantry-filter-menu {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-md);
+}
+
+.pantry-filter-menu__label {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.pantry-filter-menu__item {
+  min-height: 42px;
+  color: var(--color-text);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-medium);
+}
+
+.pantry-filter-menu__item:hover,
+.pantry-filter-menu__item:focus-visible {
+  background: var(--color-primary-50);
+  color: var(--color-primary-800);
+}
+
+.pantry-recipes-button:disabled {
+  opacity: 0.65;
+}
+
+.pantry-products-panel {
+  border-color: var(--color-border);
+}
