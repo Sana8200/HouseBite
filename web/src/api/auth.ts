@@ -27,11 +27,21 @@ export async function signIn(email: string, password: string, captchaToken: stri
 /**
  * @throws `AuthError` if the sign-up fails.
  */
+/**
+ * Returns the user. If email confirmation is enabled, the user won't have a
+ * session yet — the caller should check `result.identities?.length === 0` to
+ * detect an already-registered email (Supabase returns a fake user in that case).
+ * @throws `AuthError` if the sign-up fails.
+ */
 export async function signUp(email: string, password: string, display_name: string, captchaToken: string): Promise<User> {
     const result = await supabase.auth.signUp({
         email,
         password,
-        options: { data: { display_name }, captchaToken },
+        options: {
+            data: { display_name },
+            captchaToken,
+            emailRedirectTo: window.location.origin,
+        },
     })
     if (result.error) throw result.error
     return result.data.user!

@@ -1,7 +1,7 @@
 import "./SignIn.css";
 import { IconAlertCircle } from "@tabler/icons-react";
 import { useRef, useState } from "react";
-import { Alert, Button, Container, Paper, PasswordInput, Stack, TextInput } from "@mantine/core";
+import { Alert, Button, Container, Paper, PasswordInput, Stack, Text, TextInput } from "@mantine/core";
 import { signIn, signUp, turnstileSiteKey } from "../../api/auth";
 import { Turnstile, type TurnstileInstance } from "@marsidev/react-turnstile";
 import { notifications } from "@mantine/notifications";
@@ -16,7 +16,7 @@ function AuthError(err: Error): string {
   const msg = err.message ?? "";
   if (msg.includes("User already registered")) return "An account with this email already exists. Try signing in instead.";
   if (msg.includes("Invalid login credentials")) return "Wrong email or password.";
-  if (msg.toLowerCase().includes("email")) return msg; // email format errors etc — keep raw
+  if (msg.toLowerCase().includes("email")) return msg;
   if (msg.toLowerCase().includes("network") || msg.toLowerCase().includes("fetch")) return "Couldn't reach the server. Check your connection.";
   return msg || "Something went wrong. Please try again.";
 }
@@ -24,6 +24,7 @@ function AuthError(err: Error): string {
 export function SignIn(props: SignInProps) {
     const { defaultTab = "signIn"} = props;
     const [activeTab, setActiveTab] = useState<AuthTab>(defaultTab);
+    const [verifyEmailSent, setVerifyEmailSent] = useState(false);
 
     const [error, setError] = useState<Error | null>(null);
     const [loading, setLoading] = useState(false);
@@ -54,12 +55,17 @@ export function SignIn(props: SignInProps) {
             if (activeTab == "signIn") {
                 await signIn(email, password, captchaToken);
             } else {
-                await signUp(email, password, displayName, captchaToken);
-                notifications.show({
-                  color:"green",
-                  title:"Account created",
-                  message: `Welcome, ${displayName}! You're now signed in.`,
-                });
+                const user = await signUp(email, password, displayName, captchaToken);
+                // If email confirmation is enabled, the user has no session yet
+                if (!user.confirmed_at && !user.email_confirmed_at) {
+                    setVerifyEmailSent(true);
+                } else {
+                    notifications.show({
+                        color: "green",
+                        title: "Account created",
+                        message: `Welcome, ${displayName}! You're now signed in.`,
+                    });
+                }
             }
         } catch (e) {
             setError(new Error(AuthError(e as Error)));
@@ -70,6 +76,25 @@ export function SignIn(props: SignInProps) {
     }
 
     const disabled = loading || (activeTab == "signUp" ? !displayName : false) || !email || !password || !captchaToken;
+
+    if (verifyEmailSent) {
+        return (
+            <Container p="md" size="xs">
+                <Paper p="md" radius="xl" shadow="md" withBorder>
+                    <Stack gap="md" align="center">
+                        <Text size="xl" fw={600}>Check your email</Text>
+                        <Text ta="center" c="dimmed">
+                            We sent a verification link to <strong>{email}</strong>.
+                            Click it to activate your account.
+                        </Text>
+                        <Button variant="subtle" onClick={() => { setVerifyEmailSent(false); setActiveTab("signIn"); }}>
+                            Back to sign in
+                        </Button>
+                    </Stack>
+                </Paper>
+            </Container>
+        );
+    }
 
     return (
         <Container p="md" size="xs">
@@ -94,52 +119,52 @@ export function SignIn(props: SignInProps) {
 
                 <div className="auth-content">
                     <form className="auth-form" onSubmit={e => void(onSubmit(e))}>
-                        <Stack gap="md">
-                            {error && (
-                                <Alert
-                                    variant="light"
-                                    color="red"
-                                    radius="md"
-                                    icon={<IconAlertCircle size={18} />}
-                                    title={activeTab === "signIn" ? "Couldn't sign in" : "Couldn't create account"}
-                                    withCloseButton
-                                    onClose={() => setError(null)}
-                                >
-                                    {error.message}
-                                </Alert>
-                            )}
+                            <Stack gap="md">
+                                {error && (
+                                    <Alert
+                                        variant="light"
+                                        color="red"
+                                        radius="md"
+                                        icon={<IconAlertCircle size={18} />}
+                                        title={activeTab === "signIn" ? "Couldn't sign in" : "Couldn't create account"}
+                                        withCloseButton
+                                        onClose={() => setError(null)}
+                                    >
+                                        {error.message}
+                                    </Alert>
+                                )}
 
-                            { activeTab == "signUp" &&
+                                { activeTab == "signUp" &&
+                                    <TextInput
+                                        label="Name"
+                                        type="text"
+                                        placeholder="Your name"
+                                        value={displayName}
+                                        onChange={(e) => setDisplayName(e.target.value)}
+                                    />
+                                }
+
                                 <TextInput
-                                    label="Name"
-                                    type="text"
-                                    placeholder="Your name"
-                                    value={displayName}
-                                    onChange={(e) => setDisplayName(e.target.value)}
+                                    label="Email"
+                                    type="email"
+                                    placeholder="your@email.com"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
                                 />
-                            }
 
-                            <TextInput 
-                                label="Email"
-                                type="email"
-                                placeholder="your@email.com"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                            />
-                            
-                            <PasswordInput
-                                label="Password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                            />
+                                <PasswordInput
+                                    label="Password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                />
 
-                            <Turnstile ref={turnstileRef} siteKey={turnstileSiteKey} onSuccess={setCaptchaToken} />
+                                <Turnstile ref={turnstileRef} siteKey={turnstileSiteKey} onSuccess={setCaptchaToken} />
 
-                            <Button type="submit" variant="primary" disabled={disabled} loading={loading}>
-                                {activeTab == "signIn" ? "Sign in" : "Sign up" }
-                            </Button>
-                        </Stack>
-                    </form>
+                                <Button type="submit" variant="primary" disabled={disabled} loading={loading}>
+                                    {activeTab == "signIn" ? "Sign in" : "Sign up" }
+                                </Button>
+                            </Stack>
+                        </form>
                 </div>
             </Paper>
         </Container>
