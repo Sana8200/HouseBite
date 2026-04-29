@@ -1,3 +1,4 @@
+import type { PostgrestSingleResponse } from '@supabase/supabase-js';
 import { supabase } from '../supabase'
 import type { Household } from './schema'
 
@@ -8,7 +9,7 @@ export type NewHousehold = Pick<Household, "id" | "house_name" | "invite_id" | "
 // the previous two-step flow (insert household → insert allocation)
 // which failed because RLS SELECT policies block RETURNING on a row
 // whose allocation doesn't exist yet.
-export async function createHousehold(name: string, budget: number | null, color: string) {
+export async function createHousehold(name: string, budget: number | null, color: string): Promise<PostgrestSingleResponse<NewHousehold | NewHousehold[]>> {
     return supabase.rpc('create_household', {
         p_house_name: name,
         p_monthly_budget: budget,
@@ -17,19 +18,19 @@ export async function createHousehold(name: string, budget: number | null, color
 }
 
 // Fetches households for the current user, joining allocations for per-user household_color.
-export async function getHouseholds(): Promise<{ data: Household[] | null; error: unknown }> {
+export async function getHouseholds(): Promise<PostgrestSingleResponse<Household[]>> {
     const result = await supabase
         .from('allocations')
         .select('household_color, household(*)')
 
-    if (result.error) return { data: null, error: result.error }
+    if (result.error) return result;
 
-    const households: Household[] = (result.data ?? []).map((row: any) => ({
-        ...(row.household as Omit<Household, 'household_color'>),
-        household_color: row.household_color,
+    const households: Household[] = (result.data ?? []).map(row => ({
+        ...(row.household as unknown as Omit<Household, 'household_color'>),
+        household_color: row.household_color as string,
     }))
 
-    return { data: households, error: null }
+    return {...result, data: households};
 }
 
 // Wrapper for a SECURITY DEFINER SQL function that finds a household
@@ -48,11 +49,11 @@ export async function getHouseholdMembers(householdId: string): Promise<Postgres
 }
 
 export async function getHouseholdMemberCount(householdId: string): Promise<number> {
-    const { data, error } = await supabase.rpc('get_household_member_count', {
+    const result = await supabase.rpc('get_household_member_count', {
         p_household_id: householdId,
     })
-    if (error) return 0
-    return data as number
+    if (result.error) return 0
+    return result.data as number
 }
 
 export async function updateHousehold(id: string, name: string, budget: number | null) {
@@ -86,12 +87,12 @@ export async function kickMember(householdId: string, memberId: string): Promise
 }
 
 export async function kickMemberPermanently(householdId: string, memberId: string): Promise<string> {
-    const { data, error } = await supabase.rpc('kick_member_permanently', {
+    const result = await supabase.rpc('kick_member_permanently', {
         p_household_id: householdId,
         p_member_id: memberId,
     })
-    if (error) throw new Error(error.message)
-    return data as string
+    if (result.error) throw new Error(result.error.message)
+    return result.data as string
 }
 
 export async function transferAdmin(householdId: string, newAdminId: string): Promise<void> {

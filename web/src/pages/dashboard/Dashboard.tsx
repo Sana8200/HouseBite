@@ -435,18 +435,18 @@ export default function Dashboard(props: DashboardProps) {
         return;
       }
 
-        const mapped: Product[] = (data ?? []).map((p: any) => {
+        const mapped: Product[] = (data ?? []).map(p => {
             // Supabase may return product_specs as an object or array depending on version
             const specs = Array.isArray(p.product_specs)
                 ? p.product_specs[0]
                 : p.product_specs;
             return {
-                id: p.id,
-                name: p.name,
-                expiryDate: specs?.expiration_date ?? null,
-                current_quantity: specs?.current_quantity ?? 1,
-                householdName: p.household?.house_name ?? 'Unknown',
-                householdId: p.household_id,
+                id: p.id as string,
+                name: p.name as string,
+                expiryDate: (specs?.expiration_date as string | null) ?? null,
+                current_quantity: (specs?.current_quantity as number | null) ?? 1,
+                householdName: ((p.household as unknown as {house_name: string | null})?.house_name) ?? 'Unknown',
+                householdId: p.household_id as string,
             };
         });
 
