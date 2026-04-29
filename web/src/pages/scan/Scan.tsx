@@ -73,6 +73,8 @@ export function Scan(props: ScanProps) {
 
     return (
 
+        <>
+
         <Stack gap="xl" p="xl">
             <Group justify="space-between" align="flex-start">
                 <Title order={1}>Load a new receipt to your pantry</Title>
@@ -87,7 +89,7 @@ export function Scan(props: ScanProps) {
                     </Stepper.Step>
                     
                     <Stepper.Step label="Processing" description="AI reads receipt">
-                        {activeStep === 1 && <ScanProcessing state={state} setState={setState} setActiveStep={setActiveStep} />}
+                        {activeStep === 1 && state.state === "processing" && <ScanProcessing state={state} setState={setState} setActiveStep={setActiveStep} />}
                     </Stepper.Step>
                     
                     <Stepper.Step label="Review" description="Check & edit items">
@@ -109,8 +111,38 @@ export function Scan(props: ScanProps) {
                 </Accordion.Item>
             </Accordion>
         </Stack>
+
+
+        {state.state === "error" && (
+            <Alert
+                variant="light"
+                color="red"
+                radius="md"
+                icon={<IconAlertCircle size={18} />}
+                title="Couldn't read your receipt"
+                mt="md"
+                mx="xl"
+            >
+                {friendlyScanError(state.error)}
+                <Button 
+                    size="sm" 
+                    onClick={() => {
+                        setState({ state: "ready" });
+                        setActiveStep(0);
+                    }}
+                    mt="md"
+                >
+                    Try again
+                </Button>
+            </Alert>
+        )}
+
+    </>
+
+    
     );
-};
+
+}
 
 interface ScanReadyProps {
     state: ReadyState;
@@ -308,7 +340,15 @@ function ScanProcessing(props: ScanProcessingProps) {
             </Stack>
 
             <Group justify="center" mt="xl">
-                <Button variant="default" onClick={() => setActiveStep(0)}>Back to Upload</Button>
+                <Button 
+                    variant="default" 
+                    onClick={() => {
+                        setScanState({ state: "ready" });
+                        setActiveStep(0);
+                    }}
+                >
+                    Back to Upload
+                </Button>
             </Group>
         </>
     );
@@ -376,8 +416,8 @@ function ScanReview(props: ScanReviewProps) {
 
     return (
         <>
-            <Title order={3}>Review & Edit Receipt</Title>
-            <Text c="dimmed" mb="md">Pre-filled expiration dates are estimates. Edit as needed.</Text>
+            <Title order={3}>Review & edit receipt</Title>
+            <Text c="dimmed" mb="md">Pre-filled expiration dates are estimates! Please check on your product for the actual expiration date.</Text>
 
             <Card shadow="none" withBorder mb="md">
                 <Select
@@ -523,17 +563,9 @@ function ScanSave(props: ScanSaveProps) {
 
     return (
         <>
-            <Title order={3}>Confirm & Save</Title>
+            <Title order={3}>Confirm and save</Title>
             
             <Card shadow="none" withBorder mb="md">
-                <Select
-                    label="Household"
-                    placeholder="Select household"
-                    required
-                    data={households.map((h) => ({ value: h.id, label: h.house_name }))}
-                    value={selectedHousehold}
-                    onChange={setSelectedHousehold}
-                />
                 
                 <Text fw={500} mt="md">Receipt Summary:</Text>
                 <Text size="sm">Store: {state.data.storeName || "Not specified"}</Text>
@@ -567,32 +599,6 @@ function ScanSave(props: ScanSaveProps) {
                 </Button>
             </Group>
         </>
-    );
-}
-
-interface ScanErrorProps {
-    state: ErrorState;
-    setState: Dispatch<SetStateAction<ScanState>>;
-    setActiveStep: Dispatch<SetStateAction<number>>;
-}
-
-function ScanError(props: ScanErrorProps) {
-    const {state, setState} = props;
-    return (
-        <Stack gap="md" mt="md">
-            <Alert
-                variant="light"
-                color="red"
-                radius="md"
-                icon={<IconAlertCircle size={18} />}
-                title="Couldn't read your receipt"
-            >
-                {friendlyScanError(state.error)}
-            </Alert>
-            <Center>
-                <Button size="lg" onClick={() => setState({state: "ready"})}>Try again</Button>
-            </Center>
-        </Stack>
     );
 }
 
