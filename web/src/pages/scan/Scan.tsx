@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, type Dispatch, type SetStateAction, useCallback } from "react";
 import "./Scan.css";
-import { Alert, Box, Button, Card, Center, Checkbox, Container, Flex, Grid, Loader, NumberInput, Paper, Select, Stack, Text, TextInput, Title } from "@mantine/core";
+import { Alert, Button, Card, Center, Checkbox, Flex, Loader, NumberInput, Paper, Select, Stack, Text, TextInput, Title, Stepper, Group, Accordion } from "@mantine/core";
 import { Dropzone, IMAGE_MIME_TYPE, type FileWithPath } from "@mantine/dropzone";
 import { IconReceipt, IconAlertCircle } from "@tabler/icons-react";
 import { scanReceipt, type ReceiptData, type ReceiptItemData } from "../../api/scan";
@@ -55,6 +55,7 @@ export function Scan(props: ScanProps) {
     const { user } = props;
 
     const [state, setState] = useState<ScanState>({ state: "ready" });
+    const [activeStep, setActiveStep] = useState(0);
 
     const [households, setHouseholds] = useState<Household[]>([]);
 
@@ -71,20 +72,50 @@ export function Scan(props: ScanProps) {
     }, []);
 
     return (
-        <Container size="md" p="md">
+
+        <Stack gap="xl" p="xl">
+            <Group justify="space-between" align="flex-start">
+                <Title order={1}>Load a new receipt to your pantry</Title>
+            </Group>
+            <Group justify="space-between" align="flex-start">
+                <Text c="dimmed">You can take a new picture or drag and drop from your computer. You can only do it one receipt at a time.</Text>
+            </Group>
             <Paper shadow="md" p="md">
-                {state.state == "ready" && <ScanReady state={state} setState={setState} />}
-                {state.state == "processing" && <ScanProcessing state={state} setState={setState} />}
-                {state.state == "finished" && <ScanFinished state={state} setState={setState} households={households} user={user} />}
-                {state.state == "error" && <ScanError state={state} setState={setState} />}
+                <Stepper active={activeStep} onStepClick={setActiveStep}>
+                    <Stepper.Step label="Upload" description="Take or upload photo">
+                        {activeStep === 0 && state.state === "ready" && <ScanReady state={state} setState={setState} setActiveStep={setActiveStep} />}
+                    </Stepper.Step>
+                    
+                    <Stepper.Step label="Processing" description="AI reads receipt">
+                        {activeStep === 1 && <ScanProcessing state={state} setState={setState} setActiveStep={setActiveStep} />}
+                    </Stepper.Step>
+                    
+                    <Stepper.Step label="Review" description="Check & edit items">
+                        {activeStep === 2 && state.state === "finished" && <ScanReview state={state} setState={setState} households={households} setActiveStep={setActiveStep} />}
+                    </Stepper.Step>
+                    
+                    <Stepper.Step label="Save" description="Final confirmation">
+                        {activeStep === 3 && state.state === "finished" && <ScanSave state={state} households={households} user={user} setActiveStep={setActiveStep} />}
+                    </Stepper.Step>
+                </Stepper>
             </Paper>
-        </Container>
+
+            <Accordion variant="filled" radius="lg" chevronIconSize={17}>
+                <Accordion.Item value="how-it-works">
+                    <Accordion.Control>Curious about how it works?</Accordion.Control>
+                    <Accordion.Panel>
+                        We use OpenAI's model to read the receipt. We don't store any of the data, just the receipt which you can see in the View receipts page of your household.
+                    </Accordion.Panel>
+                </Accordion.Item>
+            </Accordion>
+        </Stack>
     );
 };
 
 interface ScanReadyProps {
     state: ReadyState;
     setState: Dispatch<SetStateAction<ScanState>>;
+    setActiveStep: Dispatch<SetStateAction<number>>;
 }
 
 function friendlyScanError(err: Error): string {
@@ -96,7 +127,7 @@ function friendlyScanError(err: Error): string {
 }
 
 function ScanReady(props: ScanReadyProps) {
-    const { setState } = props;
+    const { setState, setActiveStep } = props;
 
     const [camera, setCamera] = useState(false);
 
@@ -149,6 +180,7 @@ function ScanReady(props: ScanReadyProps) {
 
         canvas.toBlob(file => {
             if (file) setState({ state: "processing", bitmap: window.createImageBitmap(file) });
+            setActiveStep(1);
         });
     };
 
@@ -156,6 +188,7 @@ function ScanReady(props: ScanReadyProps) {
         const file = files[0];
         if (!file) return;
         setState({ state: "processing", bitmap: window.createImageBitmap(file) });
+        setActiveStep(1);
     };
 
     return (
@@ -165,23 +198,26 @@ function ScanReady(props: ScanReadyProps) {
                 <Button pos="absolute" bottom={20} size="lg" onClick={takePhoto}>Scan</Button>
             </Center>
 
-            {camera &&
-                <Center mt="md">
-                    <Text size="lg">Or upload an image</Text>
-                </Center>
-            }
+            <Flex direction="column" gap="md">
+            
+                {camera &&
+                    <Center mt="md">
+                        <Text size="lg">Or upload an image</Text>
+                    </Center>
+                }
 
-            <Dropzone
-                onDrop={onDrop}
-                accept={IMAGE_MIME_TYPE}
-                mt="md">
+                <Dropzone
+                    onDrop={onDrop}
+                    accept={IMAGE_MIME_TYPE}
+                    mt="md">
 
-                <Stack align="center" p="md">
-                    <IconReceipt size={54} />
-                    <Text>Drag and drop a receipt image, or click to select</Text>
-                </Stack>
+                    <Stack align="center" p="md">
+                        <IconReceipt size={54} />
+                        <Text>Drag and drop a receipt image, or click to select</Text>
+                    </Stack>
 
-            </Dropzone>
+                </Dropzone>
+            </Flex>
         </>
     );
 }
@@ -189,10 +225,11 @@ function ScanReady(props: ScanReadyProps) {
 interface ScanProcessingProps {
     state: ProcessingState;
     setState: Dispatch<SetStateAction<ScanState>>;
+    setActiveStep: Dispatch<SetStateAction<number>>;
 }
 
 function ScanProcessing(props: ScanProcessingProps) {
-    const { state, setState } = props;
+    const { state, setState: setScanState, setActiveStep } = props;
 
     useEffect(() => {
         let cancel = false;
@@ -225,9 +262,9 @@ function ScanProcessing(props: ScanProcessingProps) {
                 if (cancel) return;
 
                 if (result.response?.status == 429) {
-                    setState({ state: "error", error: new Error("Please try again later") });
+                    setScanState({ state: "error", error: new Error("Please try again later") });
                 } else if (result.error) {
-                    setState({ state: "error", error: result.error as Error });
+                    setScanState({ state: "error", error: result.error as Error });
                 } else {
                     const data: EditReceiptData = {
                         ...result.data!,
@@ -250,17 +287,18 @@ function ScanProcessing(props: ScanProcessingProps) {
                         })
                     };
 
-                    setState({ state: "finished", image, data });
+                    setScanState({ state: "finished", image, data });
+                    setActiveStep(2); // autoadvance to next step
                 }
             } catch (error) {
-                setState({ state: "error", error: error as Error });
+                setScanState({ state: "error", error: error as Error });
             }
         }
 
         return () => {
             cancel = true;
         };
-    }, [state.bitmap, setState]);
+    }, [state.bitmap, setScanState, setActiveStep]);
 
     return (
         <>
@@ -268,40 +306,33 @@ function ScanProcessing(props: ScanProcessingProps) {
                 <Loader size="lg" mt="md" />
                 <Text mt="md">Reading your receipt...</Text>
             </Stack>
+
+            <Group justify="center" mt="xl">
+                <Button variant="default" onClick={() => setActiveStep(0)}>Back to Upload</Button>
+            </Group>
         </>
     );
 }
 
-interface ScanFinishedProps {
+interface ScanReviewProps {
     state: FinishedState;
     setState: Dispatch<SetStateAction<ScanState>>;
     households: Household[];
-    user: User;
+    setActiveStep: Dispatch<SetStateAction<number>>;
 }
 
-function ScanFinished(props: ScanFinishedProps) {
-    const { state, setState, households, user } = props;
-
-    const navigate = useNavigate();
-
-    const [saving, setSaving] = useState(false);
+function ScanReview(props: ScanReviewProps) {
+    const { state, setState, households, setActiveStep } = props;
 
     const [selectedHousehold, setSelectedHousehold] = useState<string | null>(null);
 
     const setItem = useCallback((newItem: EditReceiptItemData) => setState(s => {
         const oldState = s as FinishedState;
-
         const data: EditReceiptData = {
             ...oldState.data,
             items: oldState.data.items.map(item => item.key == newItem.key ? newItem : item),
         };
-
-        const newState = {
-            ...oldState,
-            data,
-        };
-
-        return newState;
+        return { ...oldState, data };
     }), [setState]);
 
     const addItem = () => setState(s => {
@@ -330,47 +361,106 @@ function ScanFinished(props: ScanFinishedProps) {
 
     const setStoreName = (newName: string) => setState(s => {
         const oldState = s as FinishedState;
-        return {
-            ...oldState,
-            data: {
-                ...oldState.data,
-                storeName: newName,
-            }
-        }
+        return { ...oldState, data: { ...oldState.data, storeName: newName } }
     });
 
     const setPurchaseDate = (newPurchaseDate: string | null) => setState(s => {
         const oldState = s as FinishedState;
-        return {
-            ...oldState,
-            data: {
-                ...oldState.data,
-                purchaseDate: newPurchaseDate,
-            }
-        }
+        return { ...oldState, data: { ...oldState.data, purchaseDate: newPurchaseDate } }
     });
 
     const setTotalPrice = (newTotalPrice: number | null) => setState(s => {
         const oldState = s as FinishedState;
-        return {
-            ...oldState,
-            data: {
-                ...oldState.data,
-                totalPrice: newTotalPrice,
-            }
-        }
+        return { ...oldState, data: { ...oldState.data, totalPrice: newTotalPrice } }
     });
+
+    return (
+        <>
+            <Title order={3}>Review & Edit Receipt</Title>
+            <Text c="dimmed" mb="md">Pre-filled expiration dates are estimates. Edit as needed.</Text>
+
+            <Card shadow="none" withBorder mb="md">
+                <Select
+                    label="Household"
+                    placeholder="Select household"
+                    required
+                    data={households.map((h) => ({ value: h.id, label: h.house_name }))}
+                    value={selectedHousehold}
+                    onChange={setSelectedHousehold}
+                />
+
+                <TextInput 
+                    label="Store name"
+                    value={state.data.storeName ?? ""}
+                    onChange={e => setStoreName(e.target.value)}
+                    mt="xs"
+                />
+
+                <Flex gap="sm" mt="xs">
+                    <TextInput
+                        label="Purchase date"
+                        type="date"
+                        value={state.data.purchaseDate ?? ""}
+                        onChange={(e) => setPurchaseDate(e.target.value || null)}
+                        flex={1}
+                    />
+
+                    <NumberInput 
+                        label="Total price"
+                        value={state.data.totalPrice ?? ""}
+                        onChange={val => setTotalPrice(typeof val == "number" ? val : null)}
+                        decimalScale={2}
+                        fixedDecimalScale
+                        flex={1}
+                    />
+                </Flex>
+            </Card>
+
+            <Title order={4}>Products</Title>
+            <Stack gap="sm" mt="xs">
+                {state.data.items.map(p => (
+                    <ProductCard key={p.key} item={p} setItem={setItem} />
+                ))}
+
+                <Center>
+                    <Button variant="subtle" onClick={addItem}>
+                        Add missing product
+                    </Button>
+                </Center>
+            </Stack>
+
+            <Group justify="center" mt="xl">
+                <Button variant="default" onClick={() => setActiveStep(1)}>Back</Button>
+                <Button onClick={() => setActiveStep(3)} disabled={!selectedHousehold}>
+                    Continue to Save
+                </Button>
+            </Group>
+        </>
+    );
+}
+
+interface ScanSaveProps {
+    state: FinishedState;
+    households: Household[];
+    user: User;
+    setActiveStep: Dispatch<SetStateAction<number>>;
+}
+
+function ScanSave(props: ScanSaveProps) {
+    const { state, households, user, setActiveStep } = props;
+    const navigate = useNavigate();
+    const [saving, setSaving] = useState(false);
+    const [selectedHousehold, setSelectedHousehold] = useState<string | null>(null);
 
     const handleSave = async () => {
         if (!selectedHousehold) return;
         setSaving(true);
         try {
-
             const items: [InsertProduct, Omit<InsertProductSpecs, "product_id">][] = [];
 
             const receipt: InsertReceipt = {
                 household_id: selectedHousehold,
-                store_name: state.data.storeName,
+                store_name: state.data.storeName ?? "Unknown Store",
                 total: state.data.totalPrice ?? 0,
                 purchase_at: state.data.purchaseDate ?? new Date().toISOString().split("T")[0],
                 buyer_id: user.id,
@@ -380,8 +470,7 @@ function ScanFinished(props: ScanFinishedProps) {
             if (receipt_res.error) throw receipt_res.error;
 
             for (const item of state.data.items) {
-                if (!item.name) continue;
-                if (!item.enabled) continue;
+                if (!item.name || !item.enabled) continue;
                 items.push([
                     {
                         household_id: selectedHousehold,
@@ -409,10 +498,12 @@ function ScanFinished(props: ScanFinishedProps) {
                 title: "Receipt saved",
                 message: `Added ${savedCount} product${savedCount === 1 ? "" : "s"} to your pantry.`,
             });
+            
+            setActiveStep(0);
             void navigate("/pantry", {
                 state: {
                     householdId: selectedHousehold,
-                    householdName: households.find(h => h.id == selectedHousehold)
+                    householdName: households.find(h => h.id == selectedHousehold)?.house_name
                 }
             });
         } catch (error) {
@@ -426,79 +517,55 @@ function ScanFinished(props: ScanFinishedProps) {
         }
     };
 
-    const disabled = saving || !selectedHousehold;
+    const enabledItems = state.data.items.filter(i => i.enabled && i.name);
+    const totalProducts = enabledItems.length;
+    const totalValue = enabledItems.reduce((sum, i) => sum + (i.totalPrice ?? 0), 0);
 
     return (
         <>
-            <Center>
-                <Button size="lg" onClick={() => setState({ state: "ready" })}>New scan</Button>
-            </Center>
+            <Title order={3}>Confirm & Save</Title>
+            
+            <Card shadow="none" withBorder mb="md">
+                <Select
+                    label="Household"
+                    placeholder="Select household"
+                    required
+                    data={households.map((h) => ({ value: h.id, label: h.house_name }))}
+                    value={selectedHousehold}
+                    onChange={setSelectedHousehold}
+                />
+                
+                <Text fw={500} mt="md">Receipt Summary:</Text>
+                <Text size="sm">Store: {state.data.storeName || "Not specified"}</Text>
+                <Text size="sm">Purchase Date: {state.data.purchaseDate || "Not specified"}</Text>
+                <Text size="sm">Total: ${state.data.totalPrice?.toFixed(2) ?? "0.00"}</Text>
+                
+                <Text fw={500} mt="md">Products to save ({totalProducts}):</Text>
+                {enabledItems.map((item, idx) => (
+                    <Text key={idx} size="sm">
+                        • {item.name} - Qty: {item.quantity ?? 1} - ${item.totalPrice?.toFixed(2) ?? "0.00"}
+                        {item.expirationDate && ` (Exp: ${item.expirationDate})`}
+                    </Text>
+                ))}
+                
+                {totalProducts === 0 && (
+                    <Text c="red" size="sm">No products selected to save!</Text>
+                )}
+                
+                <Text fw={500} mt="md">Total value: ${totalValue.toFixed(2)}</Text>
+            </Card>
 
-            <Grid mt="md">
-                <Grid.Col span={{ base: 12, md: 5 }}>
-                    <Title order={4}>1. Your Receipt</Title>
-                    <Box component="img" src={state.image} alt="Receipt" bdrs="md" mt="md" pos="sticky" top={20} />
-                </Grid.Col>
-
-                <Grid.Col span={{ base: 12, md: 7 }}>
-                    <Title order={4}>2. Identified products</Title>
-                    <Text c="dimmed">Pre filled expiration dates are estimates.</Text>
-
-                    <Stack gap="sm" mt="md">
-                        {state.data.items.map(p => (
-                            <ProductCard key={p.key} item={p} setItem={setItem} />
-                        ))}
-
-                        <Center>
-                            <Button variant="subtle" onClick={addItem}>
-                                Add missing product
-                            </Button>
-                        </Center>
-
-                        <Title order={4}>3. Save receipt and selected products</Title>
-
-                        <Card shadow="none" withBorder>
-                            <Select
-                                label="Household"
-                                placeholder="Household"
-                                required
-                                data={households.map((h) => ({ value: h.id, label: h.house_name }))}
-                                value={selectedHousehold}
-                                onChange={setSelectedHousehold}
-                                mt="xs"
-                            />
-
-                            <TextInput label="Store name"
-                                value={state.data.storeName ?? ""}
-                                onChange={e => setStoreName(e.target.value)}
-                                mt="xs"
-                            />
-
-                            <Flex gap="sm" mt="xs">
-                                <TextInput
-                                    label="Purchase date"
-                                    type="date"
-                                    value={state.data.purchaseDate ?? ""}
-                                    onChange={(e) => setPurchaseDate(e.target.value || null)}
-                                    flex={1}
-                                />
-
-                                <NumberInput label="Total price"
-                                    value={state.data.totalPrice ?? ""}
-                                    onChange={val => setTotalPrice(typeof val == "number" ? val : null)}
-                                    decimalScale={2}
-                                    fixedDecimalScale
-                                    flex={1}
-                                />
-                            </Flex>
-
-                            <Flex justify="end" mt="md">
-                                <Button disabled={disabled} loading={saving} onClick={() => void handleSave()}>Save</Button>
-                            </Flex>
-                        </Card>
-                    </Stack>
-                </Grid.Col>
-            </Grid>
+            <Group justify="center" mt="xl">
+                <Button variant="default" onClick={() => setActiveStep(2)}>Back to Edit</Button>
+                <Button 
+                    onClick={() => void handleSave()} 
+                    loading={saving} 
+                    disabled={saving || !selectedHousehold || totalProducts === 0}
+                    color="green"
+                >
+                    Save to Pantry
+                </Button>
+            </Group>
         </>
     );
 }
@@ -506,6 +573,7 @@ function ScanFinished(props: ScanFinishedProps) {
 interface ScanErrorProps {
     state: ErrorState;
     setState: Dispatch<SetStateAction<ScanState>>;
+    setActiveStep: Dispatch<SetStateAction<number>>;
 }
 
 function ScanError(props: ScanErrorProps) {
