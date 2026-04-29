@@ -6,6 +6,7 @@ import { supabase } from "../../supabase"
 import { getFoodRestrictions } from "../../api/account"
 import { getHouseholdFoodRestriction, getHouseholdRestrictions, type HouseholdMemberRestriction } from "../../api/restriction"
 import type { FoodRestriction } from "../../api/schema"
+import "./FoodRestrictionsModal.css"
 
 interface FoodRestrictionsModalProps {
     householdId: string
@@ -115,16 +116,16 @@ export function FoodRestrictionsModal({ householdId, opened, onClose }: FoodRest
                 <Stack gap="lg">
 
                     {/* Active restrictions */}
-                    <Paper radius="lg" p="lg"
-                        style={{ background: "linear-gradient(135deg, #f0efe8 0%, #e8e7df 100%)", border: "1px solid #dddcd4" }}
+                    <Paper radius="xl" p="lg"
+                        style={{ background: "var(--color-surface-muted)", border: "1px solid var(--color-border)" }}
                     >
                         <Group gap="xs" mb={4}>
-                            <IconUsers size={16} color="#5a5947" />
-                            <Text size="sm" fw={700} c="#3a3929">
+                            <IconUsers size={16} color="var(--color-text-muted)" />
+                            <Text size="sm" fw={700}>
                                 Active for this household
                             </Text>
                         </Group>
-                        <Text size="xs" c="#7a7968" mb="md">
+                        <Text size="xs" c="dimmed" mb="md">
                             Hover over any item to see where it comes from.
                         </Text>
 
@@ -154,7 +155,7 @@ export function FoodRestrictionsModal({ householdId, opened, onClose }: FoodRest
                                                 alignItems: "center",
                                                 gap: 5,
                                                 transition: "opacity 0.15s",
-                                                background: r.canRemove ? "#3a3929" : "#8a8978",
+                                                background: r.canRemove ? "var(--color-primary-600)" : "var(--color-text-muted)",
                                                 color: "white",
                                                 cursor: r.canRemove ? "pointer" : "default",
                                                 opacity: busy === r.id ? 0.4 : 1,
@@ -183,18 +184,19 @@ export function FoodRestrictionsModal({ householdId, opened, onClose }: FoodRest
                             {availableIntolerances.length > 0 && (
                                 <>
                                     <Group gap="xs" mb="xs">
-                                        <IconAlertTriangle size={15} color="#b88a00" />
-                                        <Text size="sm" fw={700} c="#5a5947">Intolerances</Text>
+                                        <IconAlertTriangle size={15} color="var(--color-warning)" />
+                                        <Text size="sm" fw={700} c="dimmed">Intolerances</Text>
                                     </Group>
                                     <Group gap={6} mb="lg">
                                         {availableIntolerances.map(r => (
                                             <Text key={r.id} component="button" size="xs" px="md" py={6}
+                                                className="food-restrictions-option"
                                                 onClick={() => void toggle(r.id)}
                                                 style={{
                                                     borderRadius: 999,
-                                                    border: "1.5px solid #e0e0e0",
-                                                    background: "#fafafa",
-                                                    color: "#555",
+                                                    border: "1.5px solid var(--color-border)",
+                                                    background: "var(--color-surface)",
+                                                    color: "var(--color-text-muted)",
                                                     fontFamily: "inherit",
                                                     cursor: busy === r.id ? "wait" : "pointer",
                                                     opacity: busy === r.id ? 0.4 : 1,
@@ -211,18 +213,19 @@ export function FoodRestrictionsModal({ householdId, opened, onClose }: FoodRest
                             {availableDiets.length > 0 && (
                                 <>
                                     <Group gap="xs" mb="xs">
-                                        <IconLeaf size={15} color="#4a8c5c" />
-                                        <Text size="sm" fw={700} c="#5a5947">Dietary preferences</Text>
+                                        <IconLeaf size={15} color="var(--color-primary-600)" />
+                                        <Text size="sm" fw={700} c="dimmed">Dietary preferences</Text>
                                     </Group>
                                     <Group gap={6}>
                                         {availableDiets.map(r => (
                                             <Text key={r.id} component="button" size="xs" px="md" py={6}
+                                                className="food-restrictions-option"
                                                 onClick={() => void toggle(r.id)}
                                                 style={{
                                                     borderRadius: 999,
-                                                    border: "1.5px solid #e0e0e0",
-                                                    background: "#fafafa",
-                                                    color: "#555",
+                                                    border: "1.5px solid var(--color-border)",
+                                                    background: "var(--color-surface)",
+                                                    color: "var(--color-text-muted)",
                                                     fontFamily: "inherit",
                                                     cursor: busy === r.id ? "wait" : "pointer",
                                                     opacity: busy === r.id ? 0.4 : 1,

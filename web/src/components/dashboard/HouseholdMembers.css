@@ -1,17 +1,15 @@
-/* Warm olive background — layout handled by Mantine */
 .hh-members {
-    background: #cccabb;
-    border: 1px solid #bbb9ab;
+    background: var(--color-surface-muted);
+    border: 1px solid var(--color-border);
 }
 
-/* Hover effects */
 .hh-card {
     transition: transform 0.15s, box-shadow 0.15s;
 }
 
 .hh-card:hover {
     transform: translateY(-3px);
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-md);
 }
 
 .hh-invite {
@@ -23,16 +21,16 @@
 }
 
 .hh-invite:hover .mantine-Paper-root {
-    background: #e8e7e0;
-    border-color: #8a8878;
+    background: var(--color-surface);
+    border-color: var(--color-border);
 }
 
 .hh-invite:hover .mantine-Avatar-placeholder {
-    background: #dddcd6;
+    background: var(--color-surface-muted);
     border-style: solid;
-    color: #3a3929;
+    color: var(--color-text);
 }
 
 .hh-invite:hover .mantine-Text-root {
-    color: #3a3929;
+    color: var(--color-text);
 }

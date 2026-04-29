@@ -101,20 +101,20 @@ export function HouseholdMembers({ householdId, inviteId, adminId, currentUserId
 
     return (
         <Paper className="hh-members" radius="xl" p="xl">
-            <Title order={3} size="h5" mb="md" c="#3a3929">
+            <Title order={3} size="h5" mb="md">
                 Members
             </Title>
 
             <Group gap="md" wrap="wrap">
                 {members.map(m => (
-                    <Paper key={m.id} className="hh-card" bg="#f4f3ee" radius="lg" p="lg" w={140}>
+                    <Paper key={m.id} className="hh-card" bg="var(--color-surface)" radius="xl" p="lg" w={140}>
                         <Stack align="center" gap="xs">
                             <Avatar size={80} radius="md"
-                                styles={{ placeholder: { background: "#dddcd6", color: "#5a5947", fontSize: 32, fontWeight: 700 } }}
+                                styles={{ placeholder: { background: "var(--color-surface-muted)", color: "var(--color-text-muted)", fontSize: 32, fontWeight: 700 } }}
                             >
                                 {getName(m).charAt(0).toUpperCase()}
                             </Avatar>
-                            <Text size="sm" fw={600} c="#3a3929" ta="center" truncate maw={120}>
+                            <Text size="sm" fw={600} ta="center" truncate maw={120}>
                                 {getName(m)}
                             </Text>
                             {m.id === adminId && (
@@ -158,14 +158,14 @@ export function HouseholdMembers({ householdId, inviteId, adminId, currentUserId
 
                 {inviteId && (
                     <UnstyledButton className="hh-invite" onClick={() => setShowInvite(true)} w={140}>
-                        <Paper radius="lg" p="lg" bg="transparent" bd="2px dashed #b5b3a5" h="100%">
+                        <Paper radius="xl" p="lg" bg="transparent" bd="2px dashed var(--color-border)" h="100%">
                             <Stack align="center" gap="xs">
                                 <Avatar size={80} radius="md"
-                                    styles={{ placeholder: { background: "#e8e7e0", color: "#5a5947", border: "2px dashed #b5b3a5" } }}
+                                    styles={{ placeholder: { background: "var(--color-surface-muted)", color: "var(--color-text-muted)", border: "2px dashed var(--color-border)" } }}
                                 >
                                     <IconShare size={28} />
                                 </Avatar>
-                                <Text size="xs" c="#6b6a58" ta="center">invite someone</Text>
+                                <Text size="xs" c="dimmed" ta="center">invite someone</Text>
                             </Stack>
                         </Paper>
                     </UnstyledButton>

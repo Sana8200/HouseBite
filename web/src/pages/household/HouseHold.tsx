@@ -8,6 +8,7 @@ import { supabase } from "../../supabase"
 import type { Household } from "../../api/schema"
 import { notifications } from "@mantine/notifications"
 import type { User } from "@supabase/supabase-js"
+import "./HouseHold.css"
 
 export interface HouseHoldProps {
     user: User;
@@ -161,7 +162,7 @@ export function HouseHold(props: HouseHoldProps) {
             setShowJoinModal(false)
             void fetchHouseholds()
             notifications.show({
-                color: "green",
+                color: "brand",
                 title: "Joined household",
                 message: "You're now a member.",
             })
@@ -193,7 +194,7 @@ export function HouseHold(props: HouseHoldProps) {
             setEditingHousehold(null)
             void fetchHouseholds()
             notifications.show({
-                color: "green",
+                color: "brand",
                 title: "Saved",
                 message: "Household updated.",
             })
@@ -301,9 +302,14 @@ export function HouseHold(props: HouseHoldProps) {
                         disabled={households.length >= 5}>
                         Create Household
                     </Button>
-                    <Button size="lg" variant="default" leftSection={<IconUserPlus size={20} />}
+                    <Button
+                        size="lg"
+                        variant="default"
+                        leftSection={<IconUserPlus size={20} />}
+                        className="households-page__join-button"
                         onClick={() => { setJoinError(null); setInviteId(""); setJoinColor(HOUSEHOLD_COLORS[0]); setShowJoinModal(true) }}
-                        disabled={households.length >= 5}>
+                        disabled={households.length >= 5}
+                    >
                         Join Household
                     </Button>
                 </Group>
@@ -325,11 +331,21 @@ export function HouseHold(props: HouseHoldProps) {
                 ) : (
                     <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
                         {households.map(h => (
-                            <Card key={h.id} withBorder shadow="sm" radius="md" padding="lg"
-                                style={{ borderLeft: `4px solid ${h.household_color}` }}>
+                            <Card
+                                key={h.id}
+                                withBorder
+                                shadow="sm"
+                                radius="xl"
+                                padding="lg"
+                                style={{
+                                    borderLeft: `8px solid ${h.household_color}`,
+                                }}
+                            >
                                 <Stack gap="sm">
                                     <div>
-                                        <Text fw={700} size="lg">{h.house_name}</Text>
+                                        <Group gap="xs" mb={2}>
+                                            <Text fw={700} size="lg">{h.house_name}</Text>
+                                        </Group>
                                         {h.monthly_budget != null && (
                                             <Text size="sm" c="dimmed">Budget: {h.monthly_budget} kr/month</Text>
                                         )}
@@ -352,8 +368,8 @@ export function HouseHold(props: HouseHoldProps) {
                                         )}
                                     </CopyButton>
 
-                                    <Group gap="xs" mt="xs">
-                                        <Button variant="outline" size="sm"
+                                    <Group gap="xs" mt="xs" className="households-page__actions">
+                                        <Button variant="outline" size="sm" className="households-page__go-button"
                                             onClick={() => {
                                                 void navigate("/dashboard", {
                                                     state: { householdId: h.id, householdName: h.house_name },
@@ -361,15 +377,24 @@ export function HouseHold(props: HouseHoldProps) {
                                             }}>
                                             Go to household
                                         </Button>
-                                        <Button variant="default" size="sm"
+                                        <Button
+                                            variant="default"
+                                            size="sm"
+                                            className="households-page__edit-button"
                                             leftSection={<IconEdit size={14} />}
-                                            onClick={() => openEdit(h)}>
+                                            onClick={() => openEdit(h)}
+                                        >
                                             Edit
                                         </Button>
-                                        <Button variant="subtle" color="red" size="sm"
+                                        <Button
+                                            variant="subtle"
+                                            color="red"
+                                            size="sm"
+                                            className="households-page__leave-button"
                                             leftSection={<IconDoorExit size={14} />}
                                             loading={checkingMembers === h.id}
-                                            onClick={() => void handleLeaveClick(h.id)}>
+                                            onClick={() => void handleLeaveClick(h.id)}
+                                        >
                                             Leave
                                         </Button>
                                     </Group>
@@ -382,7 +407,7 @@ export function HouseHold(props: HouseHoldProps) {
 
             {/* Create Modal */}
             <Modal opened={showCreateModal} onClose={() => setShowCreateModal(false)}
-                centered radius="lg" title={<Title order={3}>Create a Household</Title>}>
+                centered radius="xl" title={<Title order={3}>Create a Household</Title>}>
                 <Stack gap="md">
                     {createError && (
                         <Alert
@@ -414,7 +439,7 @@ export function HouseHold(props: HouseHoldProps) {
 
             {/* Edit Modal */}
             <Modal opened={!!editingHousehold} onClose={() => setEditingHousehold(null)}
-                centered radius="lg" title={<Title order={3}>Edit Household</Title>}>
+                centered radius="xl" title={<Title order={3}>Edit Household</Title>}>
                 <Stack gap="md">
                     {editError && (
                         <Alert
@@ -442,7 +467,7 @@ export function HouseHold(props: HouseHoldProps) {
 
             {/* Join Modal */}
             <Modal opened={showJoinModal} onClose={() => { setShowJoinModal(false); setInviteId(""); setJoinColor(HOUSEHOLD_COLORS[0]) }}
-                centered radius="lg" title={<Title order={3}>Join a Household</Title>}>
+                centered radius="xl" title={<Title order={3}>Join a Household</Title>}>
                 <Stack gap="md">
                     <Text size="sm" c="dimmed">Ask a household member for their invite code.</Text>
                     {joinError && (
@@ -484,7 +509,7 @@ export function HouseHold(props: HouseHoldProps) {
                                 position: "absolute", inset: 0, borderRadius: "50%",
                                 background: "radial-gradient(circle, var(--color-primary-50) 0%, transparent 70%)",
                             }} />
-                            <ThemeIcon size={60} radius="xl" color="green" variant="filled">
+                            <ThemeIcon size={60} radius="xl" color="brand" variant="filled">
                                 <IconCheck size={30} stroke={3} />
                             </ThemeIcon>
                             <Text style={{ position: "absolute", top: -4, right: 2, fontSize: 20 }}>🎊</Text>
@@ -514,7 +539,7 @@ export function HouseHold(props: HouseHoldProps) {
                                 {({ copied, copy }) => (
                                     <Stack gap="xs">
                                         <Group gap="sm" p="sm" style={{
-                                            background: "white",
+                                            background: "var(--color-surface)",
                                             borderRadius: "var(--radius-md)",
                                             border: "1px solid var(--color-primary-200)",
                                         }}>
@@ -522,14 +547,14 @@ export function HouseHold(props: HouseHoldProps) {
                                                 {createdHousehold.inviteId}
                                             </Code>
                                             <ActionIcon variant={copied ? "filled" : "light"}
-                                                color={copied ? "green" : "gray"} onClick={copy} size="lg">
+                                                color={copied ? "brand" : "gray"} onClick={copy} size="lg">
                                                 {copied ? <IconCheck size={18} /> : <IconCopy size={18} />}
                                             </ActionIcon>
                                         </Group>
                                         {copied && (
                                             <Group gap={4} justify="center">
                                                 <IconCheck size={14} color="var(--color-success)" />
-                                                <Text size="sm" c="green" fw={500}>Copied!</Text>
+                                                <Text size="sm" fw={500} style={{ color: "var(--color-success)" }}>Copied!</Text>
                                             </Group>
                                         )}
                                     </Stack>
@@ -583,7 +608,7 @@ export function HouseHold(props: HouseHoldProps) {
                 const closeModal = () => { setLastMemberLeaveId(null); setConfirmName("") }
                 return (
                     <Modal opened={!!lastMemberLeaveId} onClose={closeModal}
-                        centered radius="lg" title={<Text fw={700} c="red">Delete household?</Text>}>
+                        centered radius="xl" title={<Text fw={700} style={{ color: "var(--color-danger)" }}>Delete household?</Text>}>
                         <Stack gap="md">
                             <Alert color="red" variant="light" title="This action is permanent">
                                 You're the last member of <strong>{h.house_name}</strong>.

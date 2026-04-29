@@ -144,7 +144,7 @@ const ProductsInDanger: React.FC<{
         {sortedProducts.map(product => {
           const days = getDaysUntilExpiry(product.expiryDate);
           return (
-            <Card key={product.id} withBorder shadow="sm" radius="md" padding="lg">
+            <Card key={product.id} withBorder shadow="sm" radius="xl" padding="lg">
               <Stack gap="md">
                 <Group justify="space-between" align="flex-start">
                   <div>
@@ -299,7 +299,7 @@ const FavouriteRecipes: React.FC<FavouriteRecipesProps> = ({ recipes }) => {
               key={recipe.id}
               withBorder
               shadow="sm"
-              radius="md"
+              radius="xl"
               padding="lg"
               style={{ transition: "transform 0.15s, box-shadow 0.15s", cursor: "pointer" }}
               onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "var(--shadow-md)"; }}
@@ -631,7 +631,7 @@ export default function Dashboard(props: DashboardProps) {
                   })
                 }
               }}
-              radius="lg"
+              radius="xl"
               withBorder
             >
               <span className="dashboard-nav-card__icon" aria-hidden="true">
@@ -703,7 +703,7 @@ export default function Dashboard(props: DashboardProps) {
       )}
 
       <Modal opened={showCreateModal} onClose={() => { setShowCreateModal(false); setModalError(null); }}
-        centered radius="lg" title={<Title order={3}>Add Product</Title>}>
+        centered radius="xl" title={<Title order={3}>Add Product</Title>}>
         <Stack gap="md">
           {modalError && (
             <Alert

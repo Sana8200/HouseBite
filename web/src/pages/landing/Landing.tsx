@@ -147,7 +147,7 @@ export function Landing(props: LandingProps) {
                         </div>
                         <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="lg">
                             {features.map(f => (
-                                <Card key={f.title} className="landing-card" withBorder radius="md" p="xl">
+                                <Card key={f.title} className="landing-card" withBorder radius="xl" p="xl">
                                     <ThemeIcon size={44} radius="md" variant="light" mb="md">
                                         <f.icon size={22} />
                                     </ThemeIcon>
@@ -163,7 +163,7 @@ export function Landing(props: LandingProps) {
                 <Container size="sm" py={60}>
                     <Paper radius="xl" p="xl" ta="center"
                         style={{
-                            background: "linear-gradient(135deg, var(--color-primary-50) 0%, var(--color-primary-100) 100%)",
+                            background: "var(--color-primary-50)",
                             border: "1px solid var(--color-primary-200)",
                         }}
                     >
@@ -221,12 +221,13 @@ export function Landing(props: LandingProps) {
     const renderQuickLinkCard = (link: QuickLink) => (
         <Card
             key={link.to}
-            className="landing-card"
+            component="button"
+            type="button"
+            className="landing-card landing-card--interactive"
             withBorder
-            radius="md"
+            radius="xl"
             p="lg"
             h="100%"
-            style={{ cursor: "pointer" }}
             onClick={() => handleQuickLinkClick(link)}
         >
             <Stack gap="sm">
@@ -246,7 +247,7 @@ export function Landing(props: LandingProps) {
         <Container size="md" py="xl">
             <Stack gap="xl">
                 {/* Hero */}
-                <Paper p="xl" radius="lg" withBorder
+                <Paper p="xl" radius="xl" withBorder
                     style={{
                         background: "linear-gradient(135deg, var(--color-primary-50) 0%, var(--color-surface) 70%)",
                         border: "1px solid var(--color-border)",

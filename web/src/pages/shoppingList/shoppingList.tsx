@@ -201,7 +201,7 @@ export function ShoppingList() {
             <Checkbox
               checked={item.purchased}
               onChange={() => void handleToggleItem(item.id)}
-              color={item.purchased ? "green" : "gray"}
+              color={item.purchased ? "brand" : "gray"}
               size="md"
               iconColor={item.purchased ? "white" : "transparent"}
               radius="xs"
@@ -280,7 +280,7 @@ export function ShoppingList() {
         {/* Summary cards mirror the two item states shown below. */}
         <Grid>
           <Grid.Col span={{ base: 12, sm: 6 }}>
-            <Card withBorder radius="lg" padding="lg">
+            <Card withBorder radius="xl" padding="lg">
               <Group gap="sm" align="center">
                 <IconShoppingCart size={22} />
                 <Text fw={600}>Pending</Text>
@@ -292,7 +292,7 @@ export function ShoppingList() {
           </Grid.Col>
 
           <Grid.Col span={{ base: 12, sm: 6 }}>
-            <Card withBorder radius="lg" padding="lg">
+            <Card withBorder radius="xl" padding="lg">
               <Group gap="sm" align="center">
                 <IconCheck size={22} />
                 <Text fw={600}>Purchased</Text>
@@ -309,7 +309,7 @@ export function ShoppingList() {
             <Loader />
           </Group>
         ) : (
-          <Paper withBorder radius="lg" className="shopping-list-table-panel">
+          <Paper withBorder radius="xl" className="shopping-list-table-panel">
             {sortedItems.length ? (
               <div className="shopping-list-table-scroll">
                 <Table className="shopping-list-table" withColumnBorders withRowBorders highlightOnHover>
@@ -369,7 +369,7 @@ export function ShoppingList() {
                           <Group justify="center" gap={6} wrap="nowrap">
                             <ActionIcon
                               variant="light"
-                              color="green"
+                              color="brand"
                               aria-label="Save shopping list item"
                               onClick={handleAddItem}
                               loading={submitting}
