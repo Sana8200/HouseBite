@@ -55,6 +55,7 @@ export function HouseHold(props: HouseHoldProps) {
     const [showJoinModal, setShowJoinModal] = useState(false)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
+    const [errorTitle, setErrorTitle] = useState<string>("Couldn't load households")
 
     const [newName, setNewName] = useState("")
     const [newBudget, setNewBudget] = useState<number | string>("")
@@ -93,6 +94,7 @@ export function HouseHold(props: HouseHoldProps) {
             const list = data ?? []
             setHouseholds(list)
             setError(null)
+            setErrorTitle("Couldn't load households")
             const counts = await Promise.all(list.map(h => getHouseholdMemberCount(h.id)))
             setMemberCounts(Object.fromEntries(list.map((h, i) => [h.id, counts[i]])))
         } catch {
@@ -206,6 +208,7 @@ export function HouseHold(props: HouseHoldProps) {
     const handleLeave = async (householdId: string) => {
         const household = households.find(h => h.id === householdId)
         if (household && household.admin_id === userId && (memberCounts[householdId] ?? 0) > 1) {
+            setErrorTitle("Transfer admin before leaving")
             setError("You are the admin of this household. Transfer admin rights to another member before leaving.")
             setLeavingId(null)
             return
@@ -284,9 +287,9 @@ export function HouseHold(props: HouseHoldProps) {
                         color="red"
                         radius="md"
                         icon={<IconAlertCircle size={18} />}
-                        title="Couldn't load households"
+                        title={errorTitle}
                         withCloseButton
-                        onClose={() => setError(null)}
+                        onClose={() => { setError(null); setErrorTitle("Couldn't load households") }}
                     >
                         {error}
                     </Alert>

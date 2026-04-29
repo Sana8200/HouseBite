@@ -504,7 +504,6 @@ export default function Dashboard(props: DashboardProps) {
             price: newPrice ? parseFloat(newPrice) : null,
         });
 
-        if (specsError) {
       if (productResult.error) {
         setModalError('Could not create product: ' + productResult.error.message);
         setCreating(false);
@@ -668,7 +667,7 @@ export default function Dashboard(props: DashboardProps) {
             householdId={selectedHouseholdId}
             inviteId={households.find(h => h.id === selectedHouseholdId)?.invite_id ?? undefined}
             adminId={households.find(h => h.id === selectedHouseholdId)?.admin_id}
-            currentUserId={userId}
+            currentUserId={user.id}
             onInviteIdChange={(newId) => {
               setHouseholds(prev =>
                 prev.map(h => h.id === selectedHouseholdId ? { ...h, invite_id: newId } : h)

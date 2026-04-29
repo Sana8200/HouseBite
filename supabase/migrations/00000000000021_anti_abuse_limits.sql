@@ -1,11 +1,9 @@
 -- Anti-abuse limits
 --
--- 1. create_household: user may belong to at most 6 households
--- 2. join_household:   user may belong to at most 6 households;
+-- 1. create_household: user may belong to at most 5 households
+-- 2. join_household:   user may belong to at most 5 households;
 --                      household may have at most 51 members
--- 3. Trigger on product: user may have at most 200 AI-scanned items
---    (products linked to a receipt with that user as buyer_id)
--- 4. Trigger on receipt: global cap of 10 000 rows; oldest deleted on overflow
+-- 3. Trigger on receipt: global cap of 10 000 rows; oldest deleted on overflow
 
 -- 1. create_household (replaces migration 1 version)
 CREATE OR REPLACE FUNCTION create_household(
@@ -104,35 +102,7 @@ BEGIN
 END;
 $$;
 
--- 3. AI-scanned product limit per user (< 200)
-CREATE OR REPLACE FUNCTION check_user_ai_scan_limit()
-RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER AS $$
-DECLARE
-  v_buyer_id UUID;
-  v_count    INT;
-BEGIN
-  IF NEW.receipt_id IS NULL THEN RETURN NEW; END IF;
-
-  SELECT buyer_id INTO v_buyer_id FROM receipt WHERE id = NEW.receipt_id;
-  IF v_buyer_id IS NULL THEN RETURN NEW; END IF;
-
-  SELECT COUNT(*) INTO v_count
-  FROM product p
-  JOIN receipt r ON p.receipt_id = r.id
-  WHERE r.buyer_id = v_buyer_id;
-
-  IF v_count >= 200 THEN
-    RAISE EXCEPTION 'You have reached the limit of 200 AI-scanned items';
-  END IF;
-  RETURN NEW;
-END;
-$$;
-
-CREATE TRIGGER trg_check_user_ai_scan_limit
-BEFORE INSERT ON product
-FOR EACH ROW EXECUTE FUNCTION check_user_ai_scan_limit();
-
--- 4. Global receipt cap: keep at most 10 000 rows, purge oldest on overflow
+-- 3. Global receipt cap: keep at most 10 000 rows, purge oldest on overflow
 CREATE OR REPLACE FUNCTION enforce_receipt_global_limit()
 RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE
