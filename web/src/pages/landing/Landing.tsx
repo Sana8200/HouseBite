@@ -123,7 +123,7 @@ export function Landing(props: LandingProps) {
                                 and plan meals with your housemates — all in one place.
                             </Text>
                             <Group gap="md" mt="sm">
-                                <Link to="/sign-in">
+                                <Link to="/sign-up">
                                     <Button size="lg" rightSection={<IconArrowRight size={18} />}>
                                         Get Started
                                     </Button>
