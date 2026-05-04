@@ -12,8 +12,11 @@ import type { User } from "@supabase/supabase-js";
 import { getExpirationDateBounds, getDaysUntilExpiry, formatOptionalDate, formatExpiry,getExpiryLabel} from "../../utils/date";
 import { insertReceipt } from "../../api/receipt";
 import { insertProductWithSpecs } from "../../api/product";
-import type { ProductSizeUnit } from "../../api/schema";
+import type { Household, ProductSizeUnit } from "../../api/schema";
 import { useMediaQuery } from "@mantine/hooks";
+import { getHouseholds } from "../../api/household";
+import { HouseholdContextBadge } from "../../components/HouseholdContextBadge";
+import { HouseholdContextDivider } from "../../components/HouseholdContextDivider";
 import "./pantry.css";
 
 type PantryViewMode = "grid" | "list";
@@ -35,6 +38,7 @@ interface PantryProduct {
 
 interface PantryLocationState {
   householdId?: string;
+  householdName?: string;
 }
 
 interface PantryProps {
@@ -358,7 +362,7 @@ export function Pantry({ user }: PantryProps) {
   const [showRecipeModal, setShowRecipeModal] = useState(false);
   const [pendingSearch, setPendingSearch] = useState<{ ingredients: string[]; householdId: string } | null>(null);
 
-  const [households, setHouseholds] = useState<{ id: string; house_name: string }[]>([]);
+  const [households, setHouseholds] = useState<Household[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [shoppingListProduct, setShoppingListProduct] = useState<{ name: string; householdId: string } | null>(null);
   const [creating, setCreating] = useState(false);
@@ -371,9 +375,9 @@ export function Pantry({ user }: PantryProps) {
   const [newExpirationDate, setNewExpirationDate] = useState("");
   const [newPrice, setNewPrice] = useState<number | string>("");
 
-  const currentHouseholdName = useMemo(() => {
+  const currentHousehold = useMemo(() => {
     if (!householdId || households.length === 0) return null;
-    return households.find(h => h.id === householdId)?.house_name;
+    return households.find(h => h.id === householdId) ?? null;
   }, [householdId, households]);
 
   useEffect(() => {
@@ -432,7 +436,7 @@ export function Pantry({ user }: PantryProps) {
 
   const fetchHouseholds = async () => {
     try {
-      const { data, error } = await supabase.from("household").select("id, house_name");
+      const { data, error } = await getHouseholds();
       if (error) {
         notifications.show({
           color: "red",
@@ -645,6 +649,10 @@ export function Pantry({ user }: PantryProps) {
       <Button
         component={Link}
         to="/dashboard"
+        state={{
+          householdId,
+          householdName: locationState?.householdName ?? currentHousehold?.house_name,
+        }}
         variant="subtle"
         leftSection={<IconArrowLeft size={16} />}
         w="fit-content"
@@ -655,13 +663,21 @@ export function Pantry({ user }: PantryProps) {
 
       <Group justify="space-between" align="flex-start">
         <div>
-          <Title order={1}>Pantry {currentHouseholdName && `- ${currentHouseholdName}`}</Title>
-          <Text c="dimmed">Manage your pantry items</Text>
+          <Title order={1}>Pantry</Title>
+          {currentHousehold && (
+            <HouseholdContextBadge
+              householdColor={currentHousehold.household_color}
+              householdName={currentHousehold.house_name}
+            />
+          )}
+          <Text size="md" c="dimmed">Manage your pantry items</Text>
         </div>
         <Button leftSection={<IconPlus size={16} />} onClick={() => { setModalError(null); setShowCreateModal(true); }}>
           Add Product
         </Button>
       </Group>
+
+      <HouseholdContextDivider householdColor={currentHousehold?.household_color} />
 
       {error && (
         <Alert
