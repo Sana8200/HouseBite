@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, type Dispatch, type SetStateAction, useCallback } from "react";
+import { useState, useRef, useEffect, type Dispatch, type SetStateAction } from "react";
 import "./Scan.css";
 import { Alert, Button, Card, Center, Flex, Loader, NumberInput, Paper, Select, Stack, Text, TextInput, Title, Stepper, Group, Accordion, Grid, Box, Table, Divider, ThemeIcon, Tooltip, Progress, Popover } from "@mantine/core";
 import { Dropzone, IMAGE_MIME_TYPE, type FileWithPath } from "@mantine/dropzone";
@@ -74,9 +74,8 @@ export function Scan(props: ScanProps) {
     }, []);
 
     // Stepper buttons do nothing - they're just visual indicators
-    const handleStepClick = (step: number) => {
-        // Do nothing - navigation is controlled by the buttons inside each step
-        return;
+    const handleStepClick = () => {        
+        return;// do nothing
     };
 
     const handleReset = () => {
@@ -92,7 +91,8 @@ export function Scan(props: ScanProps) {
                     <Title order={1}>Load a new receipt to your pantry</Title>
                 </Group>
                 <Group justify="space-between" align="flex-start">
-                    <Text c="dimmed">You can take a new picture or drag and drop from your computer. You can only do it one receipt at a time.</Text>
+                    <Text c="dimmed">You can take a new picture or drag and drop from your computer. You can only do it one receipt at a time. Pre-filled expiration dates are estimates! Please check on your product for the actual expiration date.</Text>
+                    <Text c="red" mb="sm">Don't reload or close this page until you save. You might lose your progress.</Text>
                 </Group>
                 <Paper shadow="md" p="md">
                     <Stepper active={activeStep} onStepClick={handleStepClick}>
@@ -410,15 +410,6 @@ function ScanReview(props: ScanReviewProps) {
     const currentProduct = state.data.items[currentProductIndex];
     const [confirmReset, setConfirmReset] = useState(false);
 
-    const setItem = useCallback((newItem: EditReceiptItemData) => setState(s => {
-        const oldState = s as FinishedState;
-        const data: EditReceiptData = {
-            ...oldState.data,
-            items: oldState.data.items.map(item => item.key == newItem.key ? newItem : item),
-        };
-        return { ...oldState, data };
-    }), [setState]);
-
     const addItem = () => setState(s => {
         const oldState = s as FinishedState;
         const newItem = {
@@ -449,10 +440,6 @@ function ScanReview(props: ScanReviewProps) {
 
     return (
         <>
-            <Title order={3} mb= "sm">Review & edit receipt</Title>
-            <Text c="dimmed">Pre-filled expiration dates are estimates! Please check on your product for the actual expiration date.</Text>
-            <Text c="red" mb="sm">Don't reload or close this page until you save. You might lose your progress.</Text>
-
             <Grid>
                 <Grid.Col span={{ base: 12, md: 5 }}>
                     <Card>
@@ -623,7 +610,7 @@ function ScanSave(props: ScanSaveProps) {
     // Local state for editable fields
     const [storeName, setStoreName] = useState(state.data.storeName ?? "");
     const [purchaseDate, setPurchaseDate] = useState(state.data.purchaseDate ?? "");
-    const [totalPrice, setTotalPrice] = useState<number | null>(state.data.totalPrice ?? null);
+    const totalPrice = state.data.totalPrice ?? null;
 
     const handleSave = async () => {
         if (!selectedHousehold) return;
@@ -717,8 +704,11 @@ function ScanSave(props: ScanSaveProps) {
                     <Paper withBorder radius="md" p="lg" shadow="sm">
                         <Stack gap="md">
                             {/* Receipt Header */}
-                            <Flex gap="xl"
-                                  justify="center">
+                            <Flex 
+                                  gap="xl"
+                                  justify="center"
+                                  direction={{ base: "column", sm: "row" }} 
+                                  wrap="wrap">
 
                                 <Select
                                     label="Household"
