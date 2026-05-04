@@ -1,6 +1,6 @@
 import './Dashboard.css';
 import React, { useEffect, useMemo, useState } from 'react';
-import { ActionIcon, Alert, Badge, Button, Card, Checkbox, Container, Group, Loader, Modal, NumberInput, Paper, Popover, Select, SimpleGrid, Stack, Text, TextInput, Title } from '@mantine/core';
+import { ActionIcon, Alert, Badge, Button, Card, Checkbox, Container, Group, Modal, NumberInput, Paper, Popover, Select, SimpleGrid, Stack, Text, TextInput, Title } from '@mantine/core';
 import { IconLayoutGrid, IconReceiptEuro, IconPlus, IconShoppingCart, IconTrash, IconToolsKitchen2Off, IconChefHat, IconUsers, IconClock, IconAlertCircle } from '@tabler/icons-react';
 import { AddToShoppingListModal } from "../../components/AddToShoppingListModal";
 import { useLocation, useNavigate } from 'react-router-dom';
