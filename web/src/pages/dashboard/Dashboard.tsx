@@ -131,15 +131,39 @@ const ProductsInDanger: React.FC<{
 
   if (!products.length) {
     return (
-      <Paper withBorder p="xl" radius="md">
-        <Text c="dimmed">No products expiring soon.</Text>
-      </Paper>
+      <Stack gap="md">
+        <Group justify="space-between" align="center">
+          <Title order={2} size="h3">Expiring soon</Title>
+          <Button
+            variant="subtle"
+            size="sm"
+            onClick={() => void navigate("/pantry")}
+            rightSection={<span>→</span>}
+          >
+            View all
+          </Button>
+        </Group>
+
+        <Paper withBorder p="xl" radius="md">
+          <Text c="dimmed">No products expiring soon.</Text>
+        </Paper>
+      </Stack>
     );
   }
 
   return (
     <Stack gap="md">
-      <Title order={2} size="h3">Expiring soon</Title>
+      <Group justify="space-between" align="center">
+        <Title order={2} size="h3">Expiring soon</Title>
+        <Button
+          variant="subtle"
+          size="sm"
+          onClick={() => void navigate("/pantry")}
+          rightSection={<span>→</span>}
+        >
+          View all
+        </Button>
+      </Group>
 
       <SimpleGrid cols={{ base: 1, md: 2, xl: 3 }}>
         {sortedProducts.map(product => {
