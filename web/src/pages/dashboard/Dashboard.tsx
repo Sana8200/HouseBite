@@ -1,6 +1,6 @@
 import './Dashboard.css';
 import React, { useState, useEffect } from 'react';
-import { ActionIcon, Alert, Badge, Button, Card, Checkbox, Container, Group, Loader, Modal, NumberInput, Paper, Popover, Select, SimpleGrid, Stack, Text, TextInput, Title } from '@mantine/core';
+import { ActionIcon, Alert, Badge, Button, Card, Checkbox, Container, Group, Modal, NumberInput, Paper, Popover, Select, SimpleGrid, Stack, Text, TextInput, Title } from '@mantine/core';
 import { IconLayoutGrid, IconReceiptEuro, IconPlus, IconShoppingCart, IconTrash, IconToolsKitchen2Off, IconChefHat, IconUsers, IconClock, IconAlertCircle } from '@tabler/icons-react';
 import { AddToShoppingListModal } from "../../components/AddToShoppingListModal";
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -18,6 +18,7 @@ import { getExpirationDateBounds, getDaysUntilExpiry, formatExpiry } from "../..
 import { insertReceipt } from '../../api/receipt';
 import { insertProductWithSpecs } from '../../api/product';
 import { notifications } from "@mantine/notifications";
+import { CustomLoader } from '../../components/CustomLoader';
 
 
 // Types
@@ -649,7 +650,7 @@ export default function Dashboard(props: DashboardProps) {
 
         {/* Expiring products */}
         {loading ? (
-          <Group justify="center" py="xl"><Loader /></Group>
+          <Group justify="center" py="xl"><CustomLoader /></Group>
         ) : (
           <ProductsInDanger
             products={products.filter(p => {

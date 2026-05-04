@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import {
     Button, Container, Text, Title, Stack, Group, SimpleGrid, Card,
-    ThemeIcon, Badge, Paper, Modal, Loader,
+    ThemeIcon, Badge, Paper, Modal,
 } from "@mantine/core";
 import type { User } from "@supabase/supabase-js";
 import { Link, useNavigate } from "react-router";
@@ -15,6 +15,7 @@ import { getUsername } from "../../utils/user";
 import { getHouseholds } from "../../api/household";
 import type { Household } from "../../api/schema";
 import "./Landing.css";
+import { CustomLoader } from "../../components/CustomLoader";
 
 export interface LandingProps {
     user: User | null,
@@ -299,7 +300,7 @@ export function Landing(props: LandingProps) {
                 centered
             >
                 {loadingHouseholds ? (
-                    <Group justify="center" py="md"><Loader size="sm" /></Group>
+                    <Group justify="center" py="md"><CustomLoader size="sm" /></Group>
                 ) : (
                     <Stack gap="xs">
                         {households.map(h => (

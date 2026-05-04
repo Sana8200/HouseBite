@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, type Dispatch, type SetStateAction, useCallback } from "react";
 import "./Scan.css";
-import { Alert, Box, Button, Card, Center, Checkbox, Container, Flex, Grid, Loader, NumberInput, Paper, Select, Stack, Text, TextInput, Title } from "@mantine/core";
+import { Alert, Box, Button, Card, Center, Checkbox, Container, Flex, Grid, NumberInput, Paper, Select, Stack, Text, TextInput, Title } from "@mantine/core";
 import { Dropzone, IMAGE_MIME_TYPE, type FileWithPath } from "@mantine/dropzone";
 import { IconReceipt, IconAlertCircle } from "@tabler/icons-react";
 import { scanReceipt, type ReceiptData, type ReceiptItemData } from "../../api/scan";
@@ -11,6 +11,7 @@ import type { Household, InsertProduct, InsertProductSpecs, InsertReceipt, Produ
 import type { User } from "@supabase/supabase-js";
 import { useNavigate } from "react-router";
 import { notifications } from "@mantine/notifications";
+import { CustomLoader } from "../../components/CustomLoader.tsx";
 
 const IMG_SIZE = 2000;
 
@@ -265,7 +266,7 @@ function ScanProcessing(props: ScanProcessingProps) {
     return (
         <>
             <Stack align="center">
-                <Loader size="lg" mt="md" />
+                <CustomLoader />
                 <Text mt="md">Reading your receipt...</Text>
             </Stack>
         </>

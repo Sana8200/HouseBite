@@ -10,10 +10,11 @@ import {
     removeRestriction,
 } from "../../api/account"
 import { getAvatar, getUsername } from "../../utils/user"
-import { ActionIcon, Alert, Avatar, Button, Card, Center, Chip, Container, Divider, Flex, Grid, Group, Loader, Modal, Space, Stack, Text, TextInput, Title } from "@mantine/core"
+import { ActionIcon, Alert, Avatar, Button, Card, Center, Chip, Container, Divider, Flex, Grid, Group, Modal, Space, Stack, Text, TextInput, Title } from "@mantine/core"
 import { IconEdit, IconDeviceFloppyFilled, IconAlertCircle } from '@tabler/icons-react';
 import { notifications } from "@mantine/notifications";
 import type { FoodRestriction } from "../../api/schema"
+import { CustomLoader } from "../../components/CustomLoader"
 
 interface AccountProps {
     user: User;
@@ -249,7 +250,7 @@ export function Account(props: AccountProps) {
 
     if (loading) return (
         <Center p="md">
-            <Loader />
+            <CustomLoader />
         </Center>
     );
 
