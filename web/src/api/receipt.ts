@@ -5,7 +5,7 @@ import type { InsertReceipt, Product, ProductSpecs, Receipt } from "./schema";
 
 export type ReceiptProduct = Pick<Product, "id" | "name"> & Pick<ProductSpecs, "bought_quantity" | "price">
 
-export interface ReceiptWithProducts extends Pick<Receipt, "id" | "household_id" | "store_name" | "total" | "purchase_at"> {
+export interface ReceiptWithProducts extends Pick<Receipt, "id" | "household_id" | "store_name" | "total" | "purchase_at" | "buyer_id"> {
     products: ReceiptProduct[];
 }
 
@@ -77,6 +77,7 @@ export async function fetchReceiptsByHousehold(householdId?: string): Promise<Po
             store_name,
             total,
             purchase_at,
+            buyer_id,
             product(
                 id,
                 name,
@@ -97,6 +98,7 @@ export async function fetchReceiptsByHousehold(householdId?: string): Promise<Po
         store_name: r.store_name as string,
         total: r.total as number,
         purchase_at: r.purchase_at as string,
+        buyer_id: r.buyer_id as string | null,
         products: (r.product ?? []).map(p => {
             const specs = Array.isArray(p.product_specs) ? p.product_specs[0] : p.product_specs;
             return {

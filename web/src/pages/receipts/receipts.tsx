@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Alert, Badge, Box, Button, Divider, Grid, Group, Paper, SegmentedControl, SimpleGrid, Stack, Table, Text, ThemeIcon, Title, UnstyledButton, Menu } from "@mantine/core";
+import { Alert, Badge, Box, Button, Divider, Grid, Group, Paper, SegmentedControl, SimpleGrid, Stack, Table, Text, ThemeIcon, Title, UnstyledButton, Menu, Popover } from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates";
-import { IconAlertCircle, IconArrowLeft, IconCalendarEvent, IconChevronRight, IconReceipt2, IconShoppingBag, IconDownload, IconFileSpreadsheet, IconFileText, IconTrash } from "@tabler/icons-react";
+import { IconAlertCircle, IconArrowLeft, IconCalendarEvent, IconChevronRight, IconReceipt2, IconShoppingBag, IconDownload, IconFileSpreadsheet, IconFileText, IconTrash, IconUser } from "@tabler/icons-react";
 import * as XLSX from "xlsx";
 import { fetchReceiptsByHousehold, deleteReceipt } from "../../api/receipt";
 import { notifications } from "@mantine/notifications";
 import { formatCurrency, formatDate } from "../../utils/date";
-import { getHouseholds } from "../../api/household";
+import { getHouseholds, getHouseholdMembers } from "../../api/household";
 import { HouseholdContextBadge } from "../../components/HouseholdContextBadge";
 import { HouseholdContextDivider } from "../../components/HouseholdContextDivider";
 import type { Household } from "../../api/schema";
@@ -29,6 +29,7 @@ type ReceiptSummary = {
   itemCount: number;
   total: string;
   items: ReceiptItem[];
+  buyerName: string | null;
 };
 
 type ReceiptsLocationState = {
@@ -76,6 +77,13 @@ function ReceiptListItem({ receipt, selected, onSelect }: { receipt: ReceiptSumm
                 <IconShoppingBag size={18} stroke={1.8} />
                 <Text size="sm">
                   {receipt.itemCount} item{receipt.itemCount === 1 ? "" : "s"}
+                </Text>
+              </Group>
+
+              <Group gap={8} wrap="nowrap" style={{ gridColumn: "1 / -1" }}>
+                <IconUser size={18} stroke={1.8} />
+                <Text size="sm" truncate>
+                  {receipt.buyerName ?? "Unknown buyer"}
                 </Text>
               </Group>
             </SimpleGrid>
@@ -146,13 +154,31 @@ export function Receipts() {
       return;
     }
 
-    const mapped: ReceiptSummary[] = (data ?? []).map(r => ({
+    const rows = data ?? [];
+
+    // Resolve buyer_id → display name by fetching members for each household in the results.
+    const householdIdsInResults = Array.from(
+      new Set(rows.map(r => r.household_id).filter(Boolean))
+    );
+    const buyerNames = new Map<string, string>();
+    await Promise.all(
+      householdIdsInResults.map(async hhId => {
+        const result = await getHouseholdMembers(hhId);
+        const members = result.data ?? [];
+        for (const m of members) {
+          if (m.display_name) buyerNames.set(m.id, m.display_name);
+        }
+      })
+    );
+
+    const mapped: ReceiptSummary[] = rows.map(r => ({
       id: r.id,
       storeName: r.store_name ?? "Unknown Store",
       date: formatDate(r.purchase_at),
       rawDate: r.purchase_at ?? "",
       itemCount: r.products.length,
       total: formatCurrency(r.total),
+      buyerName: r.buyer_id ? (buyerNames.get(r.buyer_id) ?? null) : null,
       items: r.products.map(p => ({
         id: p.id,
         name: p.name,
@@ -388,9 +414,15 @@ export function Receipts() {
                       {selectedReceipt.storeName}
                     </Title>
 
-                    <Group gap="xs" c="dimmed">
-                      <IconCalendarEvent size={18} stroke={1.8} />
-                      <Text>{selectedReceipt.date}</Text>
+                    <Group gap="lg" c="dimmed">
+                      <Group gap="xs">
+                        <IconCalendarEvent size={18} stroke={1.8} />
+                        <Text>{selectedReceipt.date}</Text>
+                      </Group>
+                      <Group gap="xs">
+                        <IconUser size={18} stroke={1.8} />
+                        <Text>Bought by {selectedReceipt.buyerName ?? "Unknown"}</Text>
+                      </Group>
                     </Group>
                   </Stack>
 
@@ -445,29 +477,40 @@ export function Receipts() {
                     </Text>
                   </Group>
 
-                  {confirmDelete ? (
-                    <Group justify="flex-end" gap="sm">
-                      <Text size="sm" c="dimmed">Delete this receipt and all its products?</Text>
-                      <Button variant="subtle" size="xs" onClick={() => setConfirmDelete(false)} disabled={deleting}>
-                        Cancel
-                      </Button>
-                      <Button color="red" size="xs" loading={deleting} onClick={() => void handleDeleteReceipt(selectedReceipt.id)}>
-                        Yes, delete
-                      </Button>
-                    </Group>
-                  ) : (
-                    <Group justify="flex-end">
-                      <Button
-                        variant="subtle"
-                        color="red"
-                        size="xs"
-                        leftSection={<IconTrash size={14} />}
-                        onClick={() => setConfirmDelete(true)}
-                      >
-                        Delete receipt
-                      </Button>
-                    </Group>
-                  )}
+                  <Group justify="flex-end">
+                    <Popover
+                      opened={confirmDelete}
+                      onClose={() => setConfirmDelete(false)}
+                      position="bottom-end"
+                      withArrow
+                      shadow="md"
+                    >
+                      <Popover.Target>
+                        <Button
+                          variant="subtle"
+                          color="red"
+                          size="xs"
+                          leftSection={<IconTrash size={14} />}
+                          onClick={() => setConfirmDelete(prev => !prev)}
+                        >
+                          Delete receipt
+                        </Button>
+                      </Popover.Target>
+                      <Popover.Dropdown>
+                        <Stack gap="xs">
+                          <Text size="sm">Delete this receipt and all its products?</Text>
+                          <Group gap="xs" justify="flex-end">
+                            <Button size="xs" variant="default" onClick={() => setConfirmDelete(false)} disabled={deleting}>
+                              Cancel
+                            </Button>
+                            <Button size="xs" color="red" loading={deleting} onClick={() => void handleDeleteReceipt(selectedReceipt.id)}>
+                              Yes, delete
+                            </Button>
+                          </Group>
+                        </Stack>
+                      </Popover.Dropdown>
+                    </Popover>
+                  </Group>
                 </Stack>
               ) : (
                 /* Empty state in case there is no receipt data. */
