@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import type { User } from "@supabase/supabase-js"
-import { signOut, saveUsername, savePassword } from "../../api/auth"
+import { signOut, saveUsername, savePassword, setAvatar } from "../../api/auth"
 import {
     getTotalSpent,
     deleteAccount,
@@ -9,7 +9,7 @@ import {
     addRestriction,
     removeRestriction,
 } from "../../api/account"
-import { getAvatarUrl, getUsername } from "../../utils/user"
+import { avatars, getAvatarUrl, getUsername } from "../../utils/user"
 import { ActionIcon, Alert, Avatar, Button, Card, Center, Chip, Container, Divider, Flex, Grid, Group, Modal, Space, Stack, Text, TextInput, Title } from "@mantine/core"
 import { IconEdit, IconDeviceFloppyFilled, IconAlertCircle } from '@tabler/icons-react';
 import { notifications } from "@mantine/notifications";
@@ -53,6 +53,8 @@ export function Account(props: AccountProps) {
     const [userRestrictions, setUserRestrictions] = useState<Set<string>>(new Set())
     const [togglingId, setTogglingId] = useState<string | null>(null)
     const [restrictionError, setRestrictionError] = useState<string | null>(null)
+
+    const [avatarModalOpen, setAvatarModalOpen] = useState(false);
 
 
     useEffect(() => {
@@ -263,7 +265,7 @@ export function Account(props: AccountProps) {
                     <Stack>
                         <Card shadow="md" radius="xl">
                             <Flex align="center" gap="md">
-                                <Avatar src={avatar} name={username} color="initials" size="xl" />
+                                <Avatar src={avatar} name={username} color="initials" size="xl" onClick={() => setAvatarModalOpen(true)} style={{cursor: "pointer"}} />
                                 <div>
                                     <Text size="xl">{username || "—"}</Text>
                                     <Text c="dimmed">{user.email}</Text>
@@ -496,6 +498,7 @@ export function Account(props: AccountProps) {
                 </Flex>
             </Modal>
 
+            <AvatarModal username={username} opened={avatarModalOpen} onClose={() => setAvatarModalOpen(false)}/>
         </Container>
     )
 }
@@ -531,4 +534,30 @@ function RestrictionCategory(props: RestrictionCategoryProps) {
 
 function formatRestriction(r: string) {
     return r.replace(/\b\w/g, c => c.toUpperCase());
+}
+
+interface AvatarModalProps {
+    opened: boolean,
+    onClose: () => void,
+    username: string,
+}
+
+function AvatarModal(props: AvatarModalProps) {
+    const { opened, onClose, username } = props;
+
+    const onChange = async (id: string) => {
+        await setAvatar(id);
+        onClose();
+    };
+
+    return (
+        <Modal opened={opened} onClose={onClose} title="Change avatar" centered>
+            <Flex gap="md" wrap="wrap">
+                <Avatar name={username} color="initials" size="xl" onClick={() => void onChange("")} style={{cursor: "pointer"}}/>
+                {Object.values(avatars).map(avatar => (
+                    <Avatar key={avatar.id} src={avatar.url} size="xl" onClick={() => void onChange(avatar.id)} style={{cursor: "pointer"}}/>
+                ))}
+            </Flex>
+        </Modal>
+    );
 }
