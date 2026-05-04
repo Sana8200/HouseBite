@@ -9,7 +9,7 @@ import {
     addRestriction,
     removeRestriction,
 } from "../../api/account"
-import { getAvatar, getUsername } from "../../utils/user"
+import { getAvatarUrl, getUsername } from "../../utils/user"
 import { ActionIcon, Alert, Avatar, Button, Card, Center, Chip, Container, Divider, Flex, Grid, Group, Modal, Space, Stack, Text, TextInput, Title } from "@mantine/core"
 import { IconEdit, IconDeviceFloppyFilled, IconAlertCircle } from '@tabler/icons-react';
 import { notifications } from "@mantine/notifications";
@@ -34,7 +34,7 @@ export function Account(props: AccountProps) {
     const [savingName, setSavingName] = useState(false)
     const [nameError, setNameError] = useState<string | null>(null)
 
-    const avatar = getAvatar(user);
+    const avatar = getAvatarUrl(user);
 
     // Password Modal
     const [showPasswordModal, setShowPasswordModal] = useState(false)
