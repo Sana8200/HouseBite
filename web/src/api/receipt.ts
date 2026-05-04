@@ -17,6 +17,22 @@ export async function insertReceipt(receipt: InsertReceipt): Promise<PostgrestSi
         .single();
 }
 
+export async function deleteReceipt(receiptId: string): Promise<{ error: Error | null }> {
+    // Products must be deleted first — receipt.id is ON DELETE SET NULL on product,
+    // so deleting the receipt alone would orphan them. product_specs cascade from product.
+    const { error: productsError } = await supabase
+        .from("product")
+        .delete()
+        .eq("receipt_id", receiptId);
+    if (productsError) return { error: productsError };
+
+    const { error } = await supabase
+        .from("receipt")
+        .delete()
+        .eq("id", receiptId);
+    return { error };
+}
+
 export async function fetchReceiptsByHousehold(householdId?: string): Promise<PostgrestResponse<ReceiptWithProducts>> {
     let query = supabase
         .from("receipt")

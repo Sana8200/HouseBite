@@ -7,6 +7,7 @@ import { IconUsers, IconClock, IconChevronLeft, IconChevronRight, IconChefHat, I
 import { getRecipes, saveRecipe, type SearchRecipe, type SearchRecipesResult } from "../../api/recipe"
 import type { Recipe } from "../../api/schema"
 import { notifications } from "@mantine/notifications";
+import { CustomLoader } from "../../components/CustomLoader"
 
 function parseDescription(description: string | null): { nutrition: string; ingredients: string; steps: string } {
   if (!description) return { nutrition: "", ingredients: "", steps: "" }
