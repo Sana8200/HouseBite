@@ -45,8 +45,8 @@ const theme = createTheme({
   colors: { brand },
   fontFamily: 'Epilogue, "Segoe UI", sans-serif',
   headings: {
-    fontFamily: 'Gloock, Georgia, serif',
-    fontWeight: '400',
+    fontFamily: 'Epilogue, "Segoe UI", sans-serif',
+    fontWeight: '600',
   },
   defaultRadius: 'md',
   radius: {
