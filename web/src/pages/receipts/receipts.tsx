@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Alert, Badge, Box, Button, Divider, Grid, Group, Loader, Paper, SegmentedControl, SimpleGrid, Stack, Table, Text, ThemeIcon, Title, UnstyledButton, Menu } from "@mantine/core";
+import { Alert, Badge, Box, Button, Divider, Grid, Group, Paper, SegmentedControl, SimpleGrid, Stack, Table, Text, ThemeIcon, Title, UnstyledButton, Menu } from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates";
 import "@mantine/dates/styles.css";
 import { IconAlertCircle, IconArrowLeft, IconCalendarEvent, IconChevronRight, IconReceipt2, IconShoppingBag, IconDownload, IconFileSpreadsheet, IconFileText } from "@tabler/icons-react";
@@ -9,6 +9,7 @@ import * as XLSX from "xlsx";
 import { fetchReceiptsByHousehold } from "../../api/receipt";
 import { formatCurrency, formatDate } from "../../utils/date";
 import "./receipts.css";
+import { CustomLoader } from "../../components/CustomLoader";
 
 type ReceiptItem = {
   id: string;
@@ -320,7 +321,7 @@ export function Receipts() {
           <Grid.Col span={{ base: 12, lg: 5 }}>
             <Stack gap="md">
               {loading ? (
-                <Group justify="center" py="md"><Loader size="sm" /></Group>
+                <Group justify="center" py="md"><CustomLoader size="sm" /></Group>
               ) : visibleReceipts.length === 0 ? (
                 <Text c="dimmed">No receipts found for this period.</Text>
               ) : (

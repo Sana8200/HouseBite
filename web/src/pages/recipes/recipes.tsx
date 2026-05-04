@@ -2,11 +2,12 @@ import { useEffect, useRef, useState } from "react"
 import { useLocation } from "react-router-dom"
 import { supabase } from "../../supabase"
 import "./recipes.css"
-import { Text, SimpleGrid, Stack, ActionIcon, Button, Group, Title, Container, Loader, Card, Divider, Modal, Popover } from "@mantine/core"
+import { Text, Stack, ActionIcon, Button, Group, Title, Container, Card, Divider, Modal, Popover } from "@mantine/core"
 import { IconUsers, IconClock, IconChevronLeft, IconChevronRight, IconChefHat, IconX } from "@tabler/icons-react"
 import { getRecipes, saveRecipe, type SearchRecipe, type SearchRecipesResult } from "../../api/recipe"
 import type { Recipe } from "../../api/schema"
 import { notifications } from "@mantine/notifications";
+import { CustomLoader } from "../../components/CustomLoader"
 
 function parseDescription(description: string | null): { nutrition: string; ingredients: string; steps: string } {
   if (!description) return { nutrition: "", ingredients: "", steps: "" }
@@ -391,7 +392,7 @@ export function Recipes() {
 
         <Title order={1} mb="md">Favourites</Title>
         {loadingFavourites ? (
-          <Group justify="center" py="md"><Loader size="sm" /></Group>
+          <Group justify="center" py="md"><CustomLoader size="sm" /></Group>
         ) : favourites.length === 0 ? (
           <Text c="dimmed">No favourites yet. Search for recipes and add some.</Text>
         ) : (

@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent } from "react";
-import { ActionIcon, Alert, Button, Card, Checkbox, Container, Grid, Group, Loader, Paper, Stack, Table, Text, TextInput, Title } from "@mantine/core";
+import { ActionIcon, Alert, Button, Card, Checkbox, Container, Grid, Group, Paper, Stack, Table, Text, TextInput, Title } from "@mantine/core";
 import { IconAlertCircle, IconArrowLeft, IconCheck, IconDeviceFloppy, IconPlus, IconShoppingCart, IconTrash, IconX } from "@tabler/icons-react";
 import { notifications } from "@mantine/notifications";
 import { Link, useLocation } from "react-router";
 import { addShoppingListItem, deleteShoppingItem, getShoppingItems, toggleShoppingItem, type ShoppingListItemView, } from "../../api/shoppingList";
 import "./shoppingList.css";
+import { CustomLoader } from "../../components/CustomLoader";
 
 interface ShoppingListLocationState {
   householdId?: string;
@@ -306,7 +307,7 @@ export function ShoppingList() {
 
         {loading ? (
           <Group justify="center" py="xl">
-            <Loader />
+            <CustomLoader />
           </Group>
         ) : (
           <Paper withBorder radius="xl" className="shopping-list-table-panel">
