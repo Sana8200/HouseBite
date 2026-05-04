@@ -57,6 +57,7 @@ export function Scan(props: ScanProps) {
 
     const [state, setState] = useState<ScanState>({ state: "ready" });
     const [activeStep, setActiveStep] = useState(0);
+    const [confirmReset, setConfirmReset] = useState(false);
 
     const [households, setHouseholds] = useState<Household[]>([]);
 
@@ -72,77 +73,110 @@ export function Scan(props: ScanProps) {
         }
     }, []);
 
+    // Stepper buttons do nothing - they're just visual indicators
+    const handleStepClick = (step: number) => {
+        // Do nothing - navigation is controlled by the buttons inside each step
+        return;
+    };
+
+    const handleReset = () => {
+        setState({ state: "ready" });
+        setActiveStep(0);
+        setConfirmReset(false);
+    };
+
     return (
-
         <>
+            <Stack gap="xl" p="xl">
+                <Group justify="space-between" align="flex-start">
+                    <Title order={1}>Load a new receipt to your pantry</Title>
+                </Group>
+                <Group justify="space-between" align="flex-start">
+                    <Text c="dimmed">You can take a new picture or drag and drop from your computer. You can only do it one receipt at a time.</Text>
+                </Group>
+                <Paper shadow="md" p="md">
+                    <Stepper active={activeStep} onStepClick={handleStepClick}>
+                        <Stepper.Step label="Upload" description="Take or upload photo">
+                            {activeStep === 0 && state.state === "ready" && <ScanReady state={state} setState={setState} setActiveStep={setActiveStep} />}
+                        </Stepper.Step>
+                        
+                        <Stepper.Step label="Processing" description="AI reads receipt">
+                            {activeStep === 1 && state.state === "processing" && <ScanProcessing state={state} setState={setState} setActiveStep={setActiveStep} />}
+                        </Stepper.Step>
+                        
+                        <Stepper.Step label="Review" description="Check & edit items">
+                            {activeStep === 2 && state.state === "finished" && <ScanReview state={state} setState={setState} households={households} setActiveStep={setActiveStep} />}
+                        </Stepper.Step>
+                        
+                        <Stepper.Step label="Save" description="Final confirmation">
+                            {activeStep === 3 && state.state === "finished" && <ScanSave state={state} households={households} user={user} setActiveStep={setActiveStep} />}
+                        </Stepper.Step>
+                    </Stepper>
+                </Paper>
 
-        <Stack gap="xl" p="xl">
-            <Group justify="space-between" align="flex-start">
-                <Title order={1}>Load a new receipt to your pantry</Title>
-            </Group>
-            <Group justify="space-between" align="flex-start">
-                <Text c="dimmed">You can take a new picture or drag and drop from your computer. You can only do it one receipt at a time.</Text>
-            </Group>
-            <Paper shadow="md" p="md">
-                <Stepper active={activeStep} onStepClick={setActiveStep}>
-                    <Stepper.Step label="Upload" description="Take or upload photo">
-                        {activeStep === 0 && state.state === "ready" && <ScanReady state={state} setState={setState} setActiveStep={setActiveStep} />}
-                    </Stepper.Step>
-                    
-                    <Stepper.Step label="Processing" description="AI reads receipt">
-                        {activeStep === 1 && state.state === "processing" && <ScanProcessing state={state} setState={setState} setActiveStep={setActiveStep} />}
-                    </Stepper.Step>
-                    
-                    <Stepper.Step label="Review" description="Check & edit items">
-                        {activeStep === 2 && state.state === "finished" && <ScanReview state={state} setState={setState} households={households} setActiveStep={setActiveStep} />}
-                    </Stepper.Step>
-                    
-                    <Stepper.Step label="Save" description="Final confirmation">
-                        {activeStep === 3 && state.state === "finished" && <ScanSave state={state} households={households} user={user} setActiveStep={setActiveStep} />}
-                    </Stepper.Step>
-                </Stepper>
-            </Paper>
+                <Accordion variant="filled" chevronPosition="left" radius="lg" chevronIconSize={17}>
+                    <Accordion.Item value="how-it-works">
+                        <Accordion.Control>Curious about how it works?</Accordion.Control>
+                        <Accordion.Panel>
+                            We use OpenAI's model to read the receipt. We don't store any of the data, just the receipt which you can see in the View receipts page of your household.
+                        </Accordion.Panel>
+                    </Accordion.Item>
+                </Accordion>
+            </Stack>
 
-            <Accordion variant="filled" chevronPosition="left" radius="lg" chevronIconSize={17}>
-                <Accordion.Item value="how-it-works">
-                    <Accordion.Control>Curious about how it works?</Accordion.Control>
-                    <Accordion.Panel>
-                        We use OpenAI's model to read the receipt. We don't store any of the data, just the receipt which you can see in the View receipts page of your household.
-                    </Accordion.Panel>
-                </Accordion.Item>
-            </Accordion>
-        </Stack>
-
-
-        {state.state === "error" && (
-            <Alert
-                variant="light"
-                color="red"
-                radius="md"
-                icon={<IconAlertCircle size={18} />}
-                title="Couldn't read your receipt"
-                mt="md"
-                mx="xl"
-            >
-                {friendlyScanError(state.error)}
-                <Button 
-                    size="sm" 
-                    onClick={() => {
-                        setState({ state: "ready" });
-                        setActiveStep(0);
-                    }}
+            {state.state === "error" && (
+                <Alert
+                    variant="light"
+                    color="red"
+                    radius="md"
+                    icon={<IconAlertCircle size={18} />}
+                    title="Couldn't read your receipt"
                     mt="md"
+                    mx="xl"
                 >
-                    Try again
-                </Button>
-            </Alert>
-        )}
+                    {friendlyScanError(state.error)}
+                    <Button 
+                        size="sm" 
+                        onClick={handleReset}
+                        mt="md"
+                    >
+                        Try again
+                    </Button>
+                </Alert>
+            )}
 
-    </>
-
-    
+            {/* Reset Confirmation Popover */}
+            <Popover
+                opened={confirmReset}
+                onClose={() => setConfirmReset(false)}
+                position="top"
+                withArrow
+                shadow="md"
+                withinPortal
+            >
+                <Popover.Target>
+                    <div style={{ position: 'fixed', top: 0, left: 0, visibility: 'hidden' }} />
+                </Popover.Target>
+                <Popover.Dropdown>
+                    <Stack gap="sm">
+                        <Text size="sm">This will delete your progress so far. Are you sure?</Text>
+                        <Group gap="sm" justify="flex-end">
+                            <Button size="xs" variant="default" onClick={() => setConfirmReset(false)}>
+                                Cancel
+                            </Button>
+                            <Button 
+                                size="xs" 
+                                color="red" 
+                                onClick={handleReset}
+                            >
+                                Yes, delete progress
+                            </Button>
+                        </Group>
+                    </Stack>
+                </Popover.Dropdown>
+            </Popover>
+        </>
     );
-
 }
 
 interface ScanReadyProps {
@@ -300,10 +334,15 @@ function ScanProcessing(props: ScanProcessingProps) {
                 } else if (result.error) {
                     setScanState({ state: "error", error: result.error as Error });
                 } else {
+                    // Handle case when no items are detected
+                    const items = result.data?.items ?? [];
+                    
                     const data: EditReceiptData = {
                         ...result.data!,
-                        items: result.data!.items.map((item, i) => {
-
+                        storeName: result.data?.storeName ?? "",
+                        purchaseDate: result.data?.purchaseDate ?? "",
+                        totalPrice: result.data?.totalPrice ?? null,
+                        items: items.length > 0 ? items.map((item, i) => {
                             let expirationDate: string | null = null;
 
                             if (item.estimatedExpirationDays) {
@@ -318,7 +357,20 @@ function ScanProcessing(props: ScanProcessingProps) {
                                 unit: typeof item.weight == "number" ? "kg" : null,
                                 expirationDate,
                             };
-                        })
+                        }) : [
+                            // Add a default empty item when no products detected
+                            {
+                                enabled: true,
+                                name: "",
+                                estimatedExpirationDays: null,
+                                expirationDate: null,
+                                quantity: 1,
+                                totalPrice: null,
+                                unit: null,
+                                weight: null,
+                                key: 0,
+                            }
+                        ]
                     };
 
                     setScanState({ state: "finished", image, data });
@@ -356,7 +408,7 @@ function ScanReview(props: ScanReviewProps) {
 
     const [currentProductIndex, setCurrentProductIndex] = useState(0);
     const currentProduct = state.data.items[currentProductIndex];
-    const [confirmBack, setConfirmBack] = useState(false);
+    const [confirmReset, setConfirmReset] = useState(false);
 
     const setItem = useCallback((newItem: EditReceiptItemData) => setState(s => {
         const oldState = s as FinishedState;
@@ -393,20 +445,25 @@ function ScanReview(props: ScanReviewProps) {
         };
     });
 
+    const hasValidProducts = state.data.items.some(item => item.name && item.name.trim() !== "" && item.enabled);
+
     return (
         <>
-            <Title order={3}>Review & edit receipt</Title>
-            <Text c="dimmed" mb="md">Pre-filled expiration dates are estimates! Please check on your product for the actual expiration date.</Text>
+            <Title order={3} mb= "sm">Review & edit receipt</Title>
+            <Text c="dimmed">Pre-filled expiration dates are estimates! Please check on your product for the actual expiration date.</Text>
+            <Text c="red" mb="sm">Don't reload or close this page until you save. You might lose your progress.</Text>
 
             <Grid>
                 <Grid.Col span={{ base: 12, md: 5 }}>
-                    <Card shadow="sm" withBorder p="sm">
+                    <Card>
+                        <Center>
                         <Box 
                             component="img" 
                             src={state.image} 
                             alt="Receipt" 
-                            style={{ width: "100%", height: "auto", borderRadius: "8px" }}
+                            style={{ width: "80%", height: "auto", borderRadius: "8px" }}
                         />
+                        </Center>
                     </Card>
                 </Grid.Col>
 
@@ -442,8 +499,8 @@ function ScanReview(props: ScanReviewProps) {
                     <Group justify="space-between" mt="xl">
 
                         <Popover
-                            opened={confirmBack}
-                            onClose={() => setConfirmBack(false)}
+                            opened={confirmReset}
+                            onClose={() => setConfirmReset(false)}
                             position="bottom"
                             withArrow
                             shadow="md"
@@ -451,7 +508,7 @@ function ScanReview(props: ScanReviewProps) {
                             <Popover.Target>
                                 <Button 
                                     variant="default" 
-                                    onClick={() => setConfirmBack(true)}
+                                    onClick={() => setConfirmReset(true)}
                                 >
                                     Back to Upload
                                 </Button>
@@ -460,14 +517,14 @@ function ScanReview(props: ScanReviewProps) {
                                 <Stack gap="sm">
                                     <Text size="sm">This will delete your progress so far. Are you sure?</Text>
                                     <Group gap="sm" justify="flex-end">
-                                        <Button size="xs" variant="default" onClick={() => setConfirmBack(false)}>
+                                        <Button size="xs" variant="default" onClick={() => setConfirmReset(false)}>
                                             Cancel
                                         </Button>
                                         <Button 
                                             size="xs" 
                                             color="red" 
                                             onClick={() => {
-                                                setConfirmBack(false);
+                                                setConfirmReset(false);
                                                 setState({ state: "ready" });
                                                 setActiveStep(0);
                                             }}
@@ -478,16 +535,16 @@ function ScanReview(props: ScanReviewProps) {
                                 </Stack>
                             </Popover.Dropdown>
                         </Popover>
-
-                        <Button 
-                            variant="default" 
-                            onClick={() => setCurrentProductIndex(prev => Math.max(0, prev - 1))}
-                            disabled={currentProductIndex === 0}
-                        >
-                            Previous product
-                        </Button>
                         
                         <Group gap="sm">
+                            <Button 
+                                variant="default" 
+                                onClick={() => setCurrentProductIndex(prev => Math.max(0, prev - 1))}
+                                disabled={currentProductIndex === 0}
+                            >
+                                Previous product
+                            </Button>
+
                             {/* Don't include button */}
                             {currentProduct && (
                                 <Button 
@@ -517,6 +574,11 @@ function ScanReview(props: ScanReviewProps) {
                                     Don't include this product
                                 </Button>
                             )}
+
+
+                                <Button variant="subtle" onClick={addItem} size="sm">
+                                    + Add missing product
+                                </Button>
                             
                             {currentProductIndex < state.data.items.length - 1 ? (
                                 <Button 
@@ -529,6 +591,7 @@ function ScanReview(props: ScanReviewProps) {
                                 <Button 
                                     onClick={() => setActiveStep(3)}
                                     color="green"
+                                    disabled={!hasValidProducts}
                                 >
                                     Continue to Save
                                 </Button>
@@ -536,12 +599,6 @@ function ScanReview(props: ScanReviewProps) {
                         </Group>
                     </Group>
 
-                    {/* Add missing product button */}
-                    <Center mt="md">
-                        <Button variant="subtle" onClick={addItem} size="sm">
-                            + Add missing product
-                        </Button>
-                    </Center>
                 </Grid.Col>
             </Grid>
 
@@ -634,21 +691,25 @@ function ScanSave(props: ScanSaveProps) {
         }
     };
 
-    const enabledItems = state.data.items.filter(i => i.enabled && i.name);
+    const enabledItems = state.data.items.filter(i => i.enabled && i.name && i.name.trim() !== "");
     const totalProducts = enabledItems.length;
     const totalValue = enabledItems.reduce((sum, i) => sum + (i.totalPrice ?? 0), 0);
+
+    const noProductsTooltip = "No products have been added yet. Please go back to the review step and add products.";
 
     return (
         <>
             <Grid>
                 <Grid.Col span={{ base: 12, md: 5 }}>
-                    <Card shadow="sm" withBorder p="sm">
+                    <Card>
+                        <Center>
                         <Box 
                             component="img" 
                             src={state.image} 
                             alt="Receipt" 
-                            style={{ width: "100%", height: "auto", borderRadius: "8px" }}
+                            style={{ width: "80%", height: "auto", borderRadius: "8px" }}
                         />
+                        </Center>
                     </Card>
                 </Grid.Col>
 
@@ -656,9 +717,20 @@ function ScanSave(props: ScanSaveProps) {
                     <Paper withBorder radius="md" p="lg" shadow="sm">
                         <Stack gap="md">
                             {/* Receipt Header */}
-                            <Stack gap="xs">
+                            <Flex gap="xl"
+                                  justify="center">
+
+                                <Select
+                                    label="Household"
+                                    placeholder="Select household"
+                                    required
+                                    data={households.map((h) => ({ value: h.id, label: h.house_name }))}
+                                    value={selectedHousehold}
+                                    onChange={setSelectedHousehold}
+                                />
+
                                 <TextInput 
-                                    label="Store name"
+                                    label="Shop name"
                                     value={storeName}
                                     onChange={e => setStoreName(e.target.value)}
                                     size="sm"
@@ -671,36 +743,36 @@ function ScanSave(props: ScanSaveProps) {
                                     onChange={(e) => setPurchaseDate(e.target.value)}
                                     size="sm"
                                 />
-                            </Stack>
+                            </Flex>
 
                             {/* Products Table */}
-                            <Table verticalSpacing="sm" horizontalSpacing="sm">
-                                <Table.Thead>
-                                    <Table.Tr>
-                                        <Table.Th>Product</Table.Th>
-                                        <Table.Th ta="center">Quantity</Table.Th>
-                                        <Table.Th ta="right">Price</Table.Th>
-                                    </Table.Tr>
-                                </Table.Thead>
-                                <Table.Tbody>
-                                    {enabledItems.map((item) => (
-                                        <Table.Tr key={item.key}>
-                                            <Table.Td>
-                                                <Text fw={500} size="sm">{item.name}</Text>
-                                            </Table.Td>
-                                            <Table.Td ta="center">
-                                                <Text c="dimmed" size="sm">{item.quantity ?? 1}</Text>
-                                            </Table.Td>
-                                            <Table.Td ta="right">
-                                                <Text fw={500} size="sm">{item.totalPrice?.toFixed(2) ?? "0.00"}kr</Text>
-                                            </Table.Td>
+                            {totalProducts > 0 ? (
+                                <Table verticalSpacing="sm" horizontalSpacing="sm">
+                                    <Table.Thead>
+                                        <Table.Tr>
+                                            <Table.Th>Product</Table.Th>
+                                            <Table.Th ta="center">Quantity</Table.Th>
+                                            <Table.Th ta="right">Price</Table.Th>
                                         </Table.Tr>
-                                    ))}
-                                </Table.Tbody>
-                            </Table>
-
-                            {totalProducts === 0 && (
-                                <Text c="red" size="sm" ta="center">No products selected to save!</Text>
+                                    </Table.Thead>
+                                    <Table.Tbody>
+                                        {enabledItems.map((item) => (
+                                            <Table.Tr key={item.key}>
+                                                <Table.Td>
+                                                    <Text fw={500} size="sm">{item.name}</Text>
+                                                </Table.Td>
+                                                <Table.Td ta="center">
+                                                    <Text c="dimmed" size="sm">{item.quantity ?? 1}</Text>
+                                                </Table.Td>
+                                                <Table.Td ta="right">
+                                                    <Text fw={500} size="sm">{item.totalPrice?.toFixed(2) ?? "0.00"}kr</Text>
+                                                </Table.Td>
+                                            </Table.Tr>
+                                        ))}
+                                    </Table.Tbody>
+                                </Table>
+                            ) : (
+                                <Text c="dimmed" ta="center" py="md">No products added yet</Text>
                             )}
 
                             {/* Summary Footer */}
@@ -718,29 +790,8 @@ function ScanSave(props: ScanSaveProps) {
                                     <Text fw={800} size="xl" c="brand.7">
                                         {totalValue.toFixed(2)}kr
                                     </Text>
-                                    <NumberInput 
-                                        label="Or edit total"
-                                        value={totalPrice ?? ""}
-                                        onChange={val => setTotalPrice(typeof val == "number" ? val : null)}
-                                        decimalScale={2}
-                                        fixedDecimalScale
-                                        size="xs"
-                                        w={120}
-                                    />
                                 </Stack>
                             </Group>
-
-                            {/* Household Selection */}
-                            <Divider />
-
-                            <Select
-                                label="Household"
-                                placeholder="Select household"
-                                required
-                                data={households.map((h) => ({ value: h.id, label: h.house_name }))}
-                                value={selectedHousehold}
-                                onChange={setSelectedHousehold}
-                            />
 
                             {/* Navigation Buttons */}
                             <Group justify="center" mt="md">
@@ -748,9 +799,9 @@ function ScanSave(props: ScanSaveProps) {
                                     Back to Review
                                 </Button>
                                 <Tooltip 
-                                    label="Please select a household first"
+                                    label={totalProducts === 0 ? noProductsTooltip : "Please select a household first"}
                                     position="bottom"
-                                    disabled={!!selectedHousehold}
+                                    disabled={(!!selectedHousehold && totalProducts > 0)}
                                 >
                                     <span>
                                         <Button 
