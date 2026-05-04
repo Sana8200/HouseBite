@@ -118,3 +118,23 @@ export async function deleteShoppingItem(itemId: string): Promise<void> {
     throw new Error(error.message);
   }
 }
+
+/**
+ * Monitors the shopping items for changes
+ * @param cb Called when a change is detected
+ * @returns A function to unsubscribe
+ */
+export function monitorShoppingItems(cb: () => void): () => void {
+  const channel = supabase
+      .channel("reload-shopping-items")
+      .on("postgres_changes", {
+          event: "*",
+          schema: "public",
+          table: "shopping_item"
+      }, cb)
+      .subscribe();
+
+  return () => {
+    void channel.unsubscribe();
+  };
+}
