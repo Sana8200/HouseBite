@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
     Button, Container, Text, Title, Stack, Group, SimpleGrid, Card,
     ThemeIcon, Badge, Paper, Modal,
@@ -6,9 +6,9 @@ import {
 import type { User } from "@supabase/supabase-js";
 import { Link, useNavigate } from "react-router";
 import {
-    IconBuildingCommunity, IconChefHat, IconArchive, IconBarcode,
+    IconBuildingCommunity, IconChefHat, IconArchive, IconCamera,
     IconLayoutDashboard, IconUserCircle, IconLeaf, IconArrowRight,
-    IconPlus, IconShoppingCart,
+    IconPlus, IconShoppingCart, IconDeviceMobile,
 } from "@tabler/icons-react";
 import { notifications } from "@mantine/notifications";
 import { getUsername } from "../../utils/user";
@@ -16,6 +16,7 @@ import { getHouseholds } from "../../api/household";
 import type { Household } from "../../api/schema";
 import "./Landing.css";
 import { CustomLoader } from "../../components/CustomLoader";
+import { useAppInstaller } from "../../hooks/useAppInstaller";
 
 export interface LandingProps {
     user: User | null,
@@ -58,14 +59,18 @@ type QuickLink = {
 const dailyLinks: QuickLink[] = [
     { to: "/dashboard", icon: IconLayoutDashboard, color: "green", title: "Dashboard", badge: "Overview", description: "Household overview, members, and expiring products.", householdScoped: true },
     { to: "/pantry", icon: IconArchive, color: "grape", title: "Pantry", badge: "Track", description: "Manage pantry items and expiration dates.", householdScoped: true },
+    { to: "/scan", icon: IconCamera, color: "red", title: "Scan", badge: "Quick Add", description: "Scan receipts to add products quickly." },
     { to: "/recipes", icon: IconChefHat, color: "orange", title: "Recipes", badge: "Search & Save", description: "Discover recipes and save your favourites." },
-    { to: "/scan", icon: IconBarcode, color: "red", title: "Scan", badge: "Quick Add", description: "Scan receipts to add products quickly." },
 ];
 
 const manageLinks: QuickLink[] = [
     { to: "/household", icon: IconBuildingCommunity, color: "brand", title: "Households", badge: "Manage", description: "View, create, or join households." },
     { to: "/account", icon: IconUserCircle, color: "teal", title: "Account", badge: "Settings", description: "Preferences, restrictions, and account settings." },
 ];
+
+const installLink: QuickLink = {
+    to: "#", icon: IconDeviceMobile, color: "pink", title: "App", badge: "Install", description: "Install app as an icon on your home screen."
+}
 
 function getTimeOfDayGreeting(): string {
     const h = new Date().getHours();
@@ -77,6 +82,8 @@ function getTimeOfDayGreeting(): string {
 export function Landing(props: LandingProps) {
     const { user } = props;
     const navigate = useNavigate();
+
+    const appInstaller = useAppInstaller();
 
     const [households, setHouseholds] = useState<Household[]>([]);
     const [loadingHouseholds, setLoadingHouseholds] = useState(true);
@@ -102,6 +109,14 @@ export function Landing(props: LandingProps) {
             }
         })();
     }, [user]);
+
+    const manageLinksWithInstall = useMemo(() => {
+        if (appInstaller.canPrompt) {
+            return [...manageLinks, installLink];
+        } else {
+            return manageLinks;
+        }
+    }, [appInstaller]);
 
     if (!user) {
         return (
@@ -206,7 +221,9 @@ export function Landing(props: LandingProps) {
     };
 
     const handleQuickLinkClick = (link: QuickLink) => {
-        if (link.householdScoped) {
+        if (link == installLink) {
+            void appInstaller.prompt();
+        } else if (link.householdScoped) {
             goToHouseholdScoped(link.to);
         } else {
             void navigate(link.to);
@@ -286,8 +303,8 @@ export function Landing(props: LandingProps) {
                     <Text size="sm" fw={700} c="dimmed" tt="uppercase" lts={1}>
                         Manage
                     </Text>
-                    <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
-                        {manageLinks.map(renderQuickLinkCard)}
+                    <SimpleGrid cols={{ base: 1, sm: 2, md: Math.min(4, manageLinksWithInstall.length) }} spacing="md">
+                        {manageLinksWithInstall.map(renderQuickLinkCard)}
                     </SimpleGrid>
                 </Stack>
             </Stack>

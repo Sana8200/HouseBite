@@ -1,5 +1,6 @@
 import { ActionIcon, Alert, Badge, Button, Card, Checkbox, Group, Menu, Modal, NumberInput, Paper, Popover, SegmentedControl,
   Select, SimpleGrid, Stack, Table, Text, TextInput, Title, useMantineTheme } from "@mantine/core";
+import { DatePickerInput } from "@mantine/dates";
 import { IconAlertCircle, IconArrowLeft, IconGridDots, IconList, IconPlus, IconSearch, IconShoppingCart, IconTrash } from "@tabler/icons-react";
 import { notifications } from "@mantine/notifications";
 import { AddToShoppingListModal } from "../../components/AddToShoppingListModal";
@@ -9,11 +10,15 @@ import { searchRecipes } from "../../api/recipe";
 import { supabase } from "../../supabase";
 import { RecipeSearchModal } from "../../components/RecipeSearchModal";
 import type { User } from "@supabase/supabase-js";
-import { getExpirationDateBounds, getDaysUntilExpiry, formatOptionalDate, formatExpiry,getExpiryLabel} from "../../utils/date";
+import { formatDateInputValue, getExpirationDateBounds, getDaysUntilExpiry, formatOptionalDate, formatExpiry,getExpiryLabel} from "../../utils/date";
 import { insertReceipt } from "../../api/receipt";
 import { insertProductWithSpecs } from "../../api/product";
-import type { ProductSizeUnit } from "../../api/schema";
+import { getHouseholdMembers } from "../../api/household";
+import type { Household, ProductSizeUnit } from "../../api/schema";
 import { useMediaQuery } from "@mantine/hooks";
+import { getHouseholds } from "../../api/household";
+import { HouseholdContextBadge } from "../../components/HouseholdContextBadge";
+import { HouseholdContextDivider } from "../../components/HouseholdContextDivider";
 import "./pantry.css";
 
 type PantryViewMode = "grid" | "list";
@@ -35,6 +40,7 @@ interface PantryProduct {
 
 interface PantryLocationState {
   householdId?: string;
+  householdName?: string;
 }
 
 interface PantryProps {
@@ -358,7 +364,7 @@ export function Pantry({ user }: PantryProps) {
   const [showRecipeModal, setShowRecipeModal] = useState(false);
   const [pendingSearch, setPendingSearch] = useState<{ ingredients: string[]; householdId: string } | null>(null);
 
-  const [households, setHouseholds] = useState<{ id: string; house_name: string }[]>([]);
+  const [households, setHouseholds] = useState<Household[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [shoppingListProduct, setShoppingListProduct] = useState<{ name: string; householdId: string } | null>(null);
   const [creating, setCreating] = useState(false);
@@ -371,9 +377,9 @@ export function Pantry({ user }: PantryProps) {
   const [newExpirationDate, setNewExpirationDate] = useState("");
   const [newPrice, setNewPrice] = useState<number | string>("");
 
-  const currentHouseholdName = useMemo(() => {
+  const currentHousehold = useMemo(() => {
     if (!householdId || households.length === 0) return null;
-    return households.find(h => h.id === householdId)?.house_name;
+    return households.find(h => h.id === householdId) ?? null;
   }, [householdId, households]);
 
   useEffect(() => {
@@ -391,7 +397,8 @@ export function Pantry({ user }: PantryProps) {
           id,
           name,
           household_id,
-          product_specs(current_quantity, bought_quantity, size, unit, expiration_date)
+          product_specs(current_quantity, bought_quantity, size, unit, expiration_date),
+          receipt(store_name, purchase_at, buyer_id)
         `);
 
       if (householdId) {
@@ -405,19 +412,40 @@ export function Pantry({ user }: PantryProps) {
         return;
       }
 
-      const mapped: PantryProduct[] = (data ?? []).map(p => {
+      const rows = data ?? [];
+
+      // Resolve buyer_id → display name by fetching members for each household
+      // that appears in the results. We only do this for households shown.
+      const householdIdsInResults = Array.from(
+        new Set(rows.map(r => r.household_id as string).filter(Boolean))
+      );
+      
+      const buyerNames = new Map<string, string>();
+      await Promise.all(
+        householdIdsInResults.map(async hhId => {
+          const result = await getHouseholdMembers(hhId);
+          const members = result.data ?? [];
+          for (const m of members) {
+            if (m.display_name) buyerNames.set(m.id, m.display_name);
+          }
+        })
+      );
+
+      const mapped: PantryProduct[] = rows.map(p => {
         const specs = Array.isArray(p.product_specs) ? p.product_specs[0] : p.product_specs;
+        const receipt = Array.isArray(p.receipt) ? p.receipt[0] : p.receipt;
+        const buyerId = receipt?.buyer_id as string | undefined;
         return {
           id: p.id as string,
-          name: p.name as string ,
+          name: p.name as string,
           householdId: p.household_id as string,
           current_quantity: specs?.current_quantity as number ?? 1,
           size: specs?.size as string ?? null,
           unit: specs?.unit as string ?? null,
           expirationDate: specs?.expiration_date as string ?? null,
-          purchasedOn: null,
-          shopName: null,
-          boughtBy: null,
+          purchasedOn: receipt?.purchase_at as string ?? null,
+          shopName: receipt?.store_name as string ?? null,
+          boughtBy: buyerId ? (buyerNames.get(buyerId) ?? null) : null,
         };
       });
 
@@ -432,7 +460,7 @@ export function Pantry({ user }: PantryProps) {
 
   const fetchHouseholds = async () => {
     try {
-      const { data, error } = await supabase.from("household").select("id, house_name");
+      const { data, error } = await getHouseholds();
       if (error) {
         notifications.show({
           color: "red",
@@ -473,7 +501,7 @@ export function Pantry({ user }: PantryProps) {
 
       // create receipt for this purchase
       const price = newPrice !== "" ? Number(newPrice) : null;
-      const purchaseDate = newExpirationDate || new Date().toISOString().split('T')[0];
+      const purchaseDate = newExpirationDate || formatDateInputValue(new Date());
 
       const receiptResult = await insertReceipt({
         household_id: newHouseholdId,
@@ -645,6 +673,10 @@ export function Pantry({ user }: PantryProps) {
       <Button
         component={Link}
         to="/dashboard"
+        state={{
+          householdId,
+          householdName: locationState?.householdName ?? currentHousehold?.house_name,
+        }}
         variant="subtle"
         leftSection={<IconArrowLeft size={16} />}
         w="fit-content"
@@ -655,13 +687,21 @@ export function Pantry({ user }: PantryProps) {
 
       <Group justify="space-between" align="flex-start">
         <div>
-          <Title order={1}>Pantry {currentHouseholdName && `- ${currentHouseholdName}`}</Title>
-          <Text c="dimmed">Manage your pantry items</Text>
+          <Title order={1}>Pantry</Title>
+          {currentHousehold && (
+            <HouseholdContextBadge
+              householdColor={currentHousehold.household_color}
+              householdName={currentHousehold.house_name}
+            />
+          )}
+          <Text size="md" c="dimmed">Manage your pantry items</Text>
         </div>
         <Button leftSection={<IconPlus size={16} />} onClick={() => { setModalError(null); setShowCreateModal(true); }}>
           Add Product
         </Button>
       </Group>
+
+      <HouseholdContextDivider householdColor={currentHousehold?.household_color} />
 
       {error && (
         <Alert
@@ -848,13 +888,22 @@ export function Pantry({ user }: PantryProps) {
             value={newHouseholdId}
             onChange={setNewHouseholdId}
           />
-          <TextInput
+          <DatePickerInput
             label="Expiration Date"
-            type="date"
-            value={newExpirationDate}
-            min={expirationDateBounds.min}
-            max={expirationDateBounds.max}
-            onChange={(e) => setNewExpirationDate(e.currentTarget.value)}
+            placeholder="Pick a date"
+            clearable
+            value={newExpirationDate || null}
+            minDate={expirationDateBounds.min}
+            maxDate={expirationDateBounds.max}
+            onChange={(value) => setNewExpirationDate(value ?? "")}
+            popoverProps={{ classNames: { dropdown: "app-date-picker__dropdown" } }}
+            classNames={{
+              input: "app-date-picker__input",
+              calendarHeader: "app-date-picker__header",
+              calendarHeaderControl: "app-date-picker__header-control",
+              weekday: "app-date-picker__weekday",
+              day: "app-date-picker__day",
+            }}
           />
           <NumberInput
             label="Quantity"

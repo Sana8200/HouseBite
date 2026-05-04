@@ -6,7 +6,7 @@ import type { User } from "@supabase/supabase-js";
 import { getHouseholds } from "../api/household";
 import { signOut } from "../api/auth";
 import { useMediaQuery } from "@mantine/hooks";
-import { IconLogout, IconUser, IconCamera, IconDeviceTabletStar, IconHome, IconChevronDown } from "@tabler/icons-react";
+import { IconLogout, IconUserCircle, IconCamera, IconChefHat, IconBuildingCommunity, IconChevronDown } from "@tabler/icons-react";
 import type { Household } from "../api/schema";
 import IconHouseBite from "../assets/icon.svg";
 import { supabase } from "../supabase";
@@ -67,8 +67,8 @@ export function Header(props: HeaderProps) {
 
     const authenticatedLinks = [
         { to: "/scan", label: "Scan", icon: IconCamera },
-        { to: "/recipes", label: "Recipes", icon: IconDeviceTabletStar },
-        { to: "/account", label: "Account", icon: IconUser },
+        { to: "/recipes", label: "Recipes", icon: IconChefHat },
+        { to: "/account", label: "Account", icon: IconUserCircle },
     ];
 
     const householdsActive = location.pathname === "/household" || location.pathname === "/dashboard";
@@ -97,7 +97,7 @@ export function Header(props: HeaderProps) {
                                 aria-label="Households"
                             >
                                 {isMobile ? (
-                                    <IconHome size={20} />
+                                    <IconBuildingCommunity size={20} />
                                 ) : (
                                     <Group gap={4} wrap="nowrap" component="span">
                                         <span>Households</span>

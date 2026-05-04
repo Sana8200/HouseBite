@@ -6,17 +6,26 @@ import { supabase } from "../../supabase"
 import { getFoodRestrictions } from "../../api/account"
 import { getHouseholdFoodRestriction, getHouseholdRestrictions, type HouseholdMemberRestriction } from "../../api/restriction"
 import type { FoodRestriction } from "../../api/schema"
+import { HouseholdContextBadge } from "../HouseholdContextBadge"
 import "./FoodRestrictionsModal.css"
 
 interface FoodRestrictionsModalProps {
     householdId: string
+    householdName?: string | null
+    householdColor?: string | null
     opened: boolean
     onClose: () => void
 }
 
 const fmt = (s: string) => s.replace(/\b\w/g, c => c.toUpperCase())
 
-export function FoodRestrictionsModal({ householdId, opened, onClose }: FoodRestrictionsModalProps) {
+export function FoodRestrictionsModal({
+    householdId,
+    householdName,
+    householdColor,
+    opened,
+    onClose,
+}: FoodRestrictionsModalProps) {
     const [restrictions, setRestrictions] = useState<FoodRestriction[]>([])
     const [memberRestrictions, setMemberRestrictions] = useState<HouseholdMemberRestriction[]>([])
     const [hhIds, setHhIds] = useState<Set<string>>(new Set())
@@ -104,10 +113,16 @@ export function FoodRestrictionsModal({ householdId, opened, onClose }: FoodRest
     return (
         <Modal opened={opened} onClose={onClose} centered size="lg" radius="xl" padding="xl"
             title={
-                <Group gap="sm">
-                    <IconLeaf size={22} color="var(--color-primary-600)" />
-                    <Title order={3} fz="xl">Food Restrictions</Title>
-                </Group>
+                <Stack gap={4} style={{ width: "100%" }}>
+                    <Group gap="sm">
+                        <IconLeaf size={22} color="var(--color-primary-600)" />
+                        <Title order={3} fz="xl">Food Restrictions</Title>
+                    </Group>
+                    <HouseholdContextBadge
+                        householdColor={householdColor}
+                        householdName={householdName}
+                    />
+                </Stack>
             }
         >
             {loading ? (
