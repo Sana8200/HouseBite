@@ -350,7 +350,7 @@ export function HouseHold(props: HouseHoldProps) {
                                             <Text size="sm" c="dimmed">Budget: {h.monthly_budget} kr/month</Text>
                                         )}
                                         <Text size="sm" c={memberCounts[h.id] >= 51 ? "red" : "dimmed"}>
-                                            {memberCounts[h.id] ?? "…"}/51 members
+                                            {memberCounts[h.id] ?? "…"} {memberCounts[h.id] == 1 ? "member" : "members"}
                                             {memberCounts[h.id] >= 51 && " · Household is full"}
                                         </Text>
                                     </div>
