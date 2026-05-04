@@ -10,8 +10,8 @@ import { searchRecipes } from "../../api/recipe";
 import { supabase } from "../../supabase";
 import { RecipeSearchModal } from "../../components/RecipeSearchModal";
 import type { User } from "@supabase/supabase-js";
-import { formatDateInputValue, getExpirationDateBounds, getDaysUntilExpiry, formatOptionalDate, formatExpiry,getExpiryLabel} from "../../utils/date";
-import { insertReceipt } from "../../api/receipt";
+import { getExpirationDateBounds, getDaysUntilExpiry, formatOptionalDate, formatExpiry,getExpiryLabel} from "../../utils/date";
+import { getManualEntryReceipt, incrementReceiptTotal } from "../../api/receipt";
 import { insertProductWithSpecs } from "../../api/product";
 import { getHouseholdMembers } from "../../api/household";
 import type { Household, ProductSizeUnit } from "../../api/schema";
@@ -361,6 +361,8 @@ export function Pantry({ user }: PantryProps) {
   const [searchValue, setSearchValue] = useState("");
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
   const [showRecipeModal, setShowRecipeModal] = useState(false);
   const [pendingSearch, setPendingSearch] = useState<{ ingredients: string[]; householdId: string } | null>(null);
 
@@ -501,15 +503,8 @@ export function Pantry({ user }: PantryProps) {
 
       // create receipt for this purchase
       const price = newPrice !== "" ? Number(newPrice) : null;
-      const purchaseDate = newExpirationDate || formatDateInputValue(new Date());
 
-      const receiptResult = await insertReceipt({
-        household_id: newHouseholdId,
-        store_name: 'Manual Entry',
-        total: price || 0,
-        purchase_at: purchaseDate,
-        buyer_id: user.id
-      });
+      const receiptResult = await getManualEntryReceipt(user.id, newHouseholdId);
 
       if (receiptResult.error) throw new Error('Could not create receipt: ' + receiptResult.error.message);
 
@@ -529,6 +524,13 @@ export function Pantry({ user }: PantryProps) {
       if (productResult.error) {
         // to match try/catch pattern to prevent inconsistent state
         throw new Error("Could not create product: " + productResult.error.message);
+      }
+
+      if (price) {
+        const priceResult = await incrementReceiptTotal(receiptResult.data.id, price);
+        if (priceResult.error) {
+          throw new Error("Could not update receipt: " + priceResult.error.message);
+        }
       }
 
       const addedName = newName.trim();
@@ -581,6 +583,35 @@ export function Pantry({ user }: PantryProps) {
       color: "orange",
       title: "Removed",
       message: `${product?.name ?? "Product"} removed from pantry.`,
+    });
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedProducts.length === 0) return;
+    setBulkDeleting(true);
+    const idsToDelete = [...selectedProducts];
+    const { error } = await supabase
+      .from("product")
+      .delete()
+      .in("id", idsToDelete);
+    setBulkDeleting(false);
+
+    if (error) {
+      notifications.show({
+        color: "red",
+        title: "Could not delete products",
+        message: error.message,
+      });
+      return;
+    }
+
+    setProducts((prev) => prev.filter((p) => !idsToDelete.includes(p.id)));
+    setSelectedProducts([]);
+    setConfirmBulkDelete(false);
+    notifications.show({
+      color: "orange",
+      title: "Removed",
+      message: `${idsToDelete.length} ${idsToDelete.length === 1 ? "product" : "products"} removed from pantry.`,
     });
   };
 
@@ -770,6 +801,16 @@ export function Pantry({ user }: PantryProps) {
         >
           Find recipes
         </Button>
+        <Button
+          flex="0 0 auto"
+          color="red"
+          variant="filled"
+          leftSection={<IconTrash size={16} />}
+          disabled={selectedProducts.length === 0}
+          onClick={() => setConfirmBulkDelete(true)}
+        >
+          Delete
+        </Button>
         { !isMobile &&
           <SegmentedControl
             value={viewMode}
@@ -937,6 +978,32 @@ export function Pantry({ user }: PantryProps) {
             <Button variant="subtle" onClick={() => { setShowCreateModal(false); setModalError(null); }}>Cancel</Button>
             <Button onClick={() => void handleCreate()} loading={creating}>
               Add Product
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
+
+      <Modal
+        opened={confirmBulkDelete}
+        onClose={() => setConfirmBulkDelete(false)}
+        title="Delete selected products?"
+        centered
+        radius="md"
+      >
+        <Stack gap="md">
+          <Text size="sm">
+            Are you sure you want to delete{" "}
+            <Text span fw={700}>
+              {selectedProducts.length} {selectedProducts.length === 1 ? "product" : "products"}
+            </Text>
+            ? This action cannot be undone.
+          </Text>
+          <Group justify="flex-end" gap="xs">
+            <Button variant="default" onClick={() => setConfirmBulkDelete(false)} disabled={bulkDeleting}>
+              Cancel
+            </Button>
+            <Button color="red" loading={bulkDeleting} onClick={() => void handleBulkDelete()}>
+              Delete all
             </Button>
           </Group>
         </Stack>

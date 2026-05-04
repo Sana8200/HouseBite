@@ -60,10 +60,9 @@
 .dashboard-nav-card__title {
   margin: 0;
   color: var(--color-text);
-  font-family: var(--font-family-display);
+  font-family: var(--font-family-base);
   font-size: var(--font-size-400);
-  font-weight: 400;
-  letter-spacing: -0.025em;
+  font-weight: var(--font-weight-semibold);
   line-height: 1.2;
 }
 
@@ -83,10 +82,9 @@
 
 /* Recipe carousel */
 .section-title {
-  font-family: var(--font-family-display);
+  font-family: var(--font-family-base);
   font-size: 24px;
-  font-weight: 400;
-  letter-spacing: -0.025em;
+  font-weight: var(--font-weight-semibold);
   margin-bottom: 20px;
   color: var(--color-text);
 }
