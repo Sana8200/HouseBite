@@ -42,6 +42,7 @@ export interface HouseholdMember {
     id: string
     display_name: string | null
     email: string | null
+    avatar_id: string | null
 }
 
 export async function getHouseholdMembers(householdId: string): Promise<PostgrestSingleResponse<HouseholdMember[]>> {
