@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, type Dispatch, type SetStateAction } from "react";
 import "./Scan.css";
-import { Alert, Button, Card, Center, Flex, Loader, NumberInput, Paper, Select, Stack, Text, TextInput, Title, Stepper, Group, Accordion, Grid, Box, Table, Divider, ThemeIcon, Tooltip, Progress, Popover } from "@mantine/core";
+import { Alert, Button, Card, Center, Flex, Loader, NumberInput, Paper, Select, Stack, Text, TextInput, Title, Stepper, Group, Accordion, Grid, Box, Table, Divider, ThemeIcon, Tooltip, Popover } from "@mantine/core";
 import { Dropzone, IMAGE_MIME_TYPE, type FileWithPath } from "@mantine/dropzone";
 import { IconReceipt, IconAlertCircle } from "@tabler/icons-react";
 import { scanReceipt, type ReceiptData, type ReceiptItemData } from "../../api/scan";
@@ -118,7 +118,7 @@ export function Scan(props: ScanProps) {
                     <Accordion.Item value="how-it-works">
                         <Accordion.Control>Curious about how it works?</Accordion.Control>
                         <Accordion.Panel>
-                            We use OpenAI's model to read the receipt. We don't store any of the data, just the receipt which you can see in the View receipts page of your household.
+                            We use a third party's model to read the receipt. We don't store any of the data, just the receipt which you can see in the View receipts page of your household.
                         </Accordion.Panel>
                     </Accordion.Item>
                 </Accordion>
@@ -268,7 +268,7 @@ function ScanReady(props: ScanReadyProps) {
                 </Center>
                 
                 {!camera && (
-                    <Paper withBorder p="xl" ta="center" style={{ width: "100%" }}>
+                    <Paper p="xl" ta="center" style={{ width: "100%" }}>
                         <Loader size="sm" mb="md" />
                         <Text size="sm" c="dimmed">Requesting camera access...</Text>
                     </Paper>
@@ -278,7 +278,7 @@ function ScanReady(props: ScanReadyProps) {
                 <Flex direction="column" style={{ flex: 1 }}>
                     {camera}
 
-                    <Dropzone onDrop={onDrop} accept={IMAGE_MIME_TYPE}>
+                    <Dropzone onDrop={onDrop} accept={IMAGE_MIME_TYPE} mr = "xl">
                         <Stack align="center" p="md">
                             <IconReceipt size={54} />
                             <Text>Drag and drop a receipt image, or click to select</Text>
@@ -405,9 +405,6 @@ interface ScanReviewProps {
 
 function ScanReview(props: ScanReviewProps) {
     const { state, setState, setActiveStep } = props;
-
-    const [currentProductIndex, setCurrentProductIndex] = useState(0);
-    const currentProduct = state.data.items[currentProductIndex];
     const [confirmReset, setConfirmReset] = useState(false);
 
     const addItem = () => setState(s => {
@@ -425,8 +422,6 @@ function ScanReview(props: ScanReviewProps) {
         };
         const newItems = [...oldState.data.items, newItem];
         
-        setCurrentProductIndex(newItems.length - 1);
-        
         return {
             ...oldState,
             data: {
@@ -442,154 +437,94 @@ function ScanReview(props: ScanReviewProps) {
         <>
             <Grid>
                 <Grid.Col span={{ base: 12, md: 5 }}>
-                    <Card>
+                    <Card withBorder={false} shadow="none" p={0}>
                         <Center>
-                        <Box 
-                            component="img" 
-                            src={state.image} 
-                            alt="Receipt" 
-                            style={{ width: "80%", height: "auto", borderRadius: "8px" }}
-                        />
+                            <Box 
+                                component="img" 
+                                src={state.image} 
+                                alt="Receipt" 
+                                style={{ width: "80%", height: "auto", borderRadius: "8px" }}
+                            />
                         </Center>
                     </Card>
                 </Grid.Col>
 
                 <Grid.Col span={{ base: 12, md: 7 }}>
-                    {/* Progress Bar */}
-                    <Stack gap="xs" mb="lg">
-                        <Group justify="space-between">
-                           <Text size="sm" fw={500}>Product {currentProductIndex + 1} of {state.data.items.length}</Text>
-                            <Text size="sm" c="dimmed">{Math.round(((currentProductIndex + 1) / state.data.items.length) * 100)}%</Text>
-                        </Group>
-                        <Progress value={((currentProductIndex + 1) / state.data.items.length) * 100} size="lg" radius="xl" />
-                    </Stack>
-
-                    {/* Single Product Card */}
-                    {currentProduct && (
-                        <ProductCard 
-                            key={currentProduct.key} 
-                            item={currentProduct} 
-                            setItem={(updatedItem) => {
-                                const newItems = [...state.data.items];
-                                newItems[currentProductIndex] = updatedItem;
-                                setState(s => {
-                                    const oldState = s as FinishedState;
-                                    return {
-                                        ...oldState,
-                                        data: { ...oldState.data, items: newItems }
-                                    };
-                                });
-                            }} 
-                        />
-                    )}
-
-                    <Group justify="space-between" mt="xl">
-
-                        <Popover
-                            opened={confirmReset}
-                            onClose={() => setConfirmReset(false)}
-                            position="bottom"
-                            withArrow
-                            shadow="md"
-                        >
-                            <Popover.Target>
-                                <Button 
-                                    variant="default" 
-                                    onClick={() => setConfirmReset(true)}
-                                >
-                                    Back to Upload
-                                </Button>
-                            </Popover.Target>
-                            <Popover.Dropdown>
-                                <Stack gap="sm">
-                                    <Text size="sm">This will delete your progress so far. Are you sure?</Text>
-                                    <Group gap="sm" justify="flex-end">
-                                        <Button size="xs" variant="default" onClick={() => setConfirmReset(false)}>
-                                            Cancel
-                                        </Button>
-                                        <Button 
-                                            size="xs" 
-                                            color="red" 
-                                            onClick={() => {
-                                                setConfirmReset(false);
-                                                setState({ state: "ready" });
-                                                setActiveStep(0);
-                                            }}
-                                        >
-                                            Yes, delete progress
-                                        </Button>
-                                    </Group>
-                                </Stack>
-                            </Popover.Dropdown>
-                        </Popover>
-                        
-                        <Group gap="sm">
-                            <Button 
-                                variant="default" 
-                                onClick={() => setCurrentProductIndex(prev => Math.max(0, prev - 1))}
-                                disabled={currentProductIndex === 0}
-                            >
-                                Previous product
-                            </Button>
-
-                            {/* Don't include button */}
-                            {currentProduct && (
-                                <Button 
-                                    variant="outline" 
-                                    color="red"
-                                    onClick={() => {
-                                        const newItems = [...state.data.items];
-                                        newItems[currentProductIndex] = { 
-                                            ...currentProduct, 
-                                            enabled: false,
-                                            name: currentProduct.name
+                    <Stack gap="md">
+                        {state.data.items.map((item, index) => (
+                            <ProductCard 
+                                key={item.key} 
+                                item={item} 
+                                setItem={(updatedItem) => {
+                                    const newItems = [...state.data.items];
+                                    newItems[index] = updatedItem;
+                                    setState(s => {
+                                        const oldState = s as FinishedState;
+                                        return {
+                                            ...oldState,
+                                            data: { ...oldState.data, items: newItems }
                                         };
-                                        setState(s => {
-                                            const oldState = s as FinishedState;
-                                            return {
-                                                ...oldState,
-                                                data: { ...oldState.data, items: newItems }
-                                            };
-                                        });
-                                        
-                                        if (currentProductIndex < state.data.items.length - 1) {
-                                            setCurrentProductIndex(prev => prev + 1);
-                                        }
-                                    }}
-                                    disabled={!currentProduct?.name || !currentProduct.enabled}
-                                >
-                                    Don't include this product
-                                </Button>
-                            )}
+                                    });
+                                }} 
+                            />
+                        ))}
 
+                        <Center>
+                            <Button variant="subtle" onClick={addItem} size="sm">
+                                + Add missing product
+                            </Button>
+                        </Center>
 
-                                <Button variant="subtle" onClick={addItem} size="sm">
-                                    + Add missing product
-                                </Button>
+                        <Group justify="space-between" mt="xl">
+                            <Popover
+                                opened={confirmReset}
+                                onClose={() => setConfirmReset(false)}
+                                position="bottom"
+                                withArrow
+                                shadow="md"
+                            >
+                                <Popover.Target>
+                                    <Button 
+                                        variant="default" 
+                                        onClick={() => setConfirmReset(true)}
+                                    >
+                                        Back to Upload
+                                    </Button>
+                                </Popover.Target>
+                                <Popover.Dropdown>
+                                    <Stack gap="sm">
+                                        <Text size="sm">This will delete your progress so far. Are you sure?</Text>
+                                        <Group gap="sm" justify="flex-end">
+                                            <Button size="xs" variant="default" onClick={() => setConfirmReset(false)}>
+                                                Cancel
+                                            </Button>
+                                            <Button 
+                                                size="xs" 
+                                                color="red" 
+                                                onClick={() => {
+                                                    setConfirmReset(false);
+                                                    setState({ state: "ready" });
+                                                    setActiveStep(0);
+                                                }}
+                                            >
+                                                Yes, delete progress
+                                            </Button>
+                                        </Group>
+                                    </Stack>
+                                </Popover.Dropdown>
+                            </Popover>
                             
-                            {currentProductIndex < state.data.items.length - 1 ? (
-                                <Button 
-                                    onClick={() => setCurrentProductIndex(prev => prev + 1)}
-                                    disabled={!currentProduct?.name}
-                                >
-                                    Next Product
-                                </Button>
-                            ) : (
-                                <Button 
-                                    onClick={() => setActiveStep(3)}
-                                    color="green"
-                                    disabled={!hasValidProducts}
-                                >
-                                    Continue to Save
-                                </Button>
-                            )}
+                            <Button 
+                                onClick={() => setActiveStep(3)}
+                                color="green"
+                                disabled={!hasValidProducts}
+                            >
+                                Continue to Save
+                            </Button>
                         </Group>
-                    </Group>
-
+                    </Stack>
                 </Grid.Col>
             </Grid>
-
-        
         </>
     );
 }
@@ -688,20 +623,20 @@ function ScanSave(props: ScanSaveProps) {
         <>
             <Grid>
                 <Grid.Col span={{ base: 12, md: 5 }}>
-                    <Card>
+                    <Card withBorder={false} shadow="none" p={0}>
                         <Center>
-                        <Box 
-                            component="img" 
-                            src={state.image} 
-                            alt="Receipt" 
-                            style={{ width: "80%", height: "auto", borderRadius: "8px" }}
-                        />
+                            <Box 
+                                component="img" 
+                                src={state.image} 
+                                alt="Receipt" 
+                                style={{ width: "80%", height: "auto", borderRadius: "8px" }}
+                            />
                         </Center>
                     </Card>
                 </Grid.Col>
 
                 <Grid.Col span={{ base: 12, md: 7 }}>
-                    <Paper withBorder radius="md" p="lg" shadow="sm">
+                    <Paper radius="md" p="lg" shadow="none">
                         <Stack gap="md">
                             {/* Receipt Header */}
                             <Flex 
@@ -784,7 +719,7 @@ function ScanSave(props: ScanSaveProps) {
                             </Group>
 
                             {/* Navigation Buttons */}
-                            <Group justify="center" mt="md">
+                            <Group justify="space-between" mt="md">
                                 <Button variant="default" onClick={() => setActiveStep(2)} size="sm">
                                     Back to Review
                                 </Button>
@@ -823,8 +758,7 @@ function ProductCard(props: ProductCardProps) {
     const { item, setItem } = props;
 
     return (
-        <Card shadow="none" withBorder pos="relative">
-
+        <Card shadow="none" pos="relative">
             <TextInput label="Name"
                 required
                 value={item.name ?? ""}
