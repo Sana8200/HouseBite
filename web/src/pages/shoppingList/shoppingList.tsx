@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent } from "react";
-import { ActionIcon, Alert, Button, Card, Checkbox, Container, Grid, Group, Loader, Paper, Stack, Table, Text, TextInput, Title } from "@mantine/core";
+import { ActionIcon, Alert, Button, Card, Checkbox, Container, Grid, Group, Paper, Stack, Table, Text, TextInput, Title } from "@mantine/core";
 import { IconAlertCircle, IconArrowLeft, IconCheck, IconDeviceFloppy, IconPlus, IconShoppingCart, IconTrash, IconX } from "@tabler/icons-react";
 import { notifications } from "@mantine/notifications";
 import { Link, useLocation } from "react-router";
-import { addShoppingListItem, deleteShoppingItem, getShoppingItems, toggleShoppingItem, type ShoppingListItemView, } from "../../api/shoppingList";
+import { addShoppingListItem, deleteShoppingItem, getShoppingItems, monitorShoppingItems, toggleShoppingItem, type ShoppingListItemView, } from "../../api/shoppingList";
 import "./shoppingList.css";
+import { CustomLoader } from "../../components/CustomLoader";
 
 interface ShoppingListLocationState {
   householdId?: string;
@@ -38,6 +39,10 @@ export function ShoppingList() {
     }
 
     void loadShoppingItems(householdId);
+  
+    return monitorShoppingItems(() => {
+      void loadShoppingItems(householdId);
+    });
   }, [householdId]);
 
   // Keep pending rows first and move checked rows to the bottom of the table.
@@ -306,97 +311,91 @@ export function ShoppingList() {
 
         {loading ? (
           <Group justify="center" py="xl">
-            <Loader />
+            <CustomLoader />
           </Group>
         ) : (
           <Paper withBorder radius="xl" className="shopping-list-table-panel">
-            {sortedItems.length ? (
-              <div className="shopping-list-table-scroll">
-                <Table className="shopping-list-table" withColumnBorders withRowBorders highlightOnHover>
-                  <Table.Thead>
-                    <Table.Tr>
-                      <Table.Th className="shopping-list-table__checkbox-column" />
-                      <Table.Th>Product</Table.Th>
-                      <Table.Th>Notes</Table.Th>
-                      <Table.Th className="shopping-list-table__action-column">Delete</Table.Th>
+            <div className="shopping-list-table-scroll">
+              <Table className="shopping-list-table" withColumnBorders withRowBorders highlightOnHover>
+                <Table.Thead>
+                  <Table.Tr>
+                    <Table.Th className="shopping-list-table__checkbox-column" />
+                    <Table.Th>Product</Table.Th>
+                    <Table.Th>Notes</Table.Th>
+                    <Table.Th className="shopping-list-table__action-column">Delete</Table.Th>
+                  </Table.Tr>
+                </Table.Thead>
+                <Table.Tbody>
+                  {!isAddingItem && householdId && (
+                    <Table.Tr
+                      className="shopping-list-table__row shopping-list-table__row--add-action"
+                      onClick={() => setIsAddingItem(true)}
+                    >
+                      <Table.Td colSpan={4}>
+                        <Group gap="sm" justify="center" wrap="nowrap">
+                          <IconPlus size={16} />
+                          <Text fw={600}>Add new item</Text>
+                          <Text size="sm" c="dimmed">
+                            Add a new product and save it to the shopping list
+                          </Text>
+                        </Group>
+                      </Table.Td>
                     </Table.Tr>
-                  </Table.Thead>
-                  <Table.Tbody>
-                    {!isAddingItem && householdId && (
-                      <Table.Tr
-                        className="shopping-list-table__row shopping-list-table__row--add-action"
-                        onClick={() => setIsAddingItem(true)}
-                      >
-                        <Table.Td colSpan={4}>
-                          <Group gap="sm" justify="center" wrap="nowrap">
-                            <IconPlus size={16} />
-                            <Text fw={600}>Add new item</Text>
-                            <Text size="sm" c="dimmed">
-                              Add a new product and save it to the shopping list
-                            </Text>
-                          </Group>
-                        </Table.Td>
-                      </Table.Tr>
-                    )}
-                    {isAddingItem && (
-                      <Table.Tr className="shopping-list-table__row shopping-list-table__row--draft">
-                        <Table.Td className="shopping-list-table__checkbox-column">
-                          <div className="shopping-list-checkbox-shell">
-                            <Checkbox checked={false} readOnly radius="xs" classNames={{
-                              input: "shopping-list-checkbox-input",
-                              icon: "shopping-list-checkbox-icon",
-                            }} />
-                          </div>
-                        </Table.Td>
-                        <Table.Td>
+                  )}
+                  {isAddingItem && (
+                    <Table.Tr className="shopping-list-table__row shopping-list-table__row--draft">
+                      <Table.Td className="shopping-list-table__checkbox-column">
+                        <div className="shopping-list-checkbox-shell">
+                          <Checkbox checked={false} readOnly radius="xs" classNames={{
+                            input: "shopping-list-checkbox-input",
+                            icon: "shopping-list-checkbox-icon",
+                          }} />
+                        </div>
+                      </Table.Td>
+                      <Table.Td>
+                        <TextInput
+                          placeholder="E.g: Pineapple, Cheese"
+                          value={newItemName}
+                          onChange={(event) => setNewItemName(event.currentTarget.value)}
+                          onKeyDown={handleNameInputKeyDown}
+                        />
+                      </Table.Td>
+                      <Table.Td>
                           <TextInput
-                            placeholder="E.g: Pineapple, Cheese"
-                            value={newItemName}
-                            onChange={(event) => setNewItemName(event.currentTarget.value)}
-                            onKeyDown={handleNameInputKeyDown}
+                            placeholder="E.g: 500 g, low stock, brand preference"
+                            value={newItemNotes}
+                            onChange={(event) => setNewItemNotes(event.currentTarget.value)}
+                            onKeyDown={handleNotesInputKeyDown}
+                            ref={notesInputRef}
                           />
-                        </Table.Td>
-                        <Table.Td>
-                            <TextInput
-                              placeholder="E.g: 500 g, low stock, brand preference"
-                              value={newItemNotes}
-                              onChange={(event) => setNewItemNotes(event.currentTarget.value)}
-                              onKeyDown={handleNotesInputKeyDown}
-                              ref={notesInputRef}
-                            />
-                        </Table.Td>
-                        <Table.Td className="shopping-list-table__action-column">
-                          <Group justify="center" gap={6} wrap="nowrap">
-                            <ActionIcon
-                              variant="light"
-                              color="brand"
-                              aria-label="Save shopping list item"
-                              onClick={handleAddItem}
-                              loading={submitting}
-                            >
-                              <IconDeviceFloppy size={16} />
-                            </ActionIcon>
-                            <ActionIcon
-                              variant="subtle"
-                              color="gray"
-                              aria-label="Cancel new shopping list row"
-                              onClick={handleCancelAdd}
-                            >
-                              <IconX size={16} />
-                            </ActionIcon>
-                          </Group>
-                        </Table.Td>
-                      </Table.Tr>
-                    )}
-                    {sortedItems.map(renderTableRow)}
-                  </Table.Tbody>
-                </Table>
-              </div>
-            ) : (
-              <div className="shopping-list-table-empty">
-                <Text c="dimmed">No items in this shopping list yet.</Text>
-              </div>
-            )}
+                      </Table.Td>
+                      <Table.Td className="shopping-list-table__action-column">
+                        <Group justify="center" gap={6} wrap="nowrap">
+                          <ActionIcon
+                            variant="light"
+                            color="brand"
+                            aria-label="Save shopping list item"
+                            onClick={handleAddItem}
+                            loading={submitting}
+                          >
+                            <IconDeviceFloppy size={16} />
+                          </ActionIcon>
+                          <ActionIcon
+                            variant="subtle"
+                            color="gray"
+                            aria-label="Cancel new shopping list row"
+                            onClick={handleCancelAdd}
+                          >
+                            <IconX size={16} />
+                          </ActionIcon>
+                        </Group>
+                      </Table.Td>
+                    </Table.Tr>
+                  )}
+                  {sortedItems.map(renderTableRow)}
+                </Table.Tbody>
+              </Table>
+            </div>
           </Paper>
         )}
       </Stack>

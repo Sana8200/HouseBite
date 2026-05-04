@@ -30,6 +30,8 @@ export async function getHouseholds(): Promise<PostgrestSingleResponse<Household
         household_color: row.household_color as string,
     }))
 
+    households.sort((a, b) => a.house_name.localeCompare(b.house_name));
+
     return {...result, data: households};
 }
 
@@ -45,7 +47,7 @@ export interface HouseholdMember {
 export async function getHouseholdMembers(householdId: string): Promise<PostgrestSingleResponse<HouseholdMember[]>> {
     return supabase.rpc('get_household_members', {
         p_household_id: householdId
-    })
+    }).order("display_name")
 }
 
 export async function getHouseholdMemberCount(householdId: string): Promise<number> {

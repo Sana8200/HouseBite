@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import {Button, Group, Text, Modal, Stack, Title, Code, CopyButton, ActionIcon,
-    ThemeIcon, Container, SimpleGrid, Card, TextInput, NumberInput, Alert, Loader,} from "@mantine/core"
+    ThemeIcon, Container, SimpleGrid, Card, TextInput, NumberInput, Alert} from "@mantine/core"
 import {IconEdit, IconDoorExit, IconCheck, IconCopy, IconLink, IconPlus, IconUserPlus, IconAlertCircle,} from "@tabler/icons-react"
 import { createHousehold, getHouseholds, getHouseholdMemberCount, joinHousehold, updateHousehold, leaveHousehold, getHouseholdMembers } from "../../api/household"
 import { supabase } from "../../supabase"
@@ -9,6 +9,7 @@ import type { Household } from "../../api/schema"
 import { notifications } from "@mantine/notifications"
 import type { User } from "@supabase/supabase-js"
 import "./HouseHold.css"
+import { CustomLoader } from "../../components/CustomLoader"
 
 export interface HouseHoldProps {
     user: User;
@@ -323,7 +324,7 @@ export function HouseHold(props: HouseHoldProps) {
                 <Title order={2} size="h3">Your Households ({households.length}/5)</Title>
 
                 {loading ? (
-                    <Group justify="center" py="xl"><Loader /></Group>
+                    <Group justify="center" py="xl"><CustomLoader /></Group>
                 ) : households.length === 0 ? (
                     <Text c="dimmed" ta="center" py="xl">
                         You are not part of any household yet. Create one or join with an invite code.
@@ -350,7 +351,7 @@ export function HouseHold(props: HouseHoldProps) {
                                             <Text size="sm" c="dimmed">Budget: {h.monthly_budget} kr/month</Text>
                                         )}
                                         <Text size="sm" c={memberCounts[h.id] >= 51 ? "red" : "dimmed"}>
-                                            {memberCounts[h.id] ?? "…"}/51 members
+                                            {memberCounts[h.id] ?? "…"} {memberCounts[h.id] == 1 ? "member" : "members"}
                                             {memberCounts[h.id] >= 51 && " · Household is full"}
                                         </Text>
                                     </div>

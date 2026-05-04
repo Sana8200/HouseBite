@@ -62,6 +62,11 @@ a {
   background-color: var(--color-surface);
 }
 
+.mantine-Modal-header,
+.mantine-Modal-body {
+  background-color: var(--color-surface);
+}
+
 /* Default button/action-icon variant uses surface instead of white */
 .mantine-Button-root[data-variant="default"],
 .mantine-ActionIcon-root[data-variant="default"] {
