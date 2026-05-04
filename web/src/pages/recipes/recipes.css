@@ -26,13 +26,6 @@
   width: 100%;
 }
 
-.recipe-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-  align-items: stretch;
-}
-
 .recipe-card {
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
