@@ -3,10 +3,10 @@ import { Link, useLocation } from "react-router-dom";
 import { Alert, Badge, Box, Button, Divider, Grid, Group, Loader, Paper, SegmentedControl, SimpleGrid, Stack, Table, Text, ThemeIcon, Title, UnstyledButton, Menu } from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates";
 import "@mantine/dates/styles.css";
-import { IconAlertCircle, IconArrowLeft, IconCalendarEvent, IconChevronRight, IconReceipt2, IconShoppingBag, IconDownload, IconFileSpreadsheet, IconFileText } from "@tabler/icons-react";
-import {  } from "@tabler/icons-react";
+import { IconAlertCircle, IconArrowLeft, IconCalendarEvent, IconChevronRight, IconReceipt2, IconShoppingBag, IconDownload, IconFileSpreadsheet, IconFileText, IconTrash } from "@tabler/icons-react";
 import * as XLSX from "xlsx";
-import { fetchReceiptsByHousehold } from "../../api/receipt";
+import { fetchReceiptsByHousehold, deleteReceipt } from "../../api/receipt";
+import { notifications } from "@mantine/notifications";
 import { formatCurrency, formatDate } from "../../utils/date";
 import "./receipts.css";
 
@@ -102,6 +102,8 @@ export function Receipts() {
 
   // Tracks which receipt is currently shown in the detail panel.
   const [selectedReceiptId, setSelectedReceiptId] = useState<string>("");
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   // Filter state
   const [preset, setPreset] = useState<Preset>("all");
@@ -142,6 +144,21 @@ export function Receipts() {
     setReceipts(mapped);
     setSelectedReceiptId(mapped[0]?.id ?? "");
     setLoading(false);
+  };
+
+  const handleDeleteReceipt = async (receiptId: string) => {
+    setDeleting(true);
+    const { error } = await deleteReceipt(receiptId);
+    setDeleting(false);
+    setConfirmDelete(false);
+    if (error) {
+      notifications.show({ color: "red", title: "Couldn't delete receipt", message: error.message });
+      return;
+    }
+    notifications.show({ color: "green", title: "Receipt deleted", message: "The receipt and its products have been removed." });
+    const remaining = receipts.filter(r => r.id !== receiptId);
+    setReceipts(remaining);
+    setSelectedReceiptId(remaining[0]?.id ?? "");
   };
 
   const visibleReceipts = useMemo(() => {
@@ -329,7 +346,7 @@ export function Receipts() {
                     key={receipt.id}
                     receipt={receipt}
                     selected={receipt.id === selectedReceipt?.id}
-                    onSelect={() => setSelectedReceiptId(receipt.id)}
+                    onSelect={() => { setSelectedReceiptId(receipt.id); setConfirmDelete(false); }}
                   />
                 ))
               )}
@@ -402,6 +419,30 @@ export function Receipts() {
                       {selectedReceipt.total}
                     </Text>
                   </Group>
+
+                  {confirmDelete ? (
+                    <Group justify="flex-end" gap="sm">
+                      <Text size="sm" c="dimmed">Delete this receipt and all its products?</Text>
+                      <Button variant="subtle" size="xs" onClick={() => setConfirmDelete(false)} disabled={deleting}>
+                        Cancel
+                      </Button>
+                      <Button color="red" size="xs" loading={deleting} onClick={() => void handleDeleteReceipt(selectedReceipt.id)}>
+                        Yes, delete
+                      </Button>
+                    </Group>
+                  ) : (
+                    <Group justify="flex-end">
+                      <Button
+                        variant="subtle"
+                        color="red"
+                        size="xs"
+                        leftSection={<IconTrash size={14} />}
+                        onClick={() => setConfirmDelete(true)}
+                      >
+                        Delete receipt
+                      </Button>
+                    </Group>
+                  )}
                 </Stack>
               ) : (
                 /* Empty state in case there is no receipt data. */
