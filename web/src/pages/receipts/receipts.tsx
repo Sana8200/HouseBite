@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Alert, Badge, Box, Button, Divider, Grid, Group, Paper, SegmentedControl, SimpleGrid, Stack, Table, Text, ThemeIcon, Title, UnstyledButton, Menu } from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates";
-import "@mantine/dates/styles.css";
 import { IconAlertCircle, IconArrowLeft, IconCalendarEvent, IconChevronRight, IconReceipt2, IconShoppingBag, IconDownload, IconFileSpreadsheet, IconFileText, IconTrash } from "@tabler/icons-react";
 import * as XLSX from "xlsx";
 import { fetchReceiptsByHousehold, deleteReceipt } from "../../api/receipt";
@@ -312,12 +311,13 @@ export function Receipts() {
                 value={customRange}
                 onChange={setCustomRange}
                 clearable
+                popoverProps={{ classNames: { dropdown: "app-date-picker__dropdown" } }}
                 classNames={{
-                  input: "receipts-date-picker__input",
-                  calendarHeader: "receipts-date-picker__header",
-                  calendarHeaderControl: "receipts-date-picker__header-control",
-                  weekday: "receipts-date-picker__weekday",
-                  day: "receipts-date-picker__day",
+                  input: "app-date-picker__input",
+                  calendarHeader: "app-date-picker__header",
+                  calendarHeaderControl: "app-date-picker__header-control",
+                  weekday: "app-date-picker__weekday",
+                  day: "app-date-picker__day",
                 }}
               />
             )}

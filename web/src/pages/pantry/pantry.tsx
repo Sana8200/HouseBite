@@ -1,5 +1,6 @@
 import { ActionIcon, Alert, Badge, Button, Card, Checkbox, Group, Menu, Modal, NumberInput, Paper, Popover, SegmentedControl,
   Select, SimpleGrid, Stack, Table, Text, TextInput, Title, useMantineTheme } from "@mantine/core";
+import { DatePickerInput } from "@mantine/dates";
 import { IconAlertCircle, IconArrowLeft, IconGridDots, IconList, IconPlus, IconSearch, IconShoppingCart, IconTrash } from "@tabler/icons-react";
 import { notifications } from "@mantine/notifications";
 import { AddToShoppingListModal } from "../../components/AddToShoppingListModal";
@@ -9,7 +10,7 @@ import { searchRecipes } from "../../api/recipe";
 import { supabase } from "../../supabase";
 import { RecipeSearchModal } from "../../components/RecipeSearchModal";
 import type { User } from "@supabase/supabase-js";
-import { getExpirationDateBounds, getDaysUntilExpiry, formatOptionalDate, formatExpiry,getExpiryLabel} from "../../utils/date";
+import { formatDateInputValue, getExpirationDateBounds, getDaysUntilExpiry, formatOptionalDate, formatExpiry,getExpiryLabel} from "../../utils/date";
 import { insertReceipt } from "../../api/receipt";
 import { insertProductWithSpecs } from "../../api/product";
 import { getHouseholdMembers } from "../../api/household";
@@ -500,7 +501,7 @@ export function Pantry({ user }: PantryProps) {
 
       // create receipt for this purchase
       const price = newPrice !== "" ? Number(newPrice) : null;
-      const purchaseDate = newExpirationDate || new Date().toISOString().split('T')[0];
+      const purchaseDate = newExpirationDate || formatDateInputValue(new Date());
 
       const receiptResult = await insertReceipt({
         household_id: newHouseholdId,
@@ -887,13 +888,22 @@ export function Pantry({ user }: PantryProps) {
             value={newHouseholdId}
             onChange={setNewHouseholdId}
           />
-          <TextInput
+          <DatePickerInput
             label="Expiration Date"
-            type="date"
-            value={newExpirationDate}
-            min={expirationDateBounds.min}
-            max={expirationDateBounds.max}
-            onChange={(e) => setNewExpirationDate(e.currentTarget.value)}
+            placeholder="Pick a date"
+            clearable
+            value={newExpirationDate || null}
+            minDate={expirationDateBounds.min}
+            maxDate={expirationDateBounds.max}
+            onChange={(value) => setNewExpirationDate(value ?? "")}
+            popoverProps={{ classNames: { dropdown: "app-date-picker__dropdown" } }}
+            classNames={{
+              input: "app-date-picker__input",
+              calendarHeader: "app-date-picker__header",
+              calendarHeaderControl: "app-date-picker__header-control",
+              weekday: "app-date-picker__weekday",
+              day: "app-date-picker__day",
+            }}
           />
           <NumberInput
             label="Quantity"
