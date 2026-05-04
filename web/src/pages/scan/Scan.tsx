@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect, type Dispatch, type SetStateAction } from "react";
 import "./Scan.css";
-import { Alert, Button, Card, Center, Flex, Loader, NumberInput, Paper, Select, Stack, Text, TextInput, Title, Stepper, Group, Accordion, Grid, Box, Table, Divider, ThemeIcon, Tooltip, Popover, Checkbox } from "@mantine/core";
+import { Alert, Button, Card, Center, Flex, NumberInput, Paper, Select, Stack, Text, TextInput, Title, Stepper, Group, Accordion, Grid, Box, Table, Divider, ThemeIcon, Tooltip, Popover, Checkbox } from "@mantine/core";
 import { Dropzone, IMAGE_MIME_TYPE, type FileWithPath } from "@mantine/dropzone";
-import { IconReceipt, IconAlertCircle } from "@tabler/icons-react";
+import { IconReceipt, IconAlertCircle, IconBuildingCommunity } from "@tabler/icons-react";
 import { scanReceipt, type ReceiptData, type ReceiptItemData } from "../../api/scan";
 import { getHouseholds } from "../../api/household";
 import { insertProductWithSpecs } from "../../api/product.ts";
@@ -54,12 +54,14 @@ export interface ScanProps {
 
 export function Scan(props: ScanProps) {
     const { user } = props;
+    const navigate = useNavigate();
 
     const [state, setState] = useState<ScanState>({ state: "ready" });
     const [activeStep, setActiveStep] = useState(0);
     const [confirmReset, setConfirmReset] = useState(false);
 
     const [households, setHouseholds] = useState<Household[]>([]);
+    const [loadingHouseholds, setLoadingHouseholds] = useState(true);
 
     useEffect(() => {
         void load();
@@ -67,9 +69,12 @@ export function Scan(props: ScanProps) {
             const householdsResult = await getHouseholds();
             if (householdsResult.error) {
                 setState({ state: "error", error: householdsResult.error });
-            } else {
-                setHouseholds(householdsResult.data ?? []);
+                setLoadingHouseholds(false);
+                return;
             }
+            const list = householdsResult.data ?? [];
+            setHouseholds(list);
+            setLoadingHouseholds(false);
         }
     }, []);
 
@@ -83,6 +88,40 @@ export function Scan(props: ScanProps) {
         setActiveStep(0);
         setConfirmReset(false);
     };
+
+    if (loadingHouseholds) {
+        return (
+            <Center p="xl">
+                <CustomLoader />
+            </Center>
+        );
+    }
+
+    if (households.length === 0) {
+        return (
+            <Center p="xl">
+                <Paper withBorder shadow="sm" radius="xl" p={{ base: "lg", sm: "xl" }} maw={520}>
+                    <Stack gap="md" align="center" ta="center">
+                        <ThemeIcon size={64} radius="xl" variant="light" color="brand">
+                            <IconBuildingCommunity size={32} stroke={1.8} />
+                        </ThemeIcon>
+                        <Title order={2} size="h3">You need a household first</Title>
+                        <Text c="dimmed">
+                            Scanned receipts are saved to a household so everyone living together can see them.
+                            Create or join a household to start scanning receipts.
+                        </Text>
+                        <Button
+                            mt="xs"
+                            leftSection={<IconBuildingCommunity size={18} />}
+                            onClick={() => void navigate("/household")}
+                        >
+                            Go to Households
+                        </Button>
+                    </Stack>
+                </Paper>
+            </Center>
+        );
+    }
 
     return (
         <>
@@ -269,8 +308,14 @@ function ScanReady(props: ScanReadyProps) {
                 
                 {!camera && (
                     <Paper p="xl" ta="center" style={{ width: "100%" }}>
-                        <Loader size="sm" mb="md" />
-                        <Text size="sm" c="dimmed">Requesting camera access...</Text>
+                        <Center h="100%" mih={200}>
+                            <Stack align="center" p="md">
+                                <CustomLoader size={40} />
+                                <Text size="sm" c="dimmed" ta="center">
+                                    Requesting camera access…
+                                </Text>
+                            </Stack>
+                        </Center>
                     </Paper>
                 )}
             </Flex>
