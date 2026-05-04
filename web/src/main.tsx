@@ -6,7 +6,6 @@ import "@mantine/core/styles.css";
 import '@mantine/notifications/styles.css';
 import '@mantine/dropzone/styles.css';
 import "./styles/globals.css";
-import "./styles/loader-override.css";
 import { App } from './App.tsx'
 
 const brand: [string,string,string,string,string,string,string,string,string,string] = [
