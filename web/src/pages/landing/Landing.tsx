@@ -6,7 +6,7 @@ import {
 import type { User } from "@supabase/supabase-js";
 import { Link, useNavigate } from "react-router";
 import {
-    IconBuildingCommunity, IconChefHat, IconArchive, IconBarcode,
+    IconBuildingCommunity, IconChefHat, IconArchive, IconCamera,
     IconLayoutDashboard, IconUserCircle, IconLeaf, IconArrowRight,
     IconPlus, IconShoppingCart, IconDeviceMobile,
 } from "@tabler/icons-react";
@@ -59,8 +59,8 @@ type QuickLink = {
 const dailyLinks: QuickLink[] = [
     { to: "/dashboard", icon: IconLayoutDashboard, color: "green", title: "Dashboard", badge: "Overview", description: "Household overview, members, and expiring products.", householdScoped: true },
     { to: "/pantry", icon: IconArchive, color: "grape", title: "Pantry", badge: "Track", description: "Manage pantry items and expiration dates.", householdScoped: true },
+    { to: "/scan", icon: IconCamera, color: "red", title: "Scan", badge: "Quick Add", description: "Scan receipts to add products quickly." },
     { to: "/recipes", icon: IconChefHat, color: "orange", title: "Recipes", badge: "Search & Save", description: "Discover recipes and save your favourites." },
-    { to: "/scan", icon: IconBarcode, color: "red", title: "Scan", badge: "Quick Add", description: "Scan receipts to add products quickly." },
 ];
 
 const manageLinks: QuickLink[] = [
