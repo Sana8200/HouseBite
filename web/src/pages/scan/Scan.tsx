@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, type Dispatch, type SetStateAction, useCallback } from "react";
 import "./Scan.css";
-import { Alert, Button, Card, Center, Checkbox, Flex, Loader, NumberInput, Paper, Select, Stack, Text, TextInput, Title, Stepper, Group, Accordion, Grid, Box, Table, Divider, ThemeIcon, Tooltip, Progress } from "@mantine/core";
+import { Alert, Button, Card, Center, Checkbox, Flex, Loader, NumberInput, Paper, Select, Stack, Text, TextInput, Title, Stepper, Group, Accordion, Grid, Box, Table, Divider, ThemeIcon, Tooltip, Progress, Popover } from "@mantine/core";
 import { Dropzone, IMAGE_MIME_TYPE, type FileWithPath } from "@mantine/dropzone";
 import { IconReceipt, IconAlertCircle } from "@tabler/icons-react";
 import { scanReceipt, type ReceiptData, type ReceiptItemData } from "../../api/scan";
@@ -241,11 +241,7 @@ function ScanReady(props: ScanReadyProps) {
             </Flex>
 
                 <Flex direction="column" style={{ flex: 1 }}>
-                    {camera && (
-                        <Center mt="md">
-                            <Text size="lg">or upload an image</Text>
-                        </Center>
-                    )}
+                    {camera}
 
                     <Dropzone onDrop={onDrop} accept={IMAGE_MIME_TYPE}>
                         <Stack align="center" p="md">
@@ -343,18 +339,6 @@ function ScanProcessing(props: ScanProcessingProps) {
                 <Loader size="lg" mt="md" />
                 <Text mt="md">Reading your receipt...</Text>
             </Stack>
-
-            <Group justify="center" mt="xl">
-                <Button 
-                    variant="default" 
-                    onClick={() => {
-                        setScanState({ state: "ready" });
-                        setActiveStep(0);
-                    }}
-                >
-                    Back to Upload
-                </Button>
-            </Group>
         </>
     );
 }
@@ -371,6 +355,7 @@ function ScanReview(props: ScanReviewProps) {
 
     const [currentProductIndex, setCurrentProductIndex] = useState(0);
     const currentProduct = state.data.items[currentProductIndex];
+    const [confirmBack, setConfirmBack] = useState(false);
 
     const setItem = useCallback((newItem: EditReceiptItemData) => setState(s => {
         const oldState = s as FinishedState;
@@ -454,6 +439,45 @@ function ScanReview(props: ScanReviewProps) {
                     )}
 
                     <Group justify="space-between" mt="xl">
+
+                        <Popover
+                            opened={confirmBack}
+                            onClose={() => setConfirmBack(false)}
+                            position="bottom"
+                            withArrow
+                            shadow="md"
+                        >
+                            <Popover.Target>
+                                <Button 
+                                    variant="default" 
+                                    onClick={() => setConfirmBack(true)}
+                                >
+                                    Back to Upload
+                                </Button>
+                            </Popover.Target>
+                            <Popover.Dropdown>
+                                <Stack gap="sm">
+                                    <Text size="sm">This will delete your progress so far. Are you sure?</Text>
+                                    <Group gap="sm" justify="flex-end">
+                                        <Button size="xs" variant="default" onClick={() => setConfirmBack(false)}>
+                                            Cancel
+                                        </Button>
+                                        <Button 
+                                            size="xs" 
+                                            color="red" 
+                                            onClick={() => {
+                                                setConfirmBack(false);
+                                                setState({ state: "ready" });
+                                                setActiveStep(0);
+                                            }}
+                                        >
+                                            Yes, delete progress
+                                        </Button>
+                                    </Group>
+                                </Stack>
+                            </Popover.Dropdown>
+                        </Popover>
+
                         <Button 
                             variant="default" 
                             onClick={() => setCurrentProductIndex(prev => Math.max(0, prev - 1))}
@@ -520,10 +544,7 @@ function ScanReview(props: ScanReviewProps) {
                 </Grid.Col>
             </Grid>
 
-            {/* Back button */}
-            <Group justify="center" mt="xl">
-                <Button variant="default" onClick={() => setActiveStep(1)}>Back to Upload</Button>
-            </Group>
+        
         </>
     );
 }
@@ -656,7 +677,7 @@ function ScanSave(props: ScanSaveProps) {
                                 <Table.Thead>
                                     <Table.Tr>
                                         <Table.Th>Product</Table.Th>
-                                        <Table.Th ta="center">Qty</Table.Th>
+                                        <Table.Th ta="center">Quantity</Table.Th>
                                         <Table.Th ta="right">Price</Table.Th>
                                     </Table.Tr>
                                 </Table.Thead>
