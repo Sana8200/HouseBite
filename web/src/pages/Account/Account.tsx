@@ -10,7 +10,7 @@ import {
     removeRestriction,
 } from "../../api/account"
 import { avatars, getAvatarUrl, getUsername } from "../../utils/user"
-import { ActionIcon, Alert, Avatar, Button, Card, Center, Chip, Container, Divider, Flex, Grid, Group, Modal, Space, Stack, Text, TextInput, Title } from "@mantine/core"
+import { ActionIcon, Alert, Avatar, Box, Button, Card, Center, Chip, Container, Divider, Flex, Grid, Group, Modal, Space, Stack, Text, TextInput, Title } from "@mantine/core"
 import { IconEdit, IconDeviceFloppyFilled, IconAlertCircle } from '@tabler/icons-react';
 import { notifications } from "@mantine/notifications";
 import type { FoodRestriction } from "../../api/schema"
@@ -265,7 +265,15 @@ export function Account(props: AccountProps) {
                     <Stack>
                         <Card shadow="md" radius="xl">
                             <Flex align="center" gap="md">
-                                <Avatar src={avatar} name={username} color="initials" size="xl" onClick={() => setAvatarModalOpen(true)} style={{cursor: "pointer"}} />
+                                <Box pos="relative">
+                                    <Avatar src={avatar} name={username} color="initials" size="xl" />
+                                    <ActionIcon pos="absolute" bottom={0} right={0} radius="100%" variant="light"
+                                        onClick={() => setAvatarModalOpen(true)}
+                                        style={{ border: "2px solid white" }}
+                                    >
+                                        <IconEdit size={16} />
+                                    </ActionIcon>
+                                </Box>
                                 <div>
                                     <Text size="xl">{username || "—"}</Text>
                                     <Text c="dimmed">{user.email}</Text>
