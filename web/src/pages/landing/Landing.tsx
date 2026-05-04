@@ -111,7 +111,7 @@ export function Landing(props: LandingProps) {
     }, [user]);
 
     const manageLinksWithInstall = useMemo(() => {
-        if (appInstaller?.canPrompt ?? false) {
+        if (appInstaller.canPrompt) {
             return [...manageLinks, installLink];
         } else {
             return manageLinks;
@@ -222,7 +222,7 @@ export function Landing(props: LandingProps) {
 
     const handleQuickLinkClick = (link: QuickLink) => {
         if (link == installLink) {
-            void appInstaller?.prompt();
+            void appInstaller.prompt();
         } else if (link.householdScoped) {
             goToHouseholdScoped(link.to);
         } else {
