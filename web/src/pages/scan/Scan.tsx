@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, type Dispatch, type SetStateAction } from "react";
 import "./Scan.css";
-import { Alert, Button, Card, Center, Flex, Loader, NumberInput, Paper, Select, Stack, Text, TextInput, Title, Stepper, Group, Accordion, Grid, Box, Table, Divider, ThemeIcon, Tooltip, Popover } from "@mantine/core";
+import { Alert, Button, Card, Center, Flex, Loader, NumberInput, Paper, Select, Stack, Text, TextInput, Title, Stepper, Group, Accordion, Grid, Box, Table, Divider, ThemeIcon, Tooltip, Popover, Checkbox } from "@mantine/core";
 import { Dropzone, IMAGE_MIME_TYPE, type FileWithPath } from "@mantine/dropzone";
 import { IconReceipt, IconAlertCircle } from "@tabler/icons-react";
 import { scanReceipt, type ReceiptData, type ReceiptItemData } from "../../api/scan";
@@ -451,7 +451,13 @@ function ScanReview(props: ScanReviewProps) {
 
                 <Grid.Col span={{ base: 12, md: 7 }}>
                     <Stack gap="md">
+                        <Box ta="right" mt="xl">
+                            <Text c="dimmed" size="sm">
+                                You can unselect products if you don't want to include them
+                            </Text>
+                        </Box>
                         {state.data.items.map((item, index) => (
+                            <>
                             <ProductCard 
                                 key={item.key} 
                                 item={item} 
@@ -467,6 +473,10 @@ function ScanReview(props: ScanReviewProps) {
                                     });
                                 }} 
                             />
+                            <Divider />
+                            </>
+
+                            
                         ))}
 
                         <Center>
@@ -758,11 +768,23 @@ function ProductCard(props: ProductCardProps) {
     const { item, setItem } = props;
 
     return (
-        <Card shadow="none" pos="relative">
+        <Card shadow="none" pos="relative" style={{ opacity: item.enabled ? 1 : 0.6 }}>
+            <Checkbox
+                checked={item.enabled && !!item.name}
+                disabled={!item.name}
+                onChange={e => setItem({ ...item, enabled: e.target.checked })}
+                pos="absolute" 
+                right={8} 
+                top={8} 
+                size="md"
+                label={!item.name ? "Add name to enable" : ""}
+            />
+
             <TextInput label="Name"
                 required
                 value={item.name ?? ""}
-                onChange={e => setItem({ ...item, name: e.target.value })}
+                onChange={e => setItem({ ...item, name: e.target.value, enabled: e.target.value ? item.enabled : false })}
+                pr={50}
             />
 
             <Flex gap="sm" mt="xs">
@@ -771,6 +793,7 @@ function ProductCard(props: ProductCardProps) {
                     onChange={val => setItem({ ...item, quantity: typeof val == "number" ? val : null })}
                     allowDecimal={false}
                     flex={1}
+                    disabled={!item.enabled}
                 />
 
                 <NumberInput label="Size"
@@ -779,6 +802,7 @@ function ProductCard(props: ProductCardProps) {
                     decimalScale={2}
                     fixedDecimalScale
                     flex={1}
+                    disabled={!item.enabled}
                 />
 
                 <Select
@@ -789,6 +813,7 @@ function ProductCard(props: ProductCardProps) {
                     value={item.unit}
                     onChange={val => setItem({ ...item, unit: val })}
                     flex={1}
+                    disabled={!item.enabled}
                 />
             </Flex>
 
@@ -799,6 +824,7 @@ function ProductCard(props: ProductCardProps) {
                     value={item.expirationDate || ""}
                     onChange={(e) => setItem({ ...item, expirationDate: e.target.value })}
                     flex={3}
+                    disabled={!item.enabled}
                 />
 
                 <NumberInput label="Price"
@@ -807,6 +833,7 @@ function ProductCard(props: ProductCardProps) {
                     decimalScale={2}
                     fixedDecimalScale
                     flex={2}
+                    disabled={!item.enabled}
                 />
             </Flex>
         </Card>
