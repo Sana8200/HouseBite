@@ -8,6 +8,10 @@ import * as XLSX from "xlsx";
 import { fetchReceiptsByHousehold, deleteReceipt } from "../../api/receipt";
 import { notifications } from "@mantine/notifications";
 import { formatCurrency, formatDate } from "../../utils/date";
+import { getHouseholds } from "../../api/household";
+import { HouseholdContextBadge } from "../../components/HouseholdContextBadge";
+import { HouseholdContextDivider } from "../../components/HouseholdContextDivider";
+import type { Household } from "../../api/schema";
 import "./receipts.css";
 import { CustomLoader } from "../../components/CustomLoader";
 
@@ -98,6 +102,7 @@ export function Receipts() {
   const { householdId, householdName } = locationState ?? {};
 
   const [receipts, setReceipts] = useState<ReceiptSummary[]>([]);
+  const [households, setHouseholds] = useState<Household[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -114,6 +119,21 @@ export function Receipts() {
     void fetchReceipts();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [householdId]);
+
+  useEffect(() => {
+    void loadHouseholds();
+  }, []);
+
+  const currentHousehold = useMemo(
+    () => households.find((household) => household.id === householdId) ?? null,
+    [householdId, households],
+  );
+
+  const loadHouseholds = async () => {
+    const { data, error: householdsError } = await getHouseholds();
+    if (householdsError) return;
+    setHouseholds(data ?? []);
+  };
 
   const fetchReceipts = async () => {
     setLoading(true);
@@ -249,13 +269,17 @@ export function Receipts() {
 
         {/* Page title and context */}
         <Stack gap={6}>
-          <Title order={1} size="h1">
-            Scanned receipts for {householdName ?? "Household_name"}
-          </Title>
-          <Text c="dimmed" size="lg">
+          <Title order={1} size="h1">Scanned receipts</Title>
+          <HouseholdContextBadge
+            householdColor={currentHousehold?.household_color}
+            householdName={householdName ?? currentHousehold?.house_name}
+          />
+          <Text size="md" c="dimmed">
             View and manage your shopping receipts
           </Text>
         </Stack>
+
+        <HouseholdContextDivider householdColor={currentHousehold?.household_color} />
 
         {/* Section title + filter controls */}
         <Stack gap="md">

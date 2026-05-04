@@ -1,6 +1,6 @@
 import './Dashboard.css';
-import React, { useState, useEffect } from 'react';
-import { ActionIcon, Alert, Badge, Button, Card, Checkbox, Container, Group, Modal, NumberInput, Paper, Popover, Select, SimpleGrid, Stack, Text, TextInput, Title } from '@mantine/core';
+import React, { useEffect, useMemo, useState } from 'react';
+import { ActionIcon, Alert, Badge, Button, Card, Checkbox, Container, Group, Loader, Modal, NumberInput, Paper, Popover, Select, SimpleGrid, Stack, Text, TextInput, Title } from '@mantine/core';
 import { IconLayoutGrid, IconReceiptEuro, IconPlus, IconShoppingCart, IconTrash, IconToolsKitchen2Off, IconChefHat, IconUsers, IconClock, IconAlertCircle } from '@tabler/icons-react';
 import { AddToShoppingListModal } from "../../components/AddToShoppingListModal";
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -19,6 +19,8 @@ import { insertReceipt } from '../../api/receipt';
 import { insertProductWithSpecs } from '../../api/product';
 import { notifications } from "@mantine/notifications";
 import { CustomLoader } from '../../components/CustomLoader';
+import { HouseholdContextBadge } from "../../components/HouseholdContextBadge";
+import { HouseholdContextDivider } from "../../components/HouseholdContextDivider";
 
 
 // Types
@@ -366,6 +368,10 @@ export default function Dashboard(props: DashboardProps) {
   const [newExpirationDate, setNewExpirationDate] = useState('');
   const [newPrice, setNewPrice] = useState('');
   const displayName = getUsername(user);
+  const selectedHousehold = useMemo(
+    () => households.find((household) => household.id === selectedHouseholdId) ?? null,
+    [households, selectedHouseholdId],
+  );
 
   useEffect(() => {
     if (!households.length) return;
@@ -583,19 +589,23 @@ export default function Dashboard(props: DashboardProps) {
   return (
     <Container size="lg" py="xl">
       <Stack gap="xl">
-
         {/* Header */}
         <Group justify="space-between" align="flex-start" wrap="wrap" gap="sm">
           <div>
             <Title order={1}>Hello {displayName || 'there'}, welcome back</Title>
-            <Text c="dimmed" mt={4}>
-              Viewing household: {selectedHouseholdName ?? 'Choose a household'}
-            </Text>
+            <div style={{ marginTop: 4 }}>
+              <HouseholdContextBadge
+                householdColor={selectedHousehold?.household_color}
+                householdName={selectedHouseholdName}
+              />
+            </div>
           </div>
           <Button leftSection={<IconPlus size={16} />} onClick={() => { setModalError(null); setShowCreateModal(true); }}>
             Add Product
           </Button>
         </Group>
+
+        <HouseholdContextDivider householdColor={selectedHousehold?.household_color} />
 
         {error && (
           <Alert
@@ -690,6 +700,8 @@ export default function Dashboard(props: DashboardProps) {
       {selectedHouseholdId && (
         <FoodRestrictionsModal
           householdId={selectedHouseholdId}
+          householdName={selectedHouseholdName}
+          householdColor={selectedHousehold?.household_color}
           opened={showFoodRestrictions}
           onClose={() => setShowFoodRestrictions(false)}
         />

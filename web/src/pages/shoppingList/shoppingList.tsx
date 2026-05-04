@@ -3,8 +3,12 @@ import type { KeyboardEvent } from "react";
 import { ActionIcon, Alert, Button, Card, Checkbox, Container, Grid, Group, Paper, Stack, Table, Text, TextInput, Title } from "@mantine/core";
 import { IconAlertCircle, IconArrowLeft, IconCheck, IconDeviceFloppy, IconPlus, IconShoppingCart, IconTrash, IconX } from "@tabler/icons-react";
 import { notifications } from "@mantine/notifications";
-import { Link, useLocation } from "react-router";
+import { Link, useLocation } from "react-router-dom";
 import { addShoppingListItem, deleteShoppingItem, getShoppingItems, monitorShoppingItems, toggleShoppingItem, type ShoppingListItemView, } from "../../api/shoppingList";
+import { getHouseholds } from "../../api/household";
+import type { Household } from "../../api/schema";
+import { HouseholdContextBadge } from "../../components/HouseholdContextBadge";
+import { HouseholdContextDivider } from "../../components/HouseholdContextDivider";
 import "./shoppingList.css";
 import { CustomLoader } from "../../components/CustomLoader";
 
@@ -21,6 +25,7 @@ export function ShoppingList() {
 
   // Data comes from the shopping list API for the selected household.
   const [items, setItems] = useState<ShoppingListItemView[]>([]);
+  const [households, setHouseholds] = useState<Household[]>([]);
   const [isAddingItem, setIsAddingItem] = useState(false);
   const [newItemName, setNewItemName] = useState("");
   const [newItemNotes, setNewItemNotes] = useState("");
@@ -44,6 +49,15 @@ export function ShoppingList() {
       void loadShoppingItems(householdId);
     });
   }, [householdId]);
+
+  useEffect(() => {
+    void loadHouseholds();
+  }, []);
+
+  const currentHousehold = useMemo(
+    () => households.find((household) => household.id === householdId) ?? null,
+    [householdId, households],
+  );
 
   // Keep pending rows first and move checked rows to the bottom of the table.
   const sortedItems = useMemo(
@@ -139,6 +153,12 @@ export function ShoppingList() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const loadHouseholds = async () => {
+    const { data, error: householdsError } = await getHouseholds();
+    if (householdsError) return;
+    setHouseholds(data ?? []);
   };
 
   const createItem = async (selectedHouseholdId: string) => {
@@ -261,12 +281,14 @@ export function ShoppingList() {
         {/* Header block for title, description and active household context. */}
         <Stack gap="xs">
           <Title order={1}>Shopping List</Title>
-          <Text c="dimmed">Manage your household shopping items</Text>
-          {/* Reuse the household name passed from the dashboard route. */}
-          <Text size="sm" c="dimmed">
-            Viewing household: {locationState?.householdName ?? "Choose a household"}
-          </Text>
+          <HouseholdContextBadge
+            householdColor={currentHousehold?.household_color}
+            householdName={locationState?.householdName ?? currentHousehold?.house_name}
+          />
+          <Text size="md" c="dimmed">Manage your household shopping items</Text>
         </Stack>
+
+        <HouseholdContextDivider householdColor={currentHousehold?.household_color} />
 
         {error && (
           <Alert
