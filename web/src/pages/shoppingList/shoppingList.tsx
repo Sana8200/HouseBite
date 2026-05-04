@@ -4,7 +4,7 @@ import { ActionIcon, Alert, Button, Card, Checkbox, Container, Grid, Group, Load
 import { IconAlertCircle, IconArrowLeft, IconCheck, IconDeviceFloppy, IconPlus, IconShoppingCart, IconTrash, IconX } from "@tabler/icons-react";
 import { notifications } from "@mantine/notifications";
 import { Link, useLocation } from "react-router";
-import { addShoppingListItem, deleteShoppingItem, getShoppingItems, toggleShoppingItem, type ShoppingListItemView, } from "../../api/shoppingList";
+import { addShoppingListItem, deleteShoppingItem, getShoppingItems, monitorShoppingItems, toggleShoppingItem, type ShoppingListItemView, } from "../../api/shoppingList";
 import "./shoppingList.css";
 
 interface ShoppingListLocationState {
@@ -38,6 +38,10 @@ export function ShoppingList() {
     }
 
     void loadShoppingItems(householdId);
+  
+    return monitorShoppingItems(() => {
+      void loadShoppingItems(householdId);
+    });
   }, [householdId]);
 
   // Keep pending rows first and move checked rows to the bottom of the table.
