@@ -12,6 +12,7 @@ import type { User } from "@supabase/supabase-js";
 import { getExpirationDateBounds, getDaysUntilExpiry, formatOptionalDate, formatExpiry,getExpiryLabel} from "../../utils/date";
 import { insertReceipt } from "../../api/receipt";
 import { insertProductWithSpecs } from "../../api/product";
+import { getHouseholdMembers } from "../../api/household";
 import type { ProductSizeUnit } from "../../api/schema";
 import { useMediaQuery } from "@mantine/hooks";
 import "./pantry.css";
@@ -391,7 +392,8 @@ export function Pantry({ user }: PantryProps) {
           id,
           name,
           household_id,
-          product_specs(current_quantity, bought_quantity, size, unit, expiration_date)
+          product_specs(current_quantity, bought_quantity, size, unit, expiration_date),
+          receipt(store_name, purchase_at, buyer_id)
         `);
 
       if (householdId) {
@@ -405,19 +407,40 @@ export function Pantry({ user }: PantryProps) {
         return;
       }
 
-      const mapped: PantryProduct[] = (data ?? []).map(p => {
+      const rows = data ?? [];
+
+      // Resolve buyer_id → display name by fetching members for each household
+      // that appears in the results. We only do this for households shown.
+      const householdIdsInResults = Array.from(
+        new Set(rows.map(r => r.household_id as string).filter(Boolean))
+      );
+      
+      const buyerNames = new Map<string, string>();
+      await Promise.all(
+        householdIdsInResults.map(async hhId => {
+          const result = await getHouseholdMembers(hhId);
+          const members = result.data ?? [];
+          for (const m of members) {
+            if (m.display_name) buyerNames.set(m.id, m.display_name);
+          }
+        })
+      );
+
+      const mapped: PantryProduct[] = rows.map(p => {
         const specs = Array.isArray(p.product_specs) ? p.product_specs[0] : p.product_specs;
+        const receipt = Array.isArray(p.receipt) ? p.receipt[0] : p.receipt;
+        const buyerId = receipt?.buyer_id as string | undefined;
         return {
           id: p.id as string,
-          name: p.name as string ,
+          name: p.name as string,
           householdId: p.household_id as string,
           current_quantity: specs?.current_quantity as number ?? 1,
           size: specs?.size as string ?? null,
           unit: specs?.unit as string ?? null,
           expirationDate: specs?.expiration_date as string ?? null,
-          purchasedOn: null,
-          shopName: null,
-          boughtBy: null,
+          purchasedOn: receipt?.purchase_at as string ?? null,
+          shopName: receipt?.store_name as string ?? null,
+          boughtBy: buyerId ? (buyerNames.get(buyerId) ?? null) : null,
         };
       });
 
