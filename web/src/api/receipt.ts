@@ -17,6 +17,41 @@ export async function insertReceipt(receipt: InsertReceipt): Promise<PostgrestSi
         .single();
 }
 
+export async function getManualEntryReceipt(user_id: string, household_id: string): Promise<PostgrestSingleResponse<Receipt>> {
+    const currentPeriod = new Date();
+    currentPeriod.setUTCDate(1);
+    currentPeriod.setUTCHours(0, 0, 0, 0);
+    const currentPeriodText = currentPeriod.toISOString().split("T")[0];
+    const currentMonthText = currentPeriodText.replace(/-\d+$/, "");
+    
+    const receipt = await supabase
+        .from("receipt")
+        .select()
+        .eq("buyer_id", user_id)
+        .eq("household_id", household_id)
+        .like('store_name', "Manual Entry: %")
+        .eq("purchase_at", currentPeriodText)
+        .limit(1)
+        .maybeSingle();
+
+    if (receipt.error || receipt.data) return receipt;
+
+    return await insertReceipt({
+        household_id,
+        store_name: `Manual Entry: ${currentMonthText}`,
+        total: 0,
+        purchase_at: currentPeriodText,
+        buyer_id: user_id
+    });
+}
+
+export async function incrementReceiptTotal(receipt_id: string, inc: number): Promise<PostgrestSingleResponse<void>> {
+    return await supabase.rpc("increment_receipt_total", {
+        p_receipt_id: receipt_id,
+        p_inc: inc,
+    });
+}
+
 export async function deleteReceipt(receiptId: string): Promise<{ error: Error | null }> {
     // Products must be deleted first — receipt.id is ON DELETE SET NULL on product,
     // so deleting the receipt alone would orphan them. product_specs cascade from product.

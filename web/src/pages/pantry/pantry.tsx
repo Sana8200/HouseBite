@@ -10,8 +10,8 @@ import { searchRecipes } from "../../api/recipe";
 import { supabase } from "../../supabase";
 import { RecipeSearchModal } from "../../components/RecipeSearchModal";
 import type { User } from "@supabase/supabase-js";
-import { formatDateInputValue, getExpirationDateBounds, getDaysUntilExpiry, formatOptionalDate, formatExpiry,getExpiryLabel} from "../../utils/date";
-import { insertReceipt } from "../../api/receipt";
+import { getExpirationDateBounds, getDaysUntilExpiry, formatOptionalDate, formatExpiry,getExpiryLabel} from "../../utils/date";
+import { getManualEntryReceipt, incrementReceiptTotal } from "../../api/receipt";
 import { insertProductWithSpecs } from "../../api/product";
 import { getHouseholdMembers } from "../../api/household";
 import type { Household, ProductSizeUnit } from "../../api/schema";
@@ -501,15 +501,8 @@ export function Pantry({ user }: PantryProps) {
 
       // create receipt for this purchase
       const price = newPrice !== "" ? Number(newPrice) : null;
-      const purchaseDate = newExpirationDate || formatDateInputValue(new Date());
 
-      const receiptResult = await insertReceipt({
-        household_id: newHouseholdId,
-        store_name: 'Manual Entry',
-        total: price || 0,
-        purchase_at: purchaseDate,
-        buyer_id: user.id
-      });
+      const receiptResult = await getManualEntryReceipt(user.id, newHouseholdId);
 
       if (receiptResult.error) throw new Error('Could not create receipt: ' + receiptResult.error.message);
 
@@ -529,6 +522,13 @@ export function Pantry({ user }: PantryProps) {
       if (productResult.error) {
         // to match try/catch pattern to prevent inconsistent state
         throw new Error("Could not create product: " + productResult.error.message);
+      }
+
+      if (price) {
+        const priceResult = await incrementReceiptTotal(receiptResult.data.id, price);
+        if (priceResult.error) {
+          throw new Error("Could not update receipt: " + priceResult.error.message);
+        }
       }
 
       const addedName = newName.trim();
