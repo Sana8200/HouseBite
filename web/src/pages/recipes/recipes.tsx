@@ -406,7 +406,7 @@ export function Recipes() {
             <Title order={2} size="h3">Your favourites</Title>
           </Group>
           {loadingFavourites ? (
-            <Group justify="center" py="xl"><Loader size="sm" /></Group>
+            <Group justify="center" py="xl"><CustomLoader size="sm" /></Group>
           ) : favourites.length === 0 ? (
             <Paper withBorder p="xl" radius="lg">
               <Stack align="center" gap="xs">
