@@ -58,11 +58,29 @@ export async function getHouseholdMemberCount(householdId: string): Promise<numb
     return result.data as number
 }
 
-export async function updateHousehold(id: string, name: string, budget: number | null) {
-    return supabase
+export async function updateHousehold(id: string, name: string, budget: number | null, color: string): Promise<PostgrestSingleResponse<null>> {
+    const _result1 = supabase
         .from("household")
         .update({ house_name: name, monthly_budget: budget })
-        .eq("id", id)
+        .eq("id", id);
+
+    const _result2 = supabase
+        .from("allocations")
+        .update({ household_color: color })
+        .eq("household_id", id);
+
+    const result1 = await _result1;
+
+    if (result1.error) return result1;
+
+    return await _result2;
+}
+
+export async function updateHouseholdColor(id: string, color: string) {
+    return supabase
+        .from("allocations")
+        .update({ household_color: color })
+        .eq("household_id", id)
 }
 
 export async function leaveHousehold(userId: string, householdId: string): Promise<PostgrestSingleResponse<null>> {
