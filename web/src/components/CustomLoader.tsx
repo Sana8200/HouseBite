@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react';
+import LoadingAnimationUrl from "../assets/animations/loading.png?url";
 
 interface CustomLoaderProps {
   size?: number | string;
@@ -14,7 +15,7 @@ export function CustomLoader({ size = 120, style }: CustomLoaderProps) {
 
   return (
     <img 
-      src="/animations/loading.png" 
+      src={LoadingAnimationUrl}
       alt="Loading..." 
       style={style ? { ...baseStyle, ...style } : baseStyle}
     />
