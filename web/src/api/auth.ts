@@ -62,3 +62,9 @@ export async function saveUsername(name: string) {
 export async function savePassword(password: string) {
     return supabase.auth.updateUser({ password })
 }
+
+export async function setAvatar(avatar_id: string) {
+    return supabase.auth.updateUser({
+        data: { avatar_id },
+    });
+}
