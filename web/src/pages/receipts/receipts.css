@@ -33,25 +33,17 @@
   outline-offset: 3px;
 }
 
-@media (max-width: 992px) {
-  .receipts-grid {
-    flex-direction: column;
-  }
-  
-  .receipts-details-col {
-    margin-top: 16px;
-  }
-}
-
-
+/* Desktop layout */
 .receipts-desktop {
   display: block;
 }
 
+/* Mobile layout */
 .receipts-mobile {
   display: none;
 }
 
+/* Responsive: show mobile, hide desktop on screens below 992px */
 @media (max-width: 992px) {
   .receipts-desktop {
     display: none;
