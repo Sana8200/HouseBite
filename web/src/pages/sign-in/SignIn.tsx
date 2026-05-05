@@ -1,8 +1,8 @@
 import "./SignIn.css";
-import { IconAlertCircle } from "@tabler/icons-react";
+import { IconAlertCircle, IconBrandGoogle } from "@tabler/icons-react";
 import { useRef, useState } from "react";
-import { Alert, Button, Container, Paper, PasswordInput, Stack, Text, TextInput } from "@mantine/core";
-import { signIn, signUp, turnstileSiteKey } from "../../api/auth";
+import { Alert, Button, Container, Divider, Paper, PasswordInput, Stack, Text, TextInput } from "@mantine/core";
+import { signIn, signInWithGoogle, signUp, turnstileSiteKey } from "../../api/auth";
 import { Turnstile, type TurnstileInstance } from "@marsidev/react-turnstile";
 import { notifications } from "@mantine/notifications";
 
@@ -28,6 +28,7 @@ export function SignIn(props: SignInProps) {
 
     const [error, setError] = useState<Error | null>(null);
     const [loading, setLoading] = useState(false);
+    const [googleLoading, setGoogleLoading] = useState(false);
 
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -39,6 +40,19 @@ export function SignIn(props: SignInProps) {
     const resetCaptcha = () => {
         setCaptchaToken(null);
         turnstileRef.current?.reset();
+    }
+
+    const onGoogleClick = async () => {
+        setGoogleLoading(true);
+        setError(null);
+        try {
+            const { error: oauthError } = await signInWithGoogle();
+            if (oauthError) throw oauthError;
+            // On success Supabase redirects to Google — this page unmounts.
+        } catch (e) {
+            setError(new Error(AuthError(e as Error)));
+            setGoogleLoading(false);
+        }
     }
 
     const onSubmit = async (e: React.SubmitEvent) => {
@@ -135,6 +149,20 @@ export function SignIn(props: SignInProps) {
                                         {error.message}
                                     </Alert>
                                 )}
+
+                                <Button
+                                    type="button"
+                                    variant="default"
+                                    leftSection={<IconBrandGoogle size={18} />}
+                                    loading={googleLoading}
+                                    disabled={loading}
+                                    onClick={() => void onGoogleClick()}
+                                    fullWidth
+                                >
+                                    Continue with Google
+                                </Button>
+
+                                <Divider label="or" labelPosition="center" />
 
                             { activeTab == "signUp" &&
                                 <TextInput
