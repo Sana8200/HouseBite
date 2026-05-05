@@ -1,4 +1,4 @@
-import { ActionIcon, Alert, Badge, Button, Card, Checkbox, Group, Menu, Modal, NumberInput, Paper, Popover, SegmentedControl,
+import { ActionIcon, Alert, Badge, Button, Card, Checkbox, Container, Group, Menu, Modal, NumberInput, Paper, Popover, SegmentedControl,
   Select, SimpleGrid, Stack, Table, Text, TextInput, Title, useMantineTheme } from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates";
 import { IconAlertCircle, IconArrowLeft, IconGridDots, IconList, IconPlus, IconSearch, IconShoppingCart, IconTrash } from "@tabler/icons-react";
@@ -10,7 +10,7 @@ import { searchRecipes } from "../../api/recipe";
 import { supabase } from "../../supabase";
 import { RecipeSearchModal } from "../../components/RecipeSearchModal";
 import type { User } from "@supabase/supabase-js";
-import { getExpirationDateBounds, getDaysUntilExpiry, formatOptionalDate, formatExpiry,getExpiryLabel} from "../../utils/date";
+import { getExpirationDateBounds, getDaysUntilExpiry, formatOptionalDate, formatExpiry } from "../../utils/date";
 import { getManualEntryReceipt, incrementReceiptTotal } from "../../api/receipt";
 import { insertProductWithSpecs } from "../../api/product";
 import { getHouseholdMembers } from "../../api/household";
@@ -264,7 +264,6 @@ function PantryAllProductsList({
         </Table.Td>
         <Table.Td>{product.name}</Table.Td>
         <Table.Td>{formatExpiry(product.expirationDate)}</Table.Td>
-        <Table.Td>{getExpiryLabel(daysUntilExpiry)}</Table.Td>
         <Table.Td>{formatOptionalDate(product.purchasedOn)}</Table.Td>
         <Table.Td>{product.shopName ?? "-"}</Table.Td>
         <Table.Td>{product.boughtBy ?? "-"}</Table.Td>
@@ -316,14 +315,13 @@ function PantryAllProductsList({
   });
 
   return (
-    <Paper withBorder radius="xl" p="md" style={{overflow: "auto"}}>
+    <Paper withBorder radius="xl" p="xs" className="pantry-table-shell" style={{ overflow: "auto" }}>
       <Table highlightOnHover stickyHeader>
         <Table.Thead>
           <Table.Tr>
             <Table.Th>Select</Table.Th>
             <Table.Th>Product</Table.Th>
             <Table.Th>Expires</Table.Th>
-            <Table.Th>Label</Table.Th>
             <Table.Th>Purchased on</Table.Th>
             <Table.Th>Shop name</Table.Th>
             <Table.Th>Bought by</Table.Th>
@@ -700,7 +698,8 @@ export function Pantry({ user }: PantryProps) {
   ];
 
   return (
-    <Stack gap="xl" p="xl">
+    <Container size="lg" py="xl">
+      <Stack gap="xl">
       <Button
         component={Link}
         to="/dashboard"
@@ -717,7 +716,7 @@ export function Pantry({ user }: PantryProps) {
       </Button>
 
       <Group justify="space-between" align="flex-start">
-        <div>
+        <Stack gap="xs">
           <Title order={1}>Pantry</Title>
           {currentHousehold && (
             <HouseholdContextBadge
@@ -726,7 +725,7 @@ export function Pantry({ user }: PantryProps) {
             />
           )}
           <Text size="md" c="dimmed">Manage your pantry items</Text>
-        </div>
+        </Stack>
         <Button leftSection={<IconPlus size={16} />} onClick={() => { setModalError(null); setShowCreateModal(true); }}>
           Add Product
         </Button>
@@ -1008,6 +1007,7 @@ export function Pantry({ user }: PantryProps) {
           </Group>
         </Stack>
       </Modal>
-    </Stack>
+      </Stack>
+    </Container>
   );
 }

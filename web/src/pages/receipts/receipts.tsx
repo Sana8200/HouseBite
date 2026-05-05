@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Alert, Badge, Box, Button, Divider, Grid, Group, Paper, SegmentedControl, SimpleGrid, Stack, Table, Text, ThemeIcon, Title, UnstyledButton, Menu, Popover } from "@mantine/core";
+import { Alert, Badge, Button, Container, Divider, Grid, Group, Paper, SegmentedControl, SimpleGrid, Stack, Table, Text, ThemeIcon, Title, UnstyledButton, Menu, Popover } from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates";
 import { IconAlertCircle, IconArrowLeft, IconCalendarEvent, IconChevronRight, IconReceipt2, IconShoppingBag, IconDownload, IconFileSpreadsheet, IconFileText, IconTrash, IconUser } from "@tabler/icons-react";
 import * as XLSX from "xlsx";
@@ -278,7 +278,7 @@ export function Receipts() {
   }
 
   return (
-    <Box px={{ base: "md", sm: "xl", lg: 48 }} py={{ base: "xl", lg: 40 }}>
+    <Container size="lg" py="xl">
       <Stack gap="xl">
         <Button
           component={Link}
@@ -293,7 +293,7 @@ export function Receipts() {
         </Button>
 
         {/* Page title and context */}
-        <Stack gap={6}>
+        <Stack gap="xs">
           <Title order={1} size="h1">Scanned receipts</Title>
           <HouseholdContextBadge
             householdColor={currentHousehold?.household_color}
@@ -520,6 +520,6 @@ export function Receipts() {
           </Grid.Col>
         </Grid>
       </Stack>
-    </Box>
+    </Container>
   );
 }
