@@ -1,11 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent } from "react";
-import { ActionIcon, Alert, Button, Card, Checkbox, Container, Grid, Group, Loader, Paper, Stack, Table, Text, TextInput, Title } from "@mantine/core";
+import { ActionIcon, Alert, Button, Card, Checkbox, Container, Grid, Group, Paper, Stack, Table, Text, TextInput, Title } from "@mantine/core";
 import { IconAlertCircle, IconArrowLeft, IconCheck, IconDeviceFloppy, IconPlus, IconShoppingCart, IconTrash, IconX } from "@tabler/icons-react";
 import { notifications } from "@mantine/notifications";
-import { Link, useLocation } from "react-router";
-import { addShoppingListItem, deleteShoppingItem, getShoppingItems, toggleShoppingItem, type ShoppingListItemView, } from "../../api/shoppingList";
+import { Link, useLocation } from "react-router-dom";
+import { addShoppingListItem, deleteShoppingItem, getShoppingItems, monitorShoppingItems, toggleShoppingItem, type ShoppingListItemView, } from "../../api/shoppingList";
+import { getHouseholds } from "../../api/household";
+import type { Household } from "../../api/schema";
+import { HouseholdContextBadge } from "../../components/HouseholdContextBadge";
+import { HouseholdContextDivider } from "../../components/HouseholdContextDivider";
 import "./shoppingList.css";
+import { CustomLoader } from "../../components/CustomLoader";
 
 interface ShoppingListLocationState {
   householdId?: string;
@@ -20,6 +25,7 @@ export function ShoppingList() {
 
   // Data comes from the shopping list API for the selected household.
   const [items, setItems] = useState<ShoppingListItemView[]>([]);
+  const [households, setHouseholds] = useState<Household[]>([]);
   const [isAddingItem, setIsAddingItem] = useState(false);
   const [newItemName, setNewItemName] = useState("");
   const [newItemNotes, setNewItemNotes] = useState("");
@@ -27,7 +33,6 @@ export function ShoppingList() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const notesInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     if (!householdId) {
@@ -38,7 +43,20 @@ export function ShoppingList() {
     }
 
     void loadShoppingItems(householdId);
+  
+    return monitorShoppingItems(() => {
+      void loadShoppingItems(householdId);
+    });
   }, [householdId]);
+
+  useEffect(() => {
+    void loadHouseholds();
+  }, []);
+
+  const currentHousehold = useMemo(
+    () => households.find((household) => household.id === householdId) ?? null,
+    [householdId, households],
+  );
 
   // Keep pending rows first and move checked rows to the bottom of the table.
   const sortedItems = useMemo(
@@ -94,17 +112,11 @@ export function ShoppingList() {
   };
 
   const handleAddItem = () => {
-    if (!householdId || !newItemName.trim() || !newItemNotes.trim()) return;
+    if (!householdId || !newItemName.trim()) return;
     void createItem(householdId);
   };
 
-  const handleNameInputKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
-    if (event.key !== "Enter") return;
-    event.preventDefault();
-    notesInputRef.current?.focus();
-  };
-
-  const handleNotesInputKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+  const handleInputKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.key !== "Enter") return;
     event.preventDefault();
     handleAddItem();
@@ -134,6 +146,12 @@ export function ShoppingList() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const loadHouseholds = async () => {
+    const { data, error: householdsError } = await getHouseholds();
+    if (householdsError) return;
+    setHouseholds(data ?? []);
   };
 
   const createItem = async (selectedHouseholdId: string) => {
@@ -201,7 +219,7 @@ export function ShoppingList() {
             <Checkbox
               checked={item.purchased}
               onChange={() => void handleToggleItem(item.id)}
-              color={item.purchased ? "green" : "gray"}
+              color={item.purchased ? "brand" : "gray"}
               size="md"
               iconColor={item.purchased ? "white" : "transparent"}
               radius="xs"
@@ -256,12 +274,14 @@ export function ShoppingList() {
         {/* Header block for title, description and active household context. */}
         <Stack gap="xs">
           <Title order={1}>Shopping List</Title>
-          <Text c="dimmed">Manage your household shopping items</Text>
-          {/* Reuse the household name passed from the dashboard route. */}
-          <Text size="sm" c="dimmed">
-            Viewing household: {locationState?.householdName ?? "Choose a household"}
-          </Text>
+          <HouseholdContextBadge
+            householdColor={currentHousehold?.household_color}
+            householdName={locationState?.householdName ?? currentHousehold?.house_name}
+          />
+          <Text size="md" c="dimmed">Manage your household shopping items</Text>
         </Stack>
+
+        <HouseholdContextDivider householdColor={currentHousehold?.household_color} />
 
         {error && (
           <Alert
@@ -280,7 +300,7 @@ export function ShoppingList() {
         {/* Summary cards mirror the two item states shown below. */}
         <Grid>
           <Grid.Col span={{ base: 12, sm: 6 }}>
-            <Card withBorder radius="lg" padding="lg">
+            <Card withBorder radius="xl" padding="lg">
               <Group gap="sm" align="center">
                 <IconShoppingCart size={22} />
                 <Text fw={600}>Pending</Text>
@@ -292,7 +312,7 @@ export function ShoppingList() {
           </Grid.Col>
 
           <Grid.Col span={{ base: 12, sm: 6 }}>
-            <Card withBorder radius="lg" padding="lg">
+            <Card withBorder radius="xl" padding="lg">
               <Group gap="sm" align="center">
                 <IconCheck size={22} />
                 <Text fw={600}>Purchased</Text>
@@ -306,97 +326,90 @@ export function ShoppingList() {
 
         {loading ? (
           <Group justify="center" py="xl">
-            <Loader />
+            <CustomLoader />
           </Group>
         ) : (
-          <Paper withBorder radius="lg" className="shopping-list-table-panel">
-            {sortedItems.length ? (
-              <div className="shopping-list-table-scroll">
-                <Table className="shopping-list-table" withColumnBorders withRowBorders highlightOnHover>
-                  <Table.Thead>
-                    <Table.Tr>
-                      <Table.Th className="shopping-list-table__checkbox-column" />
-                      <Table.Th>Product</Table.Th>
-                      <Table.Th>Notes</Table.Th>
-                      <Table.Th className="shopping-list-table__action-column">Delete</Table.Th>
+          <Paper withBorder radius="xl" className="shopping-list-table-panel">
+            <div className="shopping-list-table-scroll">
+              <Table className="shopping-list-table" withColumnBorders withRowBorders highlightOnHover>
+                <Table.Thead>
+                  <Table.Tr>
+                    <Table.Th className="shopping-list-table__checkbox-column" />
+                    <Table.Th>Product</Table.Th>
+                    <Table.Th>Notes</Table.Th>
+                    <Table.Th className="shopping-list-table__action-column">Delete</Table.Th>
+                  </Table.Tr>
+                </Table.Thead>
+                <Table.Tbody>
+                  {!isAddingItem && householdId && (
+                    <Table.Tr
+                      className="shopping-list-table__row shopping-list-table__row--add-action"
+                      onClick={() => setIsAddingItem(true)}
+                    >
+                      <Table.Td colSpan={4}>
+                        <Group gap="sm" justify="center" wrap="nowrap">
+                          <IconPlus size={16} />
+                          <Text fw={600}>Add new item</Text>
+                          <Text size="sm" c="dimmed">
+                            Add a new product and save it to the shopping list
+                          </Text>
+                        </Group>
+                      </Table.Td>
                     </Table.Tr>
-                  </Table.Thead>
-                  <Table.Tbody>
-                    {!isAddingItem && householdId && (
-                      <Table.Tr
-                        className="shopping-list-table__row shopping-list-table__row--add-action"
-                        onClick={() => setIsAddingItem(true)}
-                      >
-                        <Table.Td colSpan={4}>
-                          <Group gap="sm" justify="center" wrap="nowrap">
-                            <IconPlus size={16} />
-                            <Text fw={600}>Add new item</Text>
-                            <Text size="sm" c="dimmed">
-                              Add a new product and save it to the shopping list
-                            </Text>
-                          </Group>
-                        </Table.Td>
-                      </Table.Tr>
-                    )}
-                    {isAddingItem && (
-                      <Table.Tr className="shopping-list-table__row shopping-list-table__row--draft">
-                        <Table.Td className="shopping-list-table__checkbox-column">
-                          <div className="shopping-list-checkbox-shell">
-                            <Checkbox checked={false} readOnly radius="xs" classNames={{
-                              input: "shopping-list-checkbox-input",
-                              icon: "shopping-list-checkbox-icon",
-                            }} />
-                          </div>
-                        </Table.Td>
-                        <Table.Td>
+                  )}
+                  {isAddingItem && (
+                    <Table.Tr className="shopping-list-table__row shopping-list-table__row--draft">
+                      <Table.Td className="shopping-list-table__checkbox-column">
+                        <div className="shopping-list-checkbox-shell">
+                          <Checkbox checked={false} readOnly radius="xs" classNames={{
+                            input: "shopping-list-checkbox-input",
+                            icon: "shopping-list-checkbox-icon",
+                          }} />
+                        </div>
+                      </Table.Td>
+                      <Table.Td>
+                        <TextInput
+                          placeholder="E.g: Pineapple, Cheese"
+                          value={newItemName}
+                          onChange={(event) => setNewItemName(event.currentTarget.value)}
+                          onKeyDown={handleInputKeyDown}
+                        />
+                      </Table.Td>
+                      <Table.Td>
                           <TextInput
-                            placeholder="E.g: Pineapple, Cheese"
-                            value={newItemName}
-                            onChange={(event) => setNewItemName(event.currentTarget.value)}
-                            onKeyDown={handleNameInputKeyDown}
+                            placeholder="E.g: 500 g, low stock, brand preference"
+                            value={newItemNotes}
+                            onChange={(event) => setNewItemNotes(event.currentTarget.value)}
+                            onKeyDown={handleInputKeyDown}
                           />
-                        </Table.Td>
-                        <Table.Td>
-                            <TextInput
-                              placeholder="E.g: 500 g, low stock, brand preference"
-                              value={newItemNotes}
-                              onChange={(event) => setNewItemNotes(event.currentTarget.value)}
-                              onKeyDown={handleNotesInputKeyDown}
-                              ref={notesInputRef}
-                            />
-                        </Table.Td>
-                        <Table.Td className="shopping-list-table__action-column">
-                          <Group justify="center" gap={6} wrap="nowrap">
-                            <ActionIcon
-                              variant="light"
-                              color="green"
-                              aria-label="Save shopping list item"
-                              onClick={handleAddItem}
-                              loading={submitting}
-                            >
-                              <IconDeviceFloppy size={16} />
-                            </ActionIcon>
-                            <ActionIcon
-                              variant="subtle"
-                              color="gray"
-                              aria-label="Cancel new shopping list row"
-                              onClick={handleCancelAdd}
-                            >
-                              <IconX size={16} />
-                            </ActionIcon>
-                          </Group>
-                        </Table.Td>
-                      </Table.Tr>
-                    )}
-                    {sortedItems.map(renderTableRow)}
-                  </Table.Tbody>
-                </Table>
-              </div>
-            ) : (
-              <div className="shopping-list-table-empty">
-                <Text c="dimmed">No items in this shopping list yet.</Text>
-              </div>
-            )}
+                      </Table.Td>
+                      <Table.Td className="shopping-list-table__action-column">
+                        <Group justify="center" gap={6} wrap="nowrap">
+                          <ActionIcon
+                            variant="light"
+                            color="brand"
+                            aria-label="Save shopping list item"
+                            onClick={handleAddItem}
+                            loading={submitting}
+                          >
+                            <IconDeviceFloppy size={16} />
+                          </ActionIcon>
+                          <ActionIcon
+                            variant="subtle"
+                            color="gray"
+                            aria-label="Cancel new shopping list row"
+                            onClick={handleCancelAdd}
+                          >
+                            <IconX size={16} />
+                          </ActionIcon>
+                        </Group>
+                      </Table.Td>
+                    </Table.Tr>
+                  )}
+                  {sortedItems.map(renderTableRow)}
+                </Table.Tbody>
+              </Table>
+            </div>
           </Paper>
         )}
       </Stack>

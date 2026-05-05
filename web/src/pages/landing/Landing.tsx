@@ -1,20 +1,22 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
     Button, Container, Text, Title, Stack, Group, SimpleGrid, Card,
-    ThemeIcon, Badge, Paper, Modal, Loader,
+    ThemeIcon, Badge, Paper, Modal,
 } from "@mantine/core";
 import type { User } from "@supabase/supabase-js";
 import { Link, useNavigate } from "react-router";
 import {
-    IconBuildingCommunity, IconChefHat, IconArchive, IconBarcode,
+    IconBuildingCommunity, IconChefHat, IconArchive, IconCamera,
     IconLayoutDashboard, IconUserCircle, IconLeaf, IconArrowRight,
-    IconPlus, IconShoppingCart,
+    IconPlus, IconShoppingCart, IconDeviceMobile,
 } from "@tabler/icons-react";
 import { notifications } from "@mantine/notifications";
 import { getUsername } from "../../utils/user";
 import { getHouseholds } from "../../api/household";
 import type { Household } from "../../api/schema";
 import "./Landing.css";
+import { CustomLoader } from "../../components/CustomLoader";
+import { useAppInstaller } from "../../hooks/useAppInstaller";
 
 export interface LandingProps {
     user: User | null,
@@ -57,14 +59,18 @@ type QuickLink = {
 const dailyLinks: QuickLink[] = [
     { to: "/dashboard", icon: IconLayoutDashboard, color: "green", title: "Dashboard", badge: "Overview", description: "Household overview, members, and expiring products.", householdScoped: true },
     { to: "/pantry", icon: IconArchive, color: "grape", title: "Pantry", badge: "Track", description: "Manage pantry items and expiration dates.", householdScoped: true },
+    { to: "/scan", icon: IconCamera, color: "red", title: "Scan", badge: "Quick Add", description: "Scan receipts to add products quickly." },
     { to: "/recipes", icon: IconChefHat, color: "orange", title: "Recipes", badge: "Search & Save", description: "Discover recipes and save your favourites." },
-    { to: "/scan", icon: IconBarcode, color: "red", title: "Scan", badge: "Quick Add", description: "Scan receipts to add products quickly." },
 ];
 
 const manageLinks: QuickLink[] = [
     { to: "/household", icon: IconBuildingCommunity, color: "brand", title: "Households", badge: "Manage", description: "View, create, or join households." },
     { to: "/account", icon: IconUserCircle, color: "teal", title: "Account", badge: "Settings", description: "Preferences, restrictions, and account settings." },
 ];
+
+const installLink: QuickLink = {
+    to: "#", icon: IconDeviceMobile, color: "pink", title: "App", badge: "Install", description: "Install app as an icon on your home screen."
+}
 
 function getTimeOfDayGreeting(): string {
     const h = new Date().getHours();
@@ -76,6 +82,8 @@ function getTimeOfDayGreeting(): string {
 export function Landing(props: LandingProps) {
     const { user } = props;
     const navigate = useNavigate();
+
+    const appInstaller = useAppInstaller();
 
     const [households, setHouseholds] = useState<Household[]>([]);
     const [loadingHouseholds, setLoadingHouseholds] = useState(true);
@@ -102,6 +110,14 @@ export function Landing(props: LandingProps) {
         })();
     }, [user]);
 
+    const manageLinksWithInstall = useMemo(() => {
+        if (appInstaller.canPrompt) {
+            return [...manageLinks, installLink];
+        } else {
+            return manageLinks;
+        }
+    }, [appInstaller]);
+
     if (!user) {
         return (
             <div>
@@ -123,7 +139,7 @@ export function Landing(props: LandingProps) {
                                 and plan meals with your housemates — all in one place.
                             </Text>
                             <Group gap="md" mt="sm">
-                                <Link to="/sign-in">
+                                <Link to="/sign-up">
                                     <Button size="lg" rightSection={<IconArrowRight size={18} />}>
                                         Get Started
                                     </Button>
@@ -147,7 +163,7 @@ export function Landing(props: LandingProps) {
                         </div>
                         <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="lg">
                             {features.map(f => (
-                                <Card key={f.title} className="landing-card" withBorder radius="md" p="xl">
+                                <Card key={f.title} className="landing-card" withBorder radius="xl" p="xl">
                                     <ThemeIcon size={44} radius="md" variant="light" mb="md">
                                         <f.icon size={22} />
                                     </ThemeIcon>
@@ -163,7 +179,7 @@ export function Landing(props: LandingProps) {
                 <Container size="sm" py={60}>
                     <Paper radius="xl" p="xl" ta="center"
                         style={{
-                            background: "linear-gradient(135deg, var(--color-primary-50) 0%, var(--color-primary-100) 100%)",
+                            background: "var(--color-primary-50)",
                             border: "1px solid var(--color-primary-200)",
                         }}
                     >
@@ -205,7 +221,9 @@ export function Landing(props: LandingProps) {
     };
 
     const handleQuickLinkClick = (link: QuickLink) => {
-        if (link.householdScoped) {
+        if (link == installLink) {
+            void appInstaller.prompt();
+        } else if (link.householdScoped) {
             goToHouseholdScoped(link.to);
         } else {
             void navigate(link.to);
@@ -221,12 +239,13 @@ export function Landing(props: LandingProps) {
     const renderQuickLinkCard = (link: QuickLink) => (
         <Card
             key={link.to}
-            className="landing-card"
+            component="button"
+            type="button"
+            className="landing-card landing-card--interactive"
             withBorder
-            radius="md"
+            radius="xl"
             p="lg"
             h="100%"
-            style={{ cursor: "pointer" }}
             onClick={() => handleQuickLinkClick(link)}
         >
             <Stack gap="sm">
@@ -246,7 +265,7 @@ export function Landing(props: LandingProps) {
         <Container size="md" py="xl">
             <Stack gap="xl">
                 {/* Hero */}
-                <Paper p="xl" radius="lg" withBorder
+                <Paper p="xl" radius="xl" withBorder
                     style={{
                         background: "linear-gradient(135deg, var(--color-primary-50) 0%, var(--color-surface) 70%)",
                         border: "1px solid var(--color-border)",
@@ -284,8 +303,8 @@ export function Landing(props: LandingProps) {
                     <Text size="sm" fw={700} c="dimmed" tt="uppercase" lts={1}>
                         Manage
                     </Text>
-                    <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
-                        {manageLinks.map(renderQuickLinkCard)}
+                    <SimpleGrid cols={{ base: 1, sm: 2, md: Math.min(4, manageLinksWithInstall.length) }} spacing="md">
+                        {manageLinksWithInstall.map(renderQuickLinkCard)}
                     </SimpleGrid>
                 </Stack>
             </Stack>
@@ -298,7 +317,7 @@ export function Landing(props: LandingProps) {
                 centered
             >
                 {loadingHouseholds ? (
-                    <Group justify="center" py="md"><Loader size="sm" /></Group>
+                    <Group justify="center" py="md"><CustomLoader size="sm" /></Group>
                 ) : (
                     <Stack gap="xs">
                         {households.map(h => (

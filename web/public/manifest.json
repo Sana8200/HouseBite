@@ -1,7 +1,7 @@
 {
     "name": "HouseBite",
-    "start_url": "/household",
-    "display": "minimal-ui",
+    "start_url": "/",
+    "display": "standalone",
     "icons": [
         {
             "src": "icons/icon-192.png",

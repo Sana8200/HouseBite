@@ -1,5 +1,6 @@
-import { ActionIcon, Alert, Badge, Button, Card, Checkbox, Group, Menu, Modal, NumberInput, Paper, Popover, SegmentedControl,
+import { ActionIcon, Alert, Badge, Button, Card, Checkbox, Container, Group, Menu, Modal, NumberInput, Paper, Popover, SegmentedControl,
   Select, SimpleGrid, Stack, Table, Text, TextInput, Title, useMantineTheme } from "@mantine/core";
+import { DatePickerInput } from "@mantine/dates";
 import { IconAlertCircle, IconArrowLeft, IconGridDots, IconList, IconPlus, IconSearch, IconShoppingCart, IconTrash } from "@tabler/icons-react";
 import { notifications } from "@mantine/notifications";
 import { AddToShoppingListModal } from "../../components/AddToShoppingListModal";
@@ -9,11 +10,16 @@ import { searchRecipes } from "../../api/recipe";
 import { supabase } from "../../supabase";
 import { RecipeSearchModal } from "../../components/RecipeSearchModal";
 import type { User } from "@supabase/supabase-js";
-import { getExpirationDateBounds, getDaysUntilExpiry, formatOptionalDate, formatExpiry,getExpiryLabel} from "../../utils/date";
-import { insertReceipt } from "../../api/receipt";
+import { getExpirationDateBounds, getDaysUntilExpiry, formatOptionalDate, formatExpiry } from "../../utils/date";
+import { getManualEntryReceipt, incrementReceiptTotal } from "../../api/receipt";
 import { insertProductWithSpecs, softDeleteProduct } from "../../api/product";
-import type { ProductSizeUnit } from "../../api/schema";
+import { getHouseholdMembers } from "../../api/household";
+import type { Household, ProductSizeUnit } from "../../api/schema";
 import { useMediaQuery } from "@mantine/hooks";
+import { getHouseholds } from "../../api/household";
+import { HouseholdContextBadge } from "../../components/HouseholdContextBadge";
+import { HouseholdContextDivider } from "../../components/HouseholdContextDivider";
+import "./pantry.css";
 
 type PantryViewMode = "grid" | "list";
 type ExpiryStatusFilter = "all" | "expired" | "critical" | "warning" | "fresh" | "no-date";
@@ -34,6 +40,7 @@ interface PantryProduct {
 
 interface PantryLocationState {
   householdId?: string;
+  householdName?: string;
 }
 
 interface PantryProps {
@@ -63,7 +70,7 @@ function renderExpiryBadge(daysUntilExpiry: number | null) {
   if (status === "expired") return <Badge color="red">Expired</Badge>;
   if (status === "critical") return <Badge color="orange">Critical</Badge>;
   if (status === "warning") return <Badge color="yellow">Soon</Badge>;
-  return <Badge color="green">Fresh</Badge>;
+  return <Badge color="brand">Fresh</Badge>;
 }
 
 /* Helper for rendering the bottom status tag used in the grid view. */
@@ -99,7 +106,7 @@ function renderGridStatusTag(daysUntilExpiry: number | null) {
   }
 
   return (
-    <Badge color="green" radius="xl" px="md" py={10}>
+    <Badge color="brand" radius="xl" px="md" py={10}>
       {`Expires in ${daysUntilExpiry} day(s)`}
     </Badge>
   );
@@ -139,7 +146,7 @@ function PantryGrid({
         const daysUntilExpiry = getDaysUntilExpiry(product.expirationDate);
 
         return (
-          <Card key={product.id} withBorder shadow="sm" radius="md" padding="lg">
+          <Card key={product.id} withBorder shadow="sm" radius="xl" padding="lg">
             <Stack gap="md">
               <Group justify="space-between" align="flex-start">
                 <div>
@@ -257,7 +264,6 @@ function PantryAllProductsList({
         </Table.Td>
         <Table.Td>{product.name}</Table.Td>
         <Table.Td>{formatExpiry(product.expirationDate)}</Table.Td>
-        <Table.Td>{getExpiryLabel(daysUntilExpiry)}</Table.Td>
         <Table.Td>{formatOptionalDate(product.purchasedOn)}</Table.Td>
         <Table.Td>{product.shopName ?? "-"}</Table.Td>
         <Table.Td>{product.boughtBy ?? "-"}</Table.Td>
@@ -309,14 +315,13 @@ function PantryAllProductsList({
   });
 
   return (
-    <Paper withBorder radius="md" p="md" style={{overflow: "auto"}}>
+    <Paper withBorder radius="xl" p="xs" className="pantry-table-shell" style={{ overflow: "auto" }}>
       <Table highlightOnHover stickyHeader>
         <Table.Thead>
           <Table.Tr>
             <Table.Th>Select</Table.Th>
             <Table.Th>Product</Table.Th>
             <Table.Th>Expires</Table.Th>
-            <Table.Th>Label</Table.Th>
             <Table.Th>Purchased on</Table.Th>
             <Table.Th>Shop name</Table.Th>
             <Table.Th>Bought by</Table.Th>
@@ -354,10 +359,12 @@ export function Pantry({ user }: PantryProps) {
   const [searchValue, setSearchValue] = useState("");
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
   const [showRecipeModal, setShowRecipeModal] = useState(false);
   const [pendingSearch, setPendingSearch] = useState<{ ingredients: string[]; householdId: string } | null>(null);
 
-  const [households, setHouseholds] = useState<{ id: string; house_name: string }[]>([]);
+  const [households, setHouseholds] = useState<Household[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [shoppingListProduct, setShoppingListProduct] = useState<{ name: string; householdId: string } | null>(null);
   const [creating, setCreating] = useState(false);
@@ -370,9 +377,9 @@ export function Pantry({ user }: PantryProps) {
   const [newExpirationDate, setNewExpirationDate] = useState("");
   const [newPrice, setNewPrice] = useState<number | string>("");
 
-  const currentHouseholdName = useMemo(() => {
+  const currentHousehold = useMemo(() => {
     if (!householdId || households.length === 0) return null;
-    return households.find(h => h.id === householdId)?.house_name;
+    return households.find(h => h.id === householdId) ?? null;
   }, [householdId, households]);
 
   useEffect(() => {
@@ -390,7 +397,8 @@ export function Pantry({ user }: PantryProps) {
           id,
           name,
           household_id,
-          product_specs(current_quantity, bought_quantity, size, unit, expiration_date)
+          product_specs(current_quantity, bought_quantity, size, unit, expiration_date),
+          receipt(store_name, purchase_at, buyer_id)
         `);
 
       if (householdId) {
@@ -404,19 +412,40 @@ export function Pantry({ user }: PantryProps) {
         return;
       }
 
-      const mapped: PantryProduct[] = (data ?? []).map(p => {
+      const rows = data ?? [];
+
+      // Resolve buyer_id → display name by fetching members for each household
+      // that appears in the results. We only do this for households shown.
+      const householdIdsInResults = Array.from(
+        new Set(rows.map(r => r.household_id as string).filter(Boolean))
+      );
+
+      const buyerNames = new Map<string, string>();
+      await Promise.all(
+        householdIdsInResults.map(async hhId => {
+          const result = await getHouseholdMembers(hhId);
+          const members = result.data ?? [];
+          for (const m of members) {
+            if (m.display_name) buyerNames.set(m.id, m.display_name);
+          }
+        })
+      );
+
+      const mapped: PantryProduct[] = rows.map(p => {
         const specs = Array.isArray(p.product_specs) ? p.product_specs[0] : p.product_specs;
+        const receipt = Array.isArray(p.receipt) ? p.receipt[0] : p.receipt;
+        const buyerId = receipt?.buyer_id as string | undefined;
         return {
           id: p.id as string,
-          name: p.name as string ,
+          name: p.name as string,
           householdId: p.household_id as string,
           current_quantity: specs?.current_quantity as number ?? 1,
           size: specs?.size as string ?? null,
           unit: specs?.unit as string ?? null,
           expirationDate: specs?.expiration_date as string ?? null,
-          purchasedOn: null,
-          shopName: null,
-          boughtBy: null,
+          purchasedOn: receipt?.purchase_at as string ?? null,
+          shopName: receipt?.store_name as string ?? null,
+          boughtBy: buyerId ? (buyerNames.get(buyerId) ?? null) : null,
         };
       }).filter(p => p.current_quantity > 0);
 
@@ -431,7 +460,7 @@ export function Pantry({ user }: PantryProps) {
 
   const fetchHouseholds = async () => {
     try {
-      const { data, error } = await supabase.from("household").select("id, house_name");
+      const { data, error } = await getHouseholds();
       if (error) {
         notifications.show({
           color: "red",
@@ -472,15 +501,8 @@ export function Pantry({ user }: PantryProps) {
 
       // create receipt for this purchase
       const price = newPrice !== "" ? Number(newPrice) : null;
-      const purchaseDate = newExpirationDate || new Date().toISOString().split('T')[0];
 
-      const receiptResult = await insertReceipt({
-        household_id: newHouseholdId,
-        store_name: 'Manual Entry',
-        total: price || 0,
-        purchase_at: purchaseDate,
-        buyer_id: user.id
-      });
+      const receiptResult = await getManualEntryReceipt(user.id, newHouseholdId);
 
       if (receiptResult.error) throw new Error('Could not create receipt: ' + receiptResult.error.message);
 
@@ -500,6 +522,13 @@ export function Pantry({ user }: PantryProps) {
       if (productResult.error) {
         // to match try/catch pattern to prevent inconsistent state
         throw new Error("Could not create product: " + productResult.error.message);
+      }
+
+      if (price) {
+        const priceResult = await incrementReceiptTotal(receiptResult.data.id, price);
+        if (priceResult.error) {
+          throw new Error("Could not update receipt: " + priceResult.error.message);
+        }
       }
 
       const addedName = newName.trim();
@@ -549,6 +578,35 @@ export function Pantry({ user }: PantryProps) {
       color: "orange",
       title: "Removed",
       message: `${product?.name ?? "Product"} removed from pantry.`,
+    });
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedProducts.length === 0) return;
+    setBulkDeleting(true);
+    const idsToDelete = [...selectedProducts];
+    const { error } = await supabase
+      .from("product")
+      .delete()
+      .in("id", idsToDelete);
+    setBulkDeleting(false);
+
+    if (error) {
+      notifications.show({
+        color: "red",
+        title: "Could not delete products",
+        message: error.message,
+      });
+      return;
+    }
+
+    setProducts((prev) => prev.filter((p) => !idsToDelete.includes(p.id)));
+    setSelectedProducts([]);
+    setConfirmBulkDelete(false);
+    notifications.show({
+      color: "orange",
+      title: "Removed",
+      message: `${idsToDelete.length} ${idsToDelete.length === 1 ? "product" : "products"} removed from pantry.`,
     });
   };
 
@@ -637,10 +695,15 @@ export function Pantry({ user }: PantryProps) {
   ];
 
   return (
-    <Stack gap="xl" p="xl">
+    <Container size="lg" py="xl">
+      <Stack gap="xl">
       <Button
         component={Link}
         to="/dashboard"
+        state={{
+          householdId,
+          householdName: locationState?.householdName ?? currentHousehold?.house_name,
+        }}
         variant="subtle"
         leftSection={<IconArrowLeft size={16} />}
         w="fit-content"
@@ -650,14 +713,22 @@ export function Pantry({ user }: PantryProps) {
       </Button>
 
       <Group justify="space-between" align="flex-start">
-        <div>
-          <Title order={1}>Pantry {currentHouseholdName && `- ${currentHouseholdName}`}</Title>
-          <Text c="dimmed">Manage your pantry items</Text>
-        </div>
+        <Stack gap="xs">
+          <Title order={1}>Pantry</Title>
+          {currentHousehold && (
+            <HouseholdContextBadge
+              householdColor={currentHousehold.household_color}
+              householdName={currentHousehold.house_name}
+            />
+          )}
+          <Text size="md" c="dimmed">Manage your pantry items</Text>
+        </Stack>
         <Button leftSection={<IconPlus size={16} />} onClick={() => { setModalError(null); setShowCreateModal(true); }}>
           Add Product
         </Button>
       </Group>
+
+      <HouseholdContextDivider householdColor={currentHousehold?.household_color} />
 
       {error && (
         <Alert
@@ -678,19 +749,29 @@ export function Pantry({ user }: PantryProps) {
           value={searchValue}
           onChange={(event) => setSearchValue(event.currentTarget.value)}
           placeholder="Search products"
+          classNames={{
+            root: "pantry-search",
+            input: "pantry-search__input",
+            section: "pantry-search__section",
+          }}
           leftSection={
             <Menu shadow="md" width={180}>
               <Menu.Target>
-                <ActionIcon variant="subtle" aria-label="Filter products by expiry status">
+                <ActionIcon
+                  variant="subtle"
+                  className="pantry-search__filter-trigger"
+                  aria-label="Filter products by expiry status"
+                >
                   <IconList size={16} />
                 </ActionIcon>
               </Menu.Target>
 
-              <Menu.Dropdown>
-                <Menu.Label>Filter by status</Menu.Label>
+              <Menu.Dropdown className="pantry-filter-menu">
+                <Menu.Label className="pantry-filter-menu__label">Filter by status</Menu.Label>
                 {filterOptions.map((option) => (
                   <Menu.Item
                     key={option.value}
+                    className="pantry-filter-menu__item"
                     onClick={() => setStatusFilter(option.value)}
                     leftSection={
                       <Badge color={option.color} variant="filled" size="xs">
@@ -709,11 +790,22 @@ export function Pantry({ user }: PantryProps) {
           style={{ flex: "0 1 420px" }}
         />
         <Button
+          className="pantry-recipes-button"
           flex="0 0 auto"
           disabled={selectedProducts.length === 0}
           onClick={() => handleFindRecipes()}
         >
           Find recipes
+        </Button>
+        <Button
+          flex="0 0 auto"
+          color="red"
+          variant="filled"
+          leftSection={<IconTrash size={16} />}
+          disabled={selectedProducts.length === 0}
+          onClick={() => setConfirmBulkDelete(true)}
+        >
+          Delete
         </Button>
         { !isMobile &&
           <SegmentedControl
@@ -743,7 +835,7 @@ export function Pantry({ user }: PantryProps) {
         }
       </Group>
 
-      <Paper withBorder radius="md" p="lg">
+      <Paper withBorder radius="xl" p="lg" className="pantry-products-panel">
         <Stack gap="lg">
           <Group justify="space-between">
             <div>
@@ -833,13 +925,22 @@ export function Pantry({ user }: PantryProps) {
             value={newHouseholdId}
             onChange={setNewHouseholdId}
           />
-          <TextInput
+          <DatePickerInput
             label="Expiration Date"
-            type="date"
-            value={newExpirationDate}
-            min={expirationDateBounds.min}
-            max={expirationDateBounds.max}
-            onChange={(e) => setNewExpirationDate(e.currentTarget.value)}
+            placeholder="Pick a date"
+            clearable
+            value={newExpirationDate || null}
+            minDate={expirationDateBounds.min}
+            maxDate={expirationDateBounds.max}
+            onChange={(value) => setNewExpirationDate(value ?? "")}
+            popoverProps={{ classNames: { dropdown: "app-date-picker__dropdown" } }}
+            classNames={{
+              input: "app-date-picker__input",
+              calendarHeader: "app-date-picker__header",
+              calendarHeaderControl: "app-date-picker__header-control",
+              weekday: "app-date-picker__weekday",
+              day: "app-date-picker__day",
+            }}
           />
           <NumberInput
             label="Quantity"
@@ -877,6 +978,33 @@ export function Pantry({ user }: PantryProps) {
           </Group>
         </Stack>
       </Modal>
-    </Stack>
+
+      <Modal
+        opened={confirmBulkDelete}
+        onClose={() => setConfirmBulkDelete(false)}
+        title="Delete selected products?"
+        centered
+        radius="md"
+      >
+        <Stack gap="md">
+          <Text size="sm">
+            Are you sure you want to delete{" "}
+            <Text span fw={700}>
+              {selectedProducts.length} {selectedProducts.length === 1 ? "product" : "products"}
+            </Text>
+            ? This action cannot be undone.
+          </Text>
+          <Group justify="flex-end" gap="xs">
+            <Button variant="default" onClick={() => setConfirmBulkDelete(false)} disabled={bulkDeleting}>
+              Cancel
+            </Button>
+            <Button color="red" loading={bulkDeleting} onClick={() => void handleBulkDelete()}>
+              Delete all
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
+      </Stack>
+    </Container>
   );
 }

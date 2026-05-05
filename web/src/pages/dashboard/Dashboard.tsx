@@ -1,7 +1,7 @@
 import './Dashboard.css';
-import React, { useState, useEffect } from 'react';
-import { ActionIcon, Alert, Badge, Button, Card, Checkbox, Container, Group, Loader, Modal, NumberInput, Paper, Popover, Select, SimpleGrid, Stack, Text, TextInput, Title } from '@mantine/core';
-import { IconLayoutGrid, IconReceiptEuro, IconPlus, IconShoppingCart, IconTrash, IconToolsKitchen2Off, IconChefHat, IconUsers, IconClock, IconAlertCircle } from '@tabler/icons-react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { ActionIcon, Alert, Badge, Button, Card, Checkbox, Container, Group, Paper, Popover, SimpleGrid, Stack, Text, Title } from '@mantine/core';
+import { IconLayoutGrid, IconReceiptEuro, IconShoppingCart, IconTrash, IconToolsKitchen2Off, IconChefHat, IconUsers, IconClock, IconAlertCircle } from '@tabler/icons-react';
 import { AddToShoppingListModal } from "../../components/AddToShoppingListModal";
 import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../../supabase';
@@ -13,11 +13,19 @@ import { getUsername } from "../../utils/user";
 import { HouseholdBudgetSummary } from '../../components/budget_summary/HouseholdBudgetSummary';
 import type { User } from '@supabase/supabase-js';
 import { getHouseholds } from '../../api/household';
+<<<<<<< HEAD
 import type { Household, ProductSizeUnit } from '../../api/schema';
 import { getExpirationDateBounds, getDaysUntilExpiry, formatExpiry } from "../../utils/date";
 import { insertReceipt } from '../../api/receipt';
 import { insertProductWithSpecs, softDeleteProduct } from '../../api/product';
+=======
+import type { Household } from '../../api/schema';
+import { getDaysUntilExpiry, formatExpiry } from "../../utils/date";
+>>>>>>> main
 import { notifications } from "@mantine/notifications";
+import { CustomLoader } from '../../components/CustomLoader';
+import { HouseholdContextBadge } from "../../components/HouseholdContextBadge";
+import { HouseholdContextDivider } from "../../components/HouseholdContextDivider";
 
 
 // Types
@@ -130,21 +138,45 @@ const ProductsInDanger: React.FC<{
 
   if (!products.length) {
     return (
-      <Paper withBorder p="xl" radius="md">
-        <Text c="dimmed">No products expiring soon.</Text>
-      </Paper>
+      <Stack gap="md">
+        <Group justify="space-between" align="center">
+          <Title order={2} size="h3">Expiring soon</Title>
+          <Button
+            variant="subtle"
+            size="sm"
+            onClick={() => void navigate("/pantry")}
+            rightSection={<span>→</span>}
+          >
+            View all
+          </Button>
+        </Group>
+
+        <Paper withBorder p="xl" radius="md">
+          <Text c="dimmed">No products expiring soon.</Text>
+        </Paper>
+      </Stack>
     );
   }
 
   return (
     <Stack gap="md">
-      <Title order={2} size="h3">Expiring soon</Title>
+      <Group justify="space-between" align="center">
+        <Title order={2} size="h3">Expiring soon</Title>
+        <Button
+          variant="subtle"
+          size="sm"
+          onClick={() => void navigate("/pantry")}
+          rightSection={<span>→</span>}
+        >
+          View all
+        </Button>
+      </Group>
 
       <SimpleGrid cols={{ base: 1, md: 2, xl: 3 }}>
         {sortedProducts.map(product => {
           const days = getDaysUntilExpiry(product.expiryDate);
           return (
-            <Card key={product.id} withBorder shadow="sm" radius="md" padding="lg">
+            <Card key={product.id} withBorder shadow="sm" radius="xl" padding="lg">
               <Stack gap="md">
                 <Group justify="space-between" align="flex-start">
                   <div>
@@ -299,7 +331,7 @@ const FavouriteRecipes: React.FC<FavouriteRecipesProps> = ({ recipes }) => {
               key={recipe.id}
               withBorder
               shadow="sm"
-              radius="md"
+              radius="xl"
               padding="lg"
               style={{ transition: "transform 0.15s, box-shadow 0.15s", cursor: "pointer" }}
               onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "var(--shadow-md)"; }}
@@ -342,7 +374,6 @@ export interface DashboardProps {
 export default function Dashboard(props: DashboardProps) {
   const { user } = props;
 
-  const expirationDateBounds = getExpirationDateBounds();
   const navigate = useNavigate();
   const location = useLocation();
   const locationState = (location.state as DashboardLocationState | null) ?? null;
@@ -352,19 +383,13 @@ export default function Dashboard(props: DashboardProps) {
   const [selectedHouseholdName, setSelectedHouseholdName] = useState<string | null>(locationState?.householdName ?? null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showCreateModal, setShowCreateModal] = useState(false);
   const [showFoodRestrictions, setShowFoodRestrictions] = useState(false);
-  const [creating, setCreating] = useState(false);
-  const [modalError, setModalError] = useState<string | null>(null);
 
-  const [newName, setNewName] = useState('');
-  const [newHouseholdId, setNewHouseholdId] = useState('');
-  const [newQuantity, setNewQuantity] = useState('1');
-  const [newSize, setNewSize] = useState('');
-  const [newUnit, setNewUnit] = useState('');
-  const [newExpirationDate, setNewExpirationDate] = useState('');
-  const [newPrice, setNewPrice] = useState('');
   const displayName = getUsername(user);
+  const selectedHousehold = useMemo(
+    () => households.find((household) => household.id === selectedHouseholdId) ?? null,
+    [households, selectedHouseholdId],
+  );
 
   useEffect(() => {
     if (!households.length) return;
@@ -435,18 +460,18 @@ export default function Dashboard(props: DashboardProps) {
         return;
       }
 
-        const mapped: Product[] = (data ?? []).map((p: any) => {
+        const mapped: Product[] = (data ?? []).map(p => {
             // Supabase may return product_specs as an object or array depending on version
             const specs = Array.isArray(p.product_specs)
                 ? p.product_specs[0]
                 : p.product_specs;
             return {
-                id: p.id,
-                name: p.name,
-                expiryDate: specs?.expiration_date ?? null,
-                current_quantity: specs?.current_quantity ?? 1,
-                householdName: p.household?.house_name ?? 'Unknown',
-                householdId: p.household_id,
+                id: p.id as string,
+                name: p.name as string,
+                expiryDate: (specs?.expiration_date as string | null) ?? null,
+                current_quantity: (specs?.current_quantity as number | null) ?? 1,
+                householdName: ((p.household as unknown as {house_name: string | null})?.house_name) ?? 'Unknown',
+                householdId: p.household_id as string,
             };
         }).filter(p => p.current_quantity > 0);
 
@@ -456,76 +481,6 @@ export default function Dashboard(props: DashboardProps) {
       setError('Could not load products');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleCreate = async () => {
-    if (!newName.trim() || !newHouseholdId) {
-      setModalError('Name and household are required');
-      return;
-    }
-
-    if (
-      newExpirationDate
-      && (newExpirationDate < expirationDateBounds.min || newExpirationDate > expirationDateBounds.max)
-    ) {
-      setModalError(`Expiration date must be between ${expirationDateBounds.min} and ${expirationDateBounds.max}`);
-      return;
-    }
-
-    setCreating(true);
-    setModalError(null);
-
-    try {
-      // Create receipt for this purchase
-      const price = newPrice ? parseFloat(newPrice) : null;
-      const purchaseDate = newExpirationDate || new Date().toISOString().split('T')[0];
-
-      const receiptResult = await insertReceipt({
-        household_id: newHouseholdId,
-        store_name: 'Manual Entry', // Or allow store selection
-        total: price || 0,
-        purchase_at: purchaseDate,
-        buyer_id: user.id
-      });
-
-      if (receiptResult.error) throw new Error('Could not create receipt: ' + receiptResult.error.message);
-
-        const productResult = await insertProductWithSpecs({
-            name: newName.trim(),
-            household_id: newHouseholdId,
-            receipt_id: receiptResult.data.id,
-        }, {
-            bought_quantity: parseInt(newQuantity) || 1,
-            current_quantity: parseInt(newQuantity) || 1,
-            size: newSize || null,
-            unit: newUnit as ProductSizeUnit || null,
-            expiration_date: newExpirationDate || null,
-            price: newPrice ? parseFloat(newPrice) : null,
-        });
-
-      if (productResult.error) {
-        setModalError('Could not create product: ' + productResult.error.message);
-        setCreating(false);
-        return;
-      }
-
-      setNewName(''); setNewHouseholdId(''); setNewQuantity('1');
-      setNewSize(''); setNewUnit(''); setNewExpirationDate(''); setNewPrice('');
-      setShowCreateModal(false);
-      notifications.show({
-        color: "green",
-        title: "Added",
-        message: `${newName.trim()} added to pantry.`,
-      });
-
-      // refresh data
-      await fetchProducts(selectedHouseholdId);
-
-    } catch (err) {
-      setModalError(err instanceof Error ? err.message : 'Could not add product');
-    } finally {
-      setCreating(false);
     }
   };
 
@@ -579,19 +534,18 @@ export default function Dashboard(props: DashboardProps) {
   return (
     <Container size="lg" py="xl">
       <Stack gap="xl">
-
         {/* Header */}
-        <Group justify="space-between" align="flex-start" wrap="wrap" gap="sm">
-          <div>
-            <Title order={1}>Hello {displayName || 'there'}, welcome back</Title>
-            <Text c="dimmed" mt={4}>
-              Viewing household: {selectedHouseholdName ?? 'Choose a household'}
-            </Text>
+        <div>
+          <Title order={1}>Hello {displayName || 'there'}, welcome back</Title>
+          <div style={{ marginTop: 4 }}>
+            <HouseholdContextBadge
+              householdColor={selectedHousehold?.household_color}
+              householdName={selectedHouseholdName}
+            />
           </div>
-          <Button leftSection={<IconPlus size={16} />} onClick={() => { setModalError(null); setShowCreateModal(true); }}>
-            Add Product
-          </Button>
-        </Group>
+        </div>
+
+        <HouseholdContextDivider householdColor={selectedHousehold?.household_color} />
 
         {error && (
           <Alert
@@ -628,7 +582,7 @@ export default function Dashboard(props: DashboardProps) {
                   })
                 }
               }}
-              radius="lg"
+              radius="xl"
               withBorder
             >
               <span className="dashboard-nav-card__icon" aria-hidden="true">
@@ -646,7 +600,7 @@ export default function Dashboard(props: DashboardProps) {
 
         {/* Expiring products */}
         {loading ? (
-          <Group justify="center" py="xl"><Loader /></Group>
+          <Group justify="center" py="xl"><CustomLoader /></Group>
         ) : (
           <ProductsInDanger
             products={products.filter(p => {
@@ -686,6 +640,8 @@ export default function Dashboard(props: DashboardProps) {
       {selectedHouseholdId && (
         <FoodRestrictionsModal
           householdId={selectedHouseholdId}
+          householdName={selectedHouseholdName}
+          householdColor={selectedHousehold?.household_color}
           opened={showFoodRestrictions}
           onClose={() => setShowFoodRestrictions(false)}
         />
@@ -699,52 +655,6 @@ export default function Dashboard(props: DashboardProps) {
         />
       )}
 
-      <Modal opened={showCreateModal} onClose={() => { setShowCreateModal(false); setModalError(null); }}
-        centered radius="lg" title={<Title order={3}>Add Product</Title>}>
-        <Stack gap="md">
-          {modalError && (
-            <Alert
-              variant="light"
-              color="red"
-              radius="md"
-              icon={<IconAlertCircle size={18} />}
-              title="Couldn't add product"
-              withCloseButton
-              onClose={() => setModalError(null)}
-            >
-              {modalError}
-            </Alert>
-          )}
-          <TextInput label="Name" required placeholder="e.g. Fresh Milk"
-            value={newName} onChange={e => setNewName(e.target.value)} />
-          <Select label="Household" required placeholder="Select a household"
-            value={newHouseholdId} onChange={v => setNewHouseholdId(v ?? "")}
-            data={households.map(h => ({ value: h.id, label: h.house_name }))} />
-          <TextInput label="Expiration Date" type="date"
-            value={newExpirationDate}
-            min={expirationDateBounds.min}
-            max={expirationDateBounds.max}
-            onChange={e => setNewExpirationDate(e.target.value)} />
-          <NumberInput label="Quantity" min={1} value={newQuantity ? parseInt(newQuantity) : 1}
-            onChange={v => setNewQuantity(String(v))} />
-          <TextInput label="Size" placeholder="e.g. 500"
-            value={newSize} onChange={e => setNewSize(e.target.value)} />
-          <Select label="Unit" placeholder="No unit" clearable
-            value={newUnit || null} onChange={v => setNewUnit(v ?? "")}
-            data={[
-              { value: "gr", label: "gr" },
-              { value: "ml", label: "ml" },
-              { value: "kg", label: "kg" },
-              { value: "L", label: "L" },
-            ]} />
-          <NumberInput label="Price" placeholder="e.g. 4.99" min={0} decimalScale={2}
-            value={newPrice ? parseFloat(newPrice) : ""} onChange={v => setNewPrice(String(v))} />
-          <Group justify="flex-end" gap="sm">
-            <Button variant="default" onClick={() => { setShowCreateModal(false); setModalError(null); }}>Cancel</Button>
-            <Button onClick={() => void handleCreate()} loading={creating}>Add Product</Button>
-          </Group>
-        </Stack>
-      </Modal>
     </Container>
   );
 };

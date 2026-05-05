@@ -1,0 +1,74 @@
+.households-page__join-button {
+  border-color: var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow-sm);
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    background-color 0.18s ease,
+    box-shadow 0.18s ease,
+    color 0.18s ease;
+}
+
+.households-page__join-button:hover,
+.households-page__join-button:focus-visible {
+  transform: translateY(-2px);
+  border-color: var(--color-primary-200);
+  background: var(--color-primary-50);
+  color: var(--color-primary-800);
+  box-shadow: var(--shadow-md);
+}
+
+.households-page__actions .mantine-Button-root {
+  min-height: 42px;
+  border-radius: var(--radius-lg);
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    background-color 0.18s ease,
+    box-shadow 0.18s ease,
+    color 0.18s ease;
+}
+
+.households-page__go-button {
+  border-color: var(--color-primary-300);
+  background: var(--color-primary-50);
+  color: var(--color-primary-800);
+}
+
+.households-page__go-button:hover,
+.households-page__go-button:focus-visible {
+  transform: translateY(-1px);
+  border-color: var(--color-primary-400);
+  background: var(--color-primary-100);
+  color: var(--color-primary-900);
+  box-shadow: var(--shadow-sm);
+}
+
+.households-page__edit-button {
+  border-color: transparent;
+  background: transparent;
+  color: var(--color-text-muted);
+  box-shadow: none;
+}
+
+.households-page__edit-button:hover,
+.households-page__edit-button:focus-visible {
+  transform: translateY(-1px);
+  border-color: var(--color-border);
+  background: var(--color-primary-50);
+  color: var(--color-text);
+  box-shadow: none;
+}
+
+.households-page__leave-button {
+  color: var(--color-danger);
+}
+
+.households-page__leave-button:hover,
+.households-page__leave-button:focus-visible {
+  transform: translateY(-1px);
+  background: rgba(173, 49, 29, 0.08);
+  color: var(--color-danger);
+}

@@ -15,6 +15,9 @@ import type { User } from "@supabase/supabase-js";
 import { Scan } from './pages/scan/Scan';
 import { getSession, onAuthStateChange } from "./api/auth";
 import { Footer } from "./components/Footer";
+import { Center, Transition } from "@mantine/core";
+import { useMounted } from "@mantine/hooks";
+import { CustomLoader } from './components/CustomLoader';
 
 export function App() {
   const [loaded, setLoaded] = useState(false);
@@ -42,8 +45,18 @@ export function App() {
     return () => subscription.unsubscribe();
   }, []);
 
+  const mounted = useMounted();
+
   // prevents redirect when reopening a tab. we need to wait until we know if we have a user signed in.
-  if (!loaded) return <></>;
+  if (!loaded) {
+    return (
+      <Center p="xl">
+        <Transition mounted={mounted} enterDelay={1500} transition="fade" duration={1000} >
+          {(style) => <CustomLoader style={style}/>}
+        </Transition>
+      </Center>
+    )
+  };
 
 
   const routes = [

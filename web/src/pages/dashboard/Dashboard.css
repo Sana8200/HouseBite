@@ -1,9 +1,6 @@
 /* Nav card grid */
 .dashboard-nav {
   margin-bottom: var(--space-6);
-  padding: var(--space-3);
-  border-radius: var(--radius-xl);
-  background: var(--color-surface);
 }
 
 .dashboard-nav-card {
@@ -14,49 +11,80 @@
   width: 100%;
   min-height: 190px;
   padding: var(--space-5);
-  background: var(--color-white);
+  background: var(--color-surface);
   text-align: left;
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease,
-    border-color 0.2s ease, background-color 0.2s ease;
+  border: 1px solid var(--color-border);
+  transition: transform 0.14s ease-out, box-shadow 0.14s ease-out,
+    border-color 0.14s ease-out, background-color 0.14s ease-out;
 }
 
-.dashboard-nav-card:hover {
-  transform: translateY(-4px);
-  border-color: var(--color-primary-300);
+.dashboard-nav-card:hover,
+.dashboard-nav-card:focus-visible {
+  transform: translateY(-3px);
+  border-color: var(--color-primary-200);
   background: var(--color-primary-50);
   box-shadow: var(--shadow-md);
+}
+
+.dashboard-nav-card:focus-visible {
+  outline: 2px solid var(--color-primary-600);
+  outline-offset: 3px;
+}
+
+.dashboard-nav-card:active {
+  transform: translateY(-1px);
+  border-color: var(--color-primary-300);
+  background: var(--color-primary-100);
 }
 
 .dashboard-nav-card__icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 48px;
-  height: 48px;
-  border-radius: var(--radius-md);
-  background: var(--color-primary-50);
-  color: var(--color-primary-700);
+  width: 56px;
+  height: 56px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #fdf8f2 0%, #f0e6d8 100%);
+  border: 1px solid #ddd0c0;
+  color: #00572E;
+}
+
+.dashboard-nav-card:hover .dashboard-nav-card__icon,
+.dashboard-nav-card:focus-visible .dashboard-nav-card__icon,
+.dashboard-nav-card:active .dashboard-nav-card__icon {
+  border-color: var(--color-primary-300);
+  background: linear-gradient(180deg, var(--color-primary-50) 0%, #f0e6d8 100%);
 }
 
 .dashboard-nav-card__title {
   margin: 0;
   color: var(--color-text);
+  font-family: var(--font-family-base);
   font-size: var(--font-size-400);
   font-weight: var(--font-weight-semibold);
+  line-height: 1.2;
 }
 
 .dashboard-nav-card__description {
   margin: 0;
   color: var(--color-text-muted);
   font-size: var(--font-size-200);
-  line-height: 1.6;
+  font-weight: 300;
+  line-height: 1.65;
+}
+
+.dashboard-nav-card:hover .dashboard-nav-card__title,
+.dashboard-nav-card:focus-visible .dashboard-nav-card__title,
+.dashboard-nav-card:active .dashboard-nav-card__title {
+  color: var(--color-primary-800);
 }
 
 /* Recipe carousel */
 .section-title {
+  font-family: var(--font-family-base);
   font-size: 24px;
-  font-weight: bold;
+  font-weight: var(--font-weight-semibold);
   margin-bottom: 20px;
   color: var(--color-text);
 }
@@ -80,15 +108,15 @@
 
 .recipes-carousel::-webkit-scrollbar { height: 8px; }
 .recipes-carousel::-webkit-scrollbar-track { background: var(--color-surface-muted); border-radius: 10px; }
-.recipes-carousel::-webkit-scrollbar-thumb { background: #888; border-radius: 10px; }
-.recipes-carousel::-webkit-scrollbar-thumb:hover { background: #555; }
+.recipes-carousel::-webkit-scrollbar-thumb { background: #c8bfb0; border-radius: 10px; }
+.recipes-carousel::-webkit-scrollbar-thumb:hover { background: #a89f92; }
 
 .recipes-carousel .recipe-card {
   min-width: 280px;
   max-width: 280px;
   flex-shrink: 0;
-  background: var(--color-white);
-  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  border-radius: var(--radius-xl);
   box-shadow: var(--shadow-sm);
   overflow: hidden;
   transition: transform 0.2s, box-shadow 0.2s;
@@ -100,8 +128,8 @@
 }
 
 .carousel-arrow {
-  background: var(--color-white);
-  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  border: 1px solid #ddd0c0;
   border-radius: 50%;
   width: 40px;
   height: 40px;
@@ -119,9 +147,9 @@
 }
 
 .carousel-arrow:hover {
-  background: var(--color-primary-500);
-  color: var(--color-white);
-  border-color: var(--color-primary-500);
+  background: var(--color-primary);
+  color: var(--color-surface);
+  border-color: var(--color-primary);
   transform: scale(1.05);
 }
 

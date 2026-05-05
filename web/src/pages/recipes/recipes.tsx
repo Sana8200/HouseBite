@@ -2,11 +2,12 @@ import { useEffect, useRef, useState } from "react"
 import { useLocation } from "react-router-dom"
 import { supabase } from "../../supabase"
 import "./recipes.css"
-import { Paper, Text, SimpleGrid, Stack, ActionIcon, Button, Group, Popover, Title, Container, Loader, Card, Divider, Collapse } from "@mantine/core"
-import { IconX, IconUsers, IconClock, IconChevronLeft, IconChevronRight, IconChefHat } from "@tabler/icons-react"
+import { Text, SimpleGrid, Stack, ActionIcon, Button, Group, Title, Container, Card, Divider, Modal, Popover, ThemeIcon, Paper } from "@mantine/core"
+import { IconUsers, IconClock, IconChevronLeft, IconChevronRight, IconChefHat, IconX, IconHeart } from "@tabler/icons-react"
 import { getRecipes, saveRecipe, type SearchRecipe, type SearchRecipesResult } from "../../api/recipe"
 import type { Recipe } from "../../api/schema"
 import { notifications } from "@mantine/notifications";
+import { CustomLoader } from "../../components/CustomLoader"
 
 function parseDescription(description: string | null): { nutrition: string; ingredients: string; steps: string } {
   if (!description) return { nutrition: "", ingredients: "", steps: "" }
@@ -16,75 +17,53 @@ function parseDescription(description: string | null): { nutrition: string; ingr
 
 export function RecipeCard({
   recipe,
-  isOpen,
-  onToggle,
-  action,
+  onOpen,
   onDelete,
+  action,
 }: {
   recipe: SearchRecipe | Recipe
-  isOpen: boolean
-  onToggle: () => void
-  action?: React.ReactNode
+  onOpen: () => void
   onDelete?: () => void
+  action?: React.ReactNode
 }) {
-  const { nutrition, ingredients, steps } = parseDescription(recipe.description)
+  const { nutrition } = parseDescription(recipe.description)
+  const [confirmDelete, setConfirmDelete] = useState(false)
 
   return (
     <Card
       withBorder
       shadow="sm"
-      radius="md"
-      padding="md"
-      onClick={onToggle}
+      radius="xl"
+      padding="lg"
+      onClick={onOpen}
       className="recipe-card"
-      style={{ cursor: "pointer", minWidth: 280, maxWidth: 280, flexShrink: 0 }}
+      style={{ cursor: "pointer", height: "100%", position: "relative" }}
     >
       <Stack gap="sm" h="100%">
-        <Stack gap={4}>
-          <Group gap="xs" wrap="nowrap" align="flex-start">
-            <IconChefHat size={18} style={{ flexShrink: 0, marginTop: 2 }} color="var(--mantine-color-brand-6)" />
-            <Title order={5} lineClamp={2} style={{ flex: 1 }}>{recipe.title}</Title>
+        <Stack gap={6}>
+          <Group gap="xs" wrap="nowrap" align="flex-start" pr={onDelete ? 28 : 0}>
+            <ThemeIcon size="md" radius="md" variant="light" color="orange" style={{ flexShrink: 0 }}>
+              <IconChefHat size={16} />
+            </ThemeIcon>
+            <Text fw={700} size="md" lineClamp={2} style={{ flex: 1, lineHeight: 1.3 }}>{recipe.title}</Text>
           </Group>
-          <Group gap="md" pl={26}>
+          <Group gap="lg" pl={36}>
             <Group gap={4}>
-              <IconUsers size={14} color="var(--mantine-color-gray-6)" />
-              <Text size="xs" c="dimmed">{recipe.servings ?? "?"}</Text>
+              <IconUsers size={14} color="var(--color-text-muted)" />
+              <Text size="xs" c="dimmed">{recipe.servings ?? "?"} servings</Text>
             </Group>
             <Group gap={4}>
-              <IconClock size={14} color="var(--mantine-color-gray-6)" />
+              <IconClock size={14} color="var(--color-text-muted)" />
               <Text size="xs" c="dimmed">{recipe.prep_time ?? "?"} min</Text>
             </Group>
           </Group>
         </Stack>
 
         {nutrition && (
-          <Text size="xs" c="dimmed" lineClamp={isOpen ? undefined : 3} style={{ lineHeight: 1.5 }}>
+          <Text size="xs" c="dimmed" lineClamp={3} style={{ lineHeight: 1.5 }}>
             {nutrition}
           </Text>
         )}
-
-        <Collapse expanded={isOpen}>
-          <Stack gap="sm" onClick={e => e.stopPropagation()}>
-            <Divider />
-            {ingredients && (
-              <div>
-                <Text fw={600} size="sm" mb={4}>Ingredients</Text>
-                <Text size="sm" style={{ whiteSpace: "pre-wrap", lineHeight: 1.6 }}>{ingredients}</Text>
-              </div>
-            )}
-            {steps && (
-              <div>
-                <Text fw={600} size="sm" mb={4}>Instructions</Text>
-                <Text size="sm" style={{ whiteSpace: "pre-wrap", lineHeight: 1.6 }}>{steps}</Text>
-              </div>
-            )}
-            {onDelete && (
-              <Button color="red" variant="outline" size="sm" fullWidth onClick={onDelete}>
-                Remove from favourites
-              </Button>
-            )}
-          </Stack>
-        </Collapse>
 
         {action && (
           <div onClick={e => e.stopPropagation()} style={{ marginTop: "auto" }}>
@@ -92,21 +71,99 @@ export function RecipeCard({
           </div>
         )}
       </Stack>
+
+      {onDelete && (
+        <Popover
+          opened={confirmDelete}
+          onClose={() => setConfirmDelete(false)}
+          position="bottom-end"
+          withArrow
+          shadow="md"
+        >
+          <Popover.Target>
+            <ActionIcon
+              variant="subtle"
+              color="red"
+              onClick={(e) => {
+                e.stopPropagation()
+                setConfirmDelete(prev => !prev)
+              }}
+              style={{ position: "absolute", top: 8, right: 8 }}
+            >
+              <IconX size={16} />
+            </ActionIcon>
+          </Popover.Target>
+          <Popover.Dropdown onClick={(e) => e.stopPropagation()}>
+            <Stack gap="xs">
+              <Text size="sm">Remove from favourites?</Text>
+              <Group gap="xs" justify="flex-end">
+                <Button
+                  size="xs"
+                  variant="default"
+                  onClick={(e) => { e.stopPropagation(); setConfirmDelete(false) }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  size="xs"
+                  color="red"
+                  onClick={(e) => { e.stopPropagation(); setConfirmDelete(false); onDelete() }}
+                >
+                  Remove
+                </Button>
+              </Group>
+            </Stack>
+          </Popover.Dropdown>
+        </Popover>
+      )}
     </Card>
   )
 }
 
 export function RecipeCarousel({ children }: { children: React.ReactNode }) {
   const ref = useRef<HTMLDivElement>(null)
+  const [canLeft, setCanLeft] = useState(false)
+  const [canRight, setCanRight] = useState(false)
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const update = () => {
+      setCanLeft(el.scrollLeft > 0)
+      setCanRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 1)
+    }
+    update()
+    el.addEventListener("scroll", update, { passive: true })
+    const ro = new ResizeObserver(update)
+    ro.observe(el)
+    Array.from(el.children).forEach(c => ro.observe(c))
+    return () => {
+      el.removeEventListener("scroll", update)
+      ro.disconnect()
+    }
+  }, [children])
+
   const scroll = (dir: number) => ref.current?.scrollBy({ left: dir * 300, behavior: "smooth" })
 
   return (
-    <Group gap="sm" wrap="nowrap" align="center">
-      <ActionIcon variant="default" radius="xl" size="lg" onClick={() => scroll(-1)}>
+    <Group gap="sm" wrap="nowrap" align="stretch">
+      <ActionIcon
+        variant="default"
+        radius="xl"
+        size="lg"
+        onClick={() => scroll(-1)}
+        style={{ visibility: canLeft ? "visible" : "hidden" }}
+      >
         <IconChevronLeft size={18} />
       </ActionIcon>
       <div className="recipe-carousel" ref={ref}>{children}</div>
-      <ActionIcon variant="default" radius="xl" size="lg" onClick={() => scroll(1)}>
+      <ActionIcon
+        variant="default"
+        radius="xl"
+        size="lg"
+        onClick={() => scroll(1)}
+        style={{ visibility: canRight ? "visible" : "hidden" }}
+      >
         <IconChevronRight size={18} />
       </ActionIcon>
     </Group>
@@ -118,27 +175,26 @@ export interface RecipesParams extends Partial<SearchRecipesResult> {
   openRecipeId?: string;
 }
 
+type ModalState =
+  | { kind: "search"; recipe: SearchRecipe; index: number }
+  | { kind: "fav"; recipe: Recipe }
+  | null
+
 export function Recipes() {
   const location = useLocation()
-  const locationState = location.state as RecipesParams;
+  const locationState = location.state as RecipesParams | null;
+  const hasSearch = locationState?.recipes !== undefined
   const searchResults = locationState?.recipes ?? []
-  // const householdId = locationState?.householdId
   const openRecipeId = locationState?.openRecipeId
 
   const [saved, setSaved] = useState<Set<number>>(new Set())
   const [saving, setSaving] = useState<number | null>(null)
+  const [removing, setRemoving] = useState(false)
   const [favourites, setFavourites] = useState<Recipe[]>([])
   const [loadingFavourites, setLoadingFavourites] = useState(true)
-  const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null)
-  const noExactRecipe = locationState?.noExactRecipe ?? false
+  const [modalRecipe, setModalRecipe] = useState<ModalState>(null)
   const matchedIngredients = locationState?.matchedIngredients ?? []
   const unmatchedIngredients = locationState?.unmatchedIngredients ?? []
-  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
-
-  // tracks which card is open: "fav-{id}" or "search-{index}"
-  const [openId, setOpenId] = useState<string | null>(openRecipeId ? `fav-${openRecipeId}` : null)
-
-  const toggle = (key: string) => setOpenId(prev => prev === key ? null : key)
 
   const fetchFavourites = async () => {
     try {
@@ -147,7 +203,7 @@ export function Recipes() {
       setFavourites(list)
       if (openRecipeId) {
         const match = list.find(r => r.id === openRecipeId)
-        if (match) setSelectedRecipe(match)
+        if (match) setModalRecipe({ kind: "fav", recipe: match })
       }
     } catch (e) {
       notifications.show({
@@ -164,7 +220,9 @@ export function Recipes() {
   useEffect(() => { void fetchFavourites() }, [])
 
   const handleDelete = async (id: string) => {
+    setRemoving(true)
     const { error } = await supabase.from("recipe").delete().eq("id", id);
+    setRemoving(false)
     if (error) {
       notifications.show({
         color: "red",
@@ -174,7 +232,7 @@ export function Recipes() {
       return;
     }
     setFavourites(prev => prev.filter(r => r.id !== id));
-    setOpenId(null);
+    setModalRecipe(null);
     notifications.show({
       color: "orange",
       title: "Removed",
@@ -216,168 +274,177 @@ export function Recipes() {
     }
   }
 
+  const renderModalBody = () => {
+    if (!modalRecipe) return null
+    const recipe = modalRecipe.recipe
+    const { nutrition, ingredients, steps } = parseDescription(recipe.description)
+    const isAlreadyFav = modalRecipe.kind === "search"
+      && (favourites.some(f => f.title === recipe.title) || saved.has(modalRecipe.index))
+
+    return (
+      <Stack gap="md">
+        <Group gap="lg">
+          <Group gap={6}>
+            <IconUsers size={16} color="var(--mantine-color-gray-6)" />
+            <Text size="sm" c="dimmed">Serves {recipe.servings ?? "?"}</Text>
+          </Group>
+          <Group gap={6}>
+            <IconClock size={16} color="var(--mantine-color-gray-6)" />
+            <Text size="sm" c="dimmed">{recipe.prep_time ?? "?"} min</Text>
+          </Group>
+        </Group>
+
+        {nutrition && (
+          <Text size="sm" c="dimmed" style={{ lineHeight: 1.6 }}>{nutrition}</Text>
+        )}
+
+        {ingredients && (
+          <>
+            <Divider />
+            <div>
+              <Title order={5} mb={6}>Ingredients</Title>
+              <Text size="sm" style={{ whiteSpace: "pre-wrap", lineHeight: 1.6 }}>{ingredients}</Text>
+            </div>
+          </>
+        )}
+
+        {steps && (
+          <>
+            <Divider />
+            <div>
+              <Title order={5} mb={6}>Instructions</Title>
+              <Text size="sm" style={{ whiteSpace: "pre-wrap", lineHeight: 1.6 }}>{steps}</Text>
+            </div>
+          </>
+        )}
+
+        <Divider />
+
+        {modalRecipe.kind === "search" ? (
+          <Button
+            disabled={isAlreadyFav}
+            loading={saving === modalRecipe.index}
+            onClick={() => void handleSave(modalRecipe.recipe, modalRecipe.index)}
+          >
+            {isAlreadyFav ? "Already in favourites" : "Add to favourites"}
+          </Button>
+        ) : (
+          <Button
+            color="red"
+            variant="outline"
+            loading={removing}
+            onClick={() => void handleDelete(modalRecipe.recipe.id)}
+          >
+            Remove from favourites
+          </Button>
+        )}
+      </Stack>
+    )
+  }
+
   return (
       <Container size="xl" py="xl">
-        {searchResults.length > 0 ? (
+        <Stack gap="xs" mb="xl">
+          <Group gap="sm">
+            <ThemeIcon size="xl" radius="md" variant="light" color="orange">
+              <IconChefHat size={24} />
+            </ThemeIcon>
+            <Title order={1} size="h2">Recipes</Title>
+          </Group>
+          <Text c="dimmed">
+            {!hasSearch ? (
+              "Browse your saved favourites or search for new recipes from the dashboard."
+            ) : searchResults.length === 0 ? (
+              "No recipes match your search. Try removing some ingredients or restrictions."
+            ) : unmatchedIngredients.length > 0 ? (
+              <>
+                No recipe found for <Text span fw={700} c="bright">{unmatchedIngredients.join(", ")}</Text>.
+                {matchedIngredients.length > 0 ? (
+                  <> Recipes found for <Text span fw={700} c="bright">{matchedIngredients.join(", ")}</Text>:</>
+                ) : (
+                  <> Instead some suggestions for you:</>
+                )}
+              </>
+            ) : (
+              "Here are some recipes based on your search. Click one to see full details."
+            )}
+          </Text>
+        </Stack>
+
+        {hasSearch && searchResults.length > 0 && (
           <Stack gap="md" mb="xl">
-            <Title order={1}>{noExactRecipe ? "No recipe found" : "Search Results"}</Title>
-
-            <Text>
-              {unmatchedIngredients.length > 0 ? (
-                <>
-                  No recipes found for: <Text span fw={700}>{unmatchedIngredients.join(", ")}</Text>.
-                  {matchedIngredients.length > 0 && (
-                    <> Showing recipes for <Text span fw={700}>{matchedIngredients.join(", ")}</Text>.</>
-                  )}
-                </>
-              ) : (
-                "Click a recipe to see instructions. Add it to favourites to save it."
-              )}
-            </Text>
-
             <RecipeCarousel>
-              {searchResults.map((r, i) => (
+                  {searchResults.map((r, i) => {
+                    const isAlreadyFav = saved.has(i) || favourites.some(f => f.title === r.title)
+                    return (
+                      <div key={i} className="recipe-carousel-item">
+                        <RecipeCard
+                          recipe={r}
+                          onOpen={() => setModalRecipe({ kind: "search", recipe: r, index: i })}
+                          action={
+                            <Button
+                              fullWidth
+                              radius="md"
+                              disabled={isAlreadyFav}
+                              loading={saving === i}
+                              onClick={() => void handleSave(r, i)}
+                            >
+                              {isAlreadyFav ? "Already in favourites" : "Add to favourites"}
+                            </Button>
+                          }
+                        />
+                      </div>
+                    )
+                  })}
+                </RecipeCarousel>
+          </Stack>
+        )}
+
+        <Stack gap="md">
+          <Group gap="xs">
+            <IconHeart size={20} color="var(--mantine-color-red-6)" />
+            <Title order={2} size="h3">Your favourites</Title>
+          </Group>
+          {loadingFavourites ? (
+            <Group justify="center" py="xl"><CustomLoader size="sm" /></Group>
+          ) : favourites.length === 0 ? (
+            <Paper withBorder p="xl" radius="lg">
+              <Stack align="center" gap="xs">
+                <IconHeart size={32} color="var(--color-text-muted)" />
+                <Text c="dimmed" ta="center">
+                  No favourites yet. Search for recipes from the dashboard and save the ones you like.
+                </Text>
+              </Stack>
+            </Paper>
+          ) : (
+            <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="md">
+              {favourites.map(r => (
                 <RecipeCard
-                  key={i}
+                  key={r.id}
                   recipe={r}
-                  isOpen={openId === `search-${i}`}
-                  onToggle={() => toggle(`search-${i}`)}
-                  action={
-                    <Button
-                      disabled={saved.has(i) || saving === i || favourites.some(f => f.title === r.title)}
-                      onClick={() => void handleSave(r, i)}
-                    >
-                      {saved.has(i) || favourites.some(f => f.title === r.title) ? "Already in favourites" : saving === i ? "Saving..." : "Add to favourites"}
-                    </Button>
-                  }
+                  onOpen={() => setModalRecipe({ kind: "fav", recipe: r })}
+                  onDelete={() => void handleDelete(r.id)}
                 />
               ))}
-            </RecipeCarousel>
-          </Stack>
-        ) : (
-          <Stack gap="md" mb="xl">
-            <Title order={1}>No recipe found</Title>
-            <Text>No recipe found.</Text>
-          </Stack>
-        )}
+            </SimpleGrid>
+          )}
+        </Stack>
 
-        <Title order={1} mb="md">Favourites</Title>
-        {loadingFavourites ? (
-          <Group justify="center" py="md"><Loader size="sm" /></Group>
-        ) : favourites.length === 0 ? (
-          <Text c="dimmed">No favourites yet. Search for recipes and add some.</Text>
-        ) : (
-          <div style={{ display: "flex", gap: "20px", alignItems: "stretch" }}>
-
-            {/* LEFT - GRID */}
-            <div style={{ flex: 1.5 }}>
-              <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }}>
-                {favourites.map(r => (
-                  <Paper
-                    key={r.id}
-                    p="md"
-                    radius="md"
-                    withBorder
-                    shadow="sm"
-                    style={{ cursor: "pointer", position: "relative" }}
-                    onClick={() => setSelectedRecipe(r)}
-                  >
-                    <Stack gap="xs">
-                      <Text fw={600} pr={32}>{r.title}</Text>
-
-                      <Text size="sm" c="dimmed">
-                        Servings: {r.servings ?? "?"} · Prep: {r.prep_time ?? "?"} min
-                      </Text>
-
-                      <Text size="xs" c="dimmed">
-                        {r.description?.split("\n\n")[0] ?? ""}
-                      </Text>
-                    </Stack>
-
-                    <Popover
-                      opened={confirmDeleteId === r.id}
-                      onClose={() => setConfirmDeleteId(null)}
-                      position="bottom-end"
-                      withArrow
-                      shadow="md"
-                    >
-                      <Popover.Target>
-                        <ActionIcon
-                          variant="subtle"
-                          color="red"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setConfirmDeleteId(prev => prev === r.id ? null : r.id);
-                          }}
-                          style={{ position: "absolute", top: 8, right: 8 }}
-                        >
-                          <IconX size={16} />
-                        </ActionIcon>
-                      </Popover.Target>
-                      <Popover.Dropdown onClick={(e) => e.stopPropagation()}>
-                        <Stack gap="xs">
-                          <Text size="sm">Remove from favourites?</Text>
-                          <Group gap="xs" justify="flex-end">
-                            <Button
-                              size="xs"
-                              variant="default"
-                              onClick={() => setConfirmDeleteId(null)}
-                            >
-                              Cancel
-                            </Button>
-                            <Button
-                              size="xs"
-                              color="red"
-                              onClick={() => {
-                                setConfirmDeleteId(null);
-                                void handleDelete(r.id);
-                              }}
-                            >
-                              Remove
-                            </Button>
-                          </Group>
-                        </Stack>
-                      </Popover.Dropdown>
-                    </Popover>
-                  </Paper>
-                ))}
-              </SimpleGrid>
-            </div>
-
-            {/* RIGHT - DETAIL PANEL (ONLY FAVOURITES) */}
-            <div style={{ flex: 1 }}>
-              {selectedRecipe ? (
-                <Paper p="lg" radius="md" withBorder shadow="md">
-                  <Stack>
-
-                    <Button
-                      variant="subtle"
-                      size="xs"
-                      onClick={() => setSelectedRecipe(null)}
-                    >
-                      Close
-                    </Button>
-
-                    <Text fw={700} size="lg">
-                      {selectedRecipe.title}
-                    </Text>
-
-                    <Text size="sm" c="dimmed">
-                      Servings: {selectedRecipe.servings ?? "?"} · Prep: {selectedRecipe.prep_time ?? "?"} min
-                    </Text>
-
-                    <Text size="sm" style={{ whiteSpace: "pre-wrap" }}>
-                      {selectedRecipe.description}
-                    </Text>
-                  </Stack>
-                </Paper>
-              ) : (
-                <Text c="dimmed">Select a recipe to see details</Text>
-              )}
-            </div>
-
-          </div>
-        )}
+        <Modal
+          opened={modalRecipe !== null}
+          onClose={() => setModalRecipe(null)}
+          size="lg"
+          centered
+          radius="md"
+          title={
+            <Group gap="xs" wrap="nowrap">
+              <IconChefHat size={22} color="var(--mantine-color-brand-6)" />
+              <Title order={4}>{modalRecipe?.recipe.title}</Title>
+            </Group>
+          }
+        >
+          {renderModalBody()}
+        </Modal>
       </Container>
     )
   }

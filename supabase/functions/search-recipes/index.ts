@@ -72,7 +72,7 @@ Deno.serve(async (req) => {
     // ── Step 3: discard recipes with no parsed instructions, keep 3 ───────
     const validRecipes = details
       .filter((d: any) => d.analyzedInstructions?.[0]?.steps?.length > 0)
-      .slice(0, 3)
+      // .slice(0, 3)
 
     if (validRecipes.length === 0) {
       return new Response(JSON.stringify({ error: "No recipes with instructions found" }), {
