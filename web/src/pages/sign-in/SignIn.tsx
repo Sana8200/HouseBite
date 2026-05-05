@@ -92,6 +92,10 @@ export function SignIn(props: SignInProps) {
     const nameError = activeTab === "signUp" && displayName.length > 25 ? "Name must be 25 characters or fewer" : null;
     const passwordError = password.length > 50 ? "Password must be 50 characters or fewer" : null;
     const disabled = loading || (activeTab == "signUp" ? !displayName : false) || !email || !password || !captchaToken || !!nameError || !!passwordError;
+    const heading = activeTab === "signUp" ? "Create Account" : "Sign In";
+    const description = activeTab === "signUp"
+        ? "Create your account to start managing your household."
+        : "Sign in to continue managing your household.";
 
     if (verifyEmailSent) {
         return (
@@ -115,6 +119,11 @@ export function SignIn(props: SignInProps) {
     return (
         <Container p="md" size="xs">
             <Paper p="md" radius="xl" shadow="md" withBorder>
+                <Stack gap="xs">
+                    <Text size="xl" fw={600}>{heading}</Text>
+                    <Text c="dimmed">{description}</Text>
+                </Stack>
+
                 <div className={`auth-switch ${ activeTab === "signUp" ? "auth-switch--sign-up" : "" }`}>
                     <button
                         type="button"

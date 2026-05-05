@@ -4,6 +4,7 @@ import { IconAlertTriangle } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
 import { supabase } from '../../supabase';
 import type { PostgrestSingleResponse } from '@supabase/supabase-js';
+import { formatCurrency } from '../../utils/currency';
 
 interface MemberSpending {
   member_id: string;
@@ -111,13 +112,6 @@ export function HouseholdBudgetSummary({ householdId, userId }: HouseholdBudgetS
     setMemberSpending(data ?? []);
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'SEK'
-    }).format(amount);
-  };
-
   const formatMonth = (monthDate: string) => {
     const date = new Date(monthDate);
     return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
@@ -149,7 +143,7 @@ export function HouseholdBudgetSummary({ householdId, userId }: HouseholdBudgetS
         color: isHovered ? MEMBER_COLORS[member.color_index % MEMBER_COLORS.length] : MEMBER_COLORS[member.color_index % MEMBER_COLORS.length],
         label: member.member_name,
         amount: member.amount_spent,
-        tooltip: `${member.member_name}: ${formatCurrency(member.amount_spent)} (${member.percentage_of_total}%)`
+        tooltip: `${member.member_name}: ${formatCurrency(member.amount_spent, {maximumFractionDigits: 0})} (${member.percentage_of_total.toFixed(0)}%)`
       });
       // currentOffset += width;
     }
@@ -163,7 +157,7 @@ export function HouseholdBudgetSummary({ householdId, userId }: HouseholdBudgetS
         color: isHovered ? "var(--color-border)" : "var(--color-surface-muted)",
         label: 'Remaining',
         amount: remainingBudget,
-        tooltip: `Remaining: ${formatCurrency(remainingBudget)}`
+        tooltip: `Remaining: ${formatCurrency(remainingBudget, {maximumFractionDigits: 0})}`
       });
     }
     
@@ -194,7 +188,7 @@ export function HouseholdBudgetSummary({ householdId, userId }: HouseholdBudgetS
           <Group justify="space-between" mb="md">
             <Text fw={500}>Current month: {formatMonth(new Date().toISOString())}</Text>
             <Badge size="lg" color={badgeColor}>
-              {budgetUsed.toFixed(1)}% used this month
+              {budgetUsed.toFixed(0)}% used this month
             </Badge>
           </Group>
           </Box>
@@ -202,13 +196,13 @@ export function HouseholdBudgetSummary({ householdId, userId }: HouseholdBudgetS
           <SimpleGrid cols={{ base: 1, md: 3 }} spacing="md">
             <Paper withBorder p="md" radius="lg" style={{ background: "var(--color-surface-muted)" }}>
               <Text size="sm" c="dimmed">Your spending</Text>
-              <Text size="xl" fw={700}>{formatCurrency(userTotalSpent)}</Text>
+              <Text size="xl" fw={700}>{formatCurrency(userTotalSpent, {maximumFractionDigits: 0})}</Text>
               <Text size="xs">{currentUserSpending?.receipt_count || 0} receipts</Text>
             </Paper>
 
             <Paper withBorder p="md" radius="lg" style={{ background: "var(--color-surface-muted)" }}>
               <Text size="sm" c="dimmed">Household total spending</Text>
-              <Text size="xl" fw={700}>{formatCurrency(totalSpent)}</Text>
+              <Text size="xl" fw={700}>{formatCurrency(totalSpent, {maximumFractionDigits: 0})}</Text>
             </Paper>
 
             {householdBudget && (
@@ -216,9 +210,9 @@ export function HouseholdBudgetSummary({ householdId, userId }: HouseholdBudgetS
                 style={{ background: remainingBudget < 0 ? "var(--color-danger-soft)" : "var(--color-surface-muted)" }}>
                 <Text size="sm" c="dimmed">Remaining budget</Text>
                 <Text size="xl" fw={700} style={{ color: remainingBudget < 0 ? "var(--color-danger)" : "var(--color-text)" }}>
-                  {formatCurrency(Math.max(0, remainingBudget))}
+                  {formatCurrency(Math.max(0, remainingBudget), {maximumFractionDigits: 0})}
                 </Text>
-                <Text size="xs">of {formatCurrency(householdBudget)} total</Text>
+                <Text size="xs">of {formatCurrency(householdBudget, {maximumFractionDigits: 0})} total</Text>
               </Paper>
             )}
           </SimpleGrid>
@@ -250,14 +244,14 @@ export function HouseholdBudgetSummary({ householdId, userId }: HouseholdBudgetS
                       borderRadius: 2 
                     }} />
                     <Text size="xs">{member.member_name}</Text>
-                    <Text size="xs" fw={500}>{formatCurrency(member.amount_spent)}</Text>
+                    <Text size="xs" fw={500}>{formatCurrency(member.amount_spent, {maximumFractionDigits: 0})}</Text>
                   </Group>
                 ))}
                 {remainingBudget > 0 && (
                   <Group gap="xs">
                     <div style={{ width: 12, height: 12, backgroundColor: 'var(--color-surface-muted)', borderRadius: 2 }} />
                     <Text size="xs">Remaining</Text>
-                    <Text size="xs" fw={500}>{formatCurrency(remainingBudget)}</Text>
+                    <Text size="xs" fw={500}>{formatCurrency(remainingBudget, {maximumFractionDigits: 0})}</Text>
                   </Group>
                 )}
               </Group>
@@ -297,9 +291,9 @@ export function HouseholdBudgetSummary({ householdId, userId }: HouseholdBudgetS
                         </Text>
                       </Group>
                     </Table.Td>
-                    <Table.Td>{formatCurrency(member.amount_spent)}</Table.Td>
+                    <Table.Td>{formatCurrency(member.amount_spent, {maximumFractionDigits: 0})}</Table.Td>
                     <Table.Td>{member.receipt_count}</Table.Td>
-                    <Table.Td>{member.percentage_of_total.toFixed(1)}%</Table.Td>
+                    <Table.Td>{member.percentage_of_total.toFixed(0)}%</Table.Td>
                   </Table.Tr>
                 ))}
               </Table.Tbody>
@@ -318,7 +312,7 @@ export function HouseholdBudgetSummary({ householdId, userId }: HouseholdBudgetS
               icon={<IconAlertTriangle size={18} />}
               title="Monthly budget exceeded"
             >
-              You have exceeded your monthly budget by {formatCurrency(totalSpent - householdBudget)}.
+              You have exceeded your monthly budget by {formatCurrency(totalSpent - householdBudget, {maximumFractionDigits: 0})}.
             </Alert>
           )}
         </Paper>

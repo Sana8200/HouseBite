@@ -15,6 +15,7 @@ import { IconEdit, IconDeviceFloppyFilled, IconAlertCircle } from '@tabler/icons
 import { notifications } from "@mantine/notifications";
 import type { FoodRestriction } from "../../api/schema"
 import { DelayedCustomLoader } from "../../components/CustomLoader"
+import { formatCurrency } from "../../utils/currency"
 
 interface AccountProps {
     user: User;
@@ -351,7 +352,7 @@ export function Account(props: AccountProps) {
                                     <Text c="dimmed">Spent this month</Text>
                                     <Space flex={1} />
                                     <Text fw={500}>
-                                        {totalSpent?.toFixed(2) || '-'} kr
+                                        {formatCurrency(totalSpent, {maximumFractionDigits: 0})}
                                     </Text>
                                 </Flex>
                             </Stack>

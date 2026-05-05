@@ -11,6 +11,7 @@ import { notifications } from "@mantine/notifications"
 import type { User } from "@supabase/supabase-js"
 import "./HouseHold.css"
 import { DelayedCustomLoader } from "../../components/CustomLoader"
+import { formatCurrency } from "../../utils/currency"
 
 export interface HouseHoldProps {
     user: User;
@@ -352,7 +353,7 @@ export function HouseHold(props: HouseHoldProps) {
                                             <Text fw={700} size="lg">{h.house_name}</Text>
                                         </Group>
                                         {h.monthly_budget != null && (
-                                            <Text size="sm" c="dimmed">Budget: {h.monthly_budget} kr/month</Text>
+                                            <Text size="sm" c="dimmed">Budget: {formatCurrency(h.monthly_budget, {maximumFractionDigits: 0})} /month</Text>
                                         )}
                                         <Text size="sm" c={memberCounts[h.id] >= 51 ? "red" : "dimmed"}>
                                             {memberCounts[h.id] ?? "…"} {memberCounts[h.id] == 1 ? "member" : "members"}
