@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import {Button, Group, Text, Modal, Stack, Title, Code, CopyButton, ActionIcon,
-    ThemeIcon, Container, SimpleGrid, Card, TextInput, NumberInput, Alert} from "@mantine/core"
+    ThemeIcon, Container, SimpleGrid, Card, TextInput, NumberInput, Alert,
+    Tooltip} from "@mantine/core"
 import {IconEdit, IconDoorExit, IconCheck, IconCopy, IconLink, IconPlus, IconUserPlus, IconAlertCircle,} from "@tabler/icons-react"
 import { createHousehold, getHouseholds, getHouseholdMemberCount, joinHousehold, updateHousehold, leaveHousehold, getHouseholdMembers } from "../../api/household"
 import { supabase } from "../../supabase"
@@ -87,6 +88,8 @@ export function HouseHold(props: HouseHoldProps) {
     const [memberCounts, setMemberCounts] = useState<Record<string, number>>({})
     const [userId, setUserId] = useState<string | null>(null)
 
+    const atHouseholdLimit = households.length >= 5;
+
     const fetchHouseholds = async () => {
         try {
             const { data, error } = await getHouseholds()
@@ -116,7 +119,7 @@ export function HouseHold(props: HouseHoldProps) {
         if (!newName.trim()) { setCreateError("Household name is required"); return }
         
         // Check household limit
-        if (households.length >= 5) {
+        if (atHouseholdLimit) {
             setCreateError("You have reached the maximum of 5 households. Please leave a household first before creating a new one.")
             return
         }
@@ -149,7 +152,7 @@ export function HouseHold(props: HouseHoldProps) {
         if (!inviteId.trim()) { setJoinError("Invite code is required"); return }
         
         // Check household limit
-        if (households.length >= 5) {
+        if (atHouseholdLimit) {
             setJoinError("You have reached the maximum of 5 households. Please leave a household first before joining a new one.")
             return
         }
@@ -300,28 +303,27 @@ export function HouseHold(props: HouseHoldProps) {
                 )}
 
                 <Group gap="md">
-                    <Button size="lg" leftSection={<IconPlus size={20} />}
-                        onClick={() => { setCreateError(null); setShowCreateModal(true) }}
-                        disabled={households.length >= 5}>
-                        Create Household
-                    </Button>
-                    <Button
-                        size="lg"
-                        variant="default"
-                        leftSection={<IconUserPlus size={20} />}
-                        className="households-page__join-button"
-                        onClick={() => { setJoinError(null); setInviteId(""); setJoinColor(HOUSEHOLD_COLORS[0]); setShowJoinModal(true) }}
-                        disabled={households.length >= 5}
-                    >
-                        Join Household
-                    </Button>
+                    <Tooltip label="At maximum limit" disabled={!atHouseholdLimit}>
+                        <Button size="lg" leftSection={<IconPlus size={20} />}
+                            onClick={() => { setCreateError(null); setShowCreateModal(true) }}
+                            disabled={atHouseholdLimit}
+                        >
+                            Create Household
+                        </Button>
+                    </Tooltip>
+                    <Tooltip label="At maximum limit" disabled={!atHouseholdLimit}>
+                        <Button
+                            size="lg"
+                            variant="default"
+                            leftSection={<IconUserPlus size={20} />}
+                            className="households-page__join-button"
+                            onClick={() => { setJoinError(null); setInviteId(""); setJoinColor(HOUSEHOLD_COLORS[0]); setShowJoinModal(true) }}
+                            disabled={atHouseholdLimit}
+                        >
+                            Join Household
+                        </Button>
+                    </Tooltip>
                 </Group>
-
-                {households.length >= 5 && (
-                    <Alert color="yellow" withCloseButton title="Household Limit Reached">
-                        You are part of the maximum number of households (5). To create or join another household, please leave one first.
-                    </Alert>
-                )}
 
                 <Title order={2} size="h3">Your Households ({households.length}/5)</Title>
 

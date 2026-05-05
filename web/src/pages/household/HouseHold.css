@@ -1,4 +1,4 @@
-.households-page__join-button {
+.households-page__join-button:not([disabled]) {
   border-color: var(--color-border);
   background: var(--color-surface);
   color: var(--color-text);
@@ -11,8 +11,8 @@
     color 0.18s ease;
 }
 
-.households-page__join-button:hover,
-.households-page__join-button:focus-visible {
+.households-page__join-button:not([disabled]):hover,
+.households-page__join-button:not([disabled]):focus-visible {
   transform: translateY(-2px);
   border-color: var(--color-primary-200);
   background: var(--color-primary-50);
