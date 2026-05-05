@@ -9,6 +9,7 @@
 }
 
 .auth-switch {
+  margin-top: var(--space-5);
   position: relative;
   display: grid;
   grid-template-columns: 1fr 1fr;
