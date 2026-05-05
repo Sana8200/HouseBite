@@ -7,7 +7,7 @@ import { IconUsers, IconClock, IconChevronLeft, IconChevronRight, IconChefHat, I
 import { getRecipes, saveRecipe, type SearchRecipe, type SearchRecipesResult } from "../../api/recipe"
 import type { Household, Recipe } from "../../api/schema"
 import { notifications } from "@mantine/notifications";
-import { CustomLoader } from "../../components/CustomLoader"
+import { DelayedCustomLoader } from "../../components/CustomLoader"
 import { getHouseholds } from "../../api/household";
 import { addShoppingListItem, getShoppingItems } from "../../api/shoppingList";
 import { getPantryProductNames } from "../../api/product";
@@ -686,7 +686,7 @@ export function Recipes() {
             <Title order={2} size="h3">Your favourites</Title>
           </Group>
           {loadingFavourites ? (
-            <Group justify="center" py="xl"><CustomLoader size="sm" /></Group>
+            <Group justify="center" py="xl"><DelayedCustomLoader size="sm" /></Group>
           ) : favourites.length === 0 ? (
             <Paper withBorder p="xl" radius="lg">
               <Stack align="center" gap="xs">

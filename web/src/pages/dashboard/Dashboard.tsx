@@ -16,7 +16,7 @@ import { getHouseholds } from '../../api/household';
 import type { Household } from '../../api/schema';
 import { getDaysUntilExpiry, formatExpiry } from "../../utils/date";
 import { notifications } from "@mantine/notifications";
-import { CustomLoader } from '../../components/CustomLoader';
+import { DelayedCustomLoader } from '../../components/CustomLoader';
 import { HouseholdContextBadge } from "../../components/HouseholdContextBadge";
 import { HouseholdContextDivider } from "../../components/HouseholdContextDivider";
 
@@ -596,7 +596,7 @@ export default function Dashboard(props: DashboardProps) {
 
         {/* Expiring products */}
         {loading ? (
-          <Group justify="center" py="xl"><CustomLoader /></Group>
+          <Group justify="center" py="xl"><DelayedCustomLoader /></Group>
         ) : (
           <ProductsInDanger
             products={products.filter(p => {

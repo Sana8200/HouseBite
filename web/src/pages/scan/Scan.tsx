@@ -11,7 +11,7 @@ import type { Household, InsertProduct, InsertProductSpecs, InsertReceipt, Produ
 import type { User } from "@supabase/supabase-js";
 import { useNavigate } from "react-router";
 import { notifications } from "@mantine/notifications";
-import { CustomLoader } from "../../components/CustomLoader.tsx";
+import { DelayedCustomLoader, CustomLoader } from "../../components/CustomLoader.tsx";
 
 const IMG_SIZE = 2000;
 
@@ -92,7 +92,7 @@ export function Scan(props: ScanProps) {
     if (loadingHouseholds) {
         return (
             <Center p="xl">
-                <CustomLoader />
+                <DelayedCustomLoader />
             </Center>
         );
     }

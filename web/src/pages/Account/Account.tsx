@@ -14,7 +14,7 @@ import { ActionIcon, Alert, Avatar, Box, Button, Card, Center, Chip, Container, 
 import { IconEdit, IconDeviceFloppyFilled, IconAlertCircle } from '@tabler/icons-react';
 import { notifications } from "@mantine/notifications";
 import type { FoodRestriction } from "../../api/schema"
-import { CustomLoader } from "../../components/CustomLoader"
+import { DelayedCustomLoader } from "../../components/CustomLoader"
 
 interface AccountProps {
     user: User;
@@ -252,7 +252,7 @@ export function Account(props: AccountProps) {
 
     if (loading) return (
         <Center p="md">
-            <CustomLoader />
+            <DelayedCustomLoader />
         </Center>
     );
 

@@ -12,7 +12,7 @@ import { HouseholdContextBadge } from "../../components/HouseholdContextBadge";
 import { HouseholdContextDivider } from "../../components/HouseholdContextDivider";
 import type { Household } from "../../api/schema";
 import "./receipts.css";
-import { CustomLoader } from "../../components/CustomLoader";
+import { DelayedCustomLoader } from "../../components/CustomLoader";
 
 type ReceiptItem = {
   id: string;
@@ -388,7 +388,7 @@ export function Receipts() {
           <Grid.Col span={{ base: 12, lg: 5 }}>
             <Stack gap="md">
               {loading ? (
-                <Group justify="center" py="md"><CustomLoader size="sm" /></Group>
+                <Group justify="center" py="md"><DelayedCustomLoader size="sm" /></Group>
               ) : visibleReceipts.length === 0 ? (
                 <Text c="dimmed">No receipts found for this period.</Text>
               ) : (
