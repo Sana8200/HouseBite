@@ -1,6 +1,13 @@
 import "./SignIn.css";
-import { IconAlertCircle } from "@tabler/icons-react";
+import { IconAlertCircle} from "@tabler/icons-react";
+import { useRef, useState } from "react";
+import { Alert, Button, Container, Divider, Paper, PasswordInput, Stack, Text, TextInput } from "@mantine/core";
+import { signIn, signInWithGoogle, signUp, turnstileSiteKey } from "../../api/auth";
+import { Turnstile, type TurnstileInstance } from "@marsidev/react-turnstile";
+import { notifications } from "@mantine/notifications";
 
+
+// We can use IconBrandGoogle from mantine for google icon, but kind of doesn't look good 
 // Official Google "G" logo, colored. Used inside the OAuth sign-in button.
 function GoogleLogo({ size = 18 }: { size?: number }) {
     return (
@@ -13,11 +20,6 @@ function GoogleLogo({ size = 18 }: { size?: number }) {
         </svg>
     );
 }
-import { useRef, useState } from "react";
-import { Alert, Button, Container, Divider, Paper, PasswordInput, Stack, Text, TextInput } from "@mantine/core";
-import { signIn, signInWithGoogle, signUp, turnstileSiteKey } from "../../api/auth";
-import { Turnstile, type TurnstileInstance } from "@marsidev/react-turnstile";
-import { notifications } from "@mantine/notifications";
 
 export type AuthTab = "signIn" | "signUp";
 
