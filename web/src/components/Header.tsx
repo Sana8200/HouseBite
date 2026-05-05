@@ -8,7 +8,7 @@ import { signOut } from "../api/auth";
 import { useMediaQuery } from "@mantine/hooks";
 import { IconLogout, IconUserCircle, IconCamera, IconChefHat, IconBuildingCommunity, IconChevronDown } from "@tabler/icons-react";
 import type { Household } from "../api/schema";
-import IconHouseBite from "../assets/icon.svg";
+import IconHouseBite from "../assets/icons/icon.svg";
 import { supabase } from "../supabase";
 
 export interface HeaderProps {
