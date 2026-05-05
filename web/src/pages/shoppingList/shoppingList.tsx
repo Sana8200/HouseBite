@@ -33,7 +33,6 @@ export function ShoppingList() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const notesInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     if (!householdId) {
@@ -113,17 +112,11 @@ export function ShoppingList() {
   };
 
   const handleAddItem = () => {
-    if (!householdId || !newItemName.trim() || !newItemNotes.trim()) return;
+    if (!householdId || !newItemName.trim()) return;
     void createItem(householdId);
   };
 
-  const handleNameInputKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
-    if (event.key !== "Enter") return;
-    event.preventDefault();
-    notesInputRef.current?.focus();
-  };
-
-  const handleNotesInputKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+  const handleInputKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.key !== "Enter") return;
     event.preventDefault();
     handleAddItem();
@@ -379,7 +372,7 @@ export function ShoppingList() {
                           placeholder="E.g: Pineapple, Cheese"
                           value={newItemName}
                           onChange={(event) => setNewItemName(event.currentTarget.value)}
-                          onKeyDown={handleNameInputKeyDown}
+                          onKeyDown={handleInputKeyDown}
                         />
                       </Table.Td>
                       <Table.Td>
@@ -387,8 +380,7 @@ export function ShoppingList() {
                             placeholder="E.g: 500 g, low stock, brand preference"
                             value={newItemNotes}
                             onChange={(event) => setNewItemNotes(event.currentTarget.value)}
-                            onKeyDown={handleNotesInputKeyDown}
-                            ref={notesInputRef}
+                            onKeyDown={handleInputKeyDown}
                           />
                       </Table.Td>
                       <Table.Td className="shopping-list-table__action-column">
