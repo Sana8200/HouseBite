@@ -84,7 +84,7 @@ export function Header(props: HeaderProps) {
                     <Menu
                         shadow="md"
                         width={260}
-                        position="bottom-end"
+                        position="bottom-start"
                         offset={8}
                         trigger="click-hover"
                         openDelay={80}

@@ -45,7 +45,7 @@ export function ShoppingList() {
     void loadShoppingItems(householdId);
   
     return monitorShoppingItems(() => {
-      void loadShoppingItems(householdId);
+      void loadShoppingItems(householdId, false);
     });
   }, [householdId]);
 
@@ -134,8 +134,8 @@ export function ShoppingList() {
     void removeItem(itemId);
   };
 
-  const loadShoppingItems = async (selectedHouseholdId: string) => {
-    setLoading(true);
+  const loadShoppingItems = async (selectedHouseholdId: string, showLoading = true) => {
+    if (showLoading) setLoading(true);
     setError(null);
 
     try {
@@ -144,7 +144,7 @@ export function ShoppingList() {
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "Could not load shopping list");
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   };
 
@@ -243,6 +243,7 @@ export function ShoppingList() {
         </Table.Td>
         <Table.Td className="shopping-list-table__action-column">
           <ActionIcon
+            type="button"
             variant="subtle"
             color="red"
             aria-label={`Delete ${item.name}`}
@@ -386,6 +387,7 @@ export function ShoppingList() {
                       <Table.Td className="shopping-list-table__action-column">
                         <Group justify="center" gap={6} wrap="nowrap">
                           <ActionIcon
+                            type="button"
                             variant="light"
                             color="brand"
                             aria-label="Save shopping list item"
@@ -395,6 +397,7 @@ export function ShoppingList() {
                             <IconDeviceFloppy size={16} />
                           </ActionIcon>
                           <ActionIcon
+                            type="button"
                             variant="subtle"
                             color="gray"
                             aria-label="Cancel new shopping list row"
