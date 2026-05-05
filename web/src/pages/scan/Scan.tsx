@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, type Dispatch, type SetStateAction } from "react";
+import { useState, useRef, useEffect, type Dispatch, type SetStateAction, Fragment } from "react";
 import "./Scan.css";
 import { Alert, Button, Card, Center, Flex, NumberInput, Paper, Select, Stack, Text, TextInput, Title, Stepper, Group, Accordion, Grid, Box, Table, Divider, ThemeIcon, Tooltip, Popover, Checkbox } from "@mantine/core";
 import { Dropzone, IMAGE_MIME_TYPE, type FileWithPath } from "@mantine/dropzone";
@@ -502,26 +502,23 @@ function ScanReview(props: ScanReviewProps) {
                             </Text>
                         </Box>
                         {state.data.items.map((item, index) => (
-                            <>
-                            <ProductCard 
-                                key={item.key} 
-                                item={item} 
-                                setItem={(updatedItem) => {
-                                    const newItems = [...state.data.items];
-                                    newItems[index] = updatedItem;
-                                    setState(s => {
-                                        const oldState = s as FinishedState;
-                                        return {
-                                            ...oldState,
-                                            data: { ...oldState.data, items: newItems }
-                                        };
-                                    });
-                                }} 
-                            />
-                            <Divider />
-                            </>
-
-                            
+                            <Fragment key={item.key}>
+                                <ProductCard 
+                                    item={item} 
+                                    setItem={(updatedItem) => {
+                                        const newItems = [...state.data.items];
+                                        newItems[index] = updatedItem;
+                                        setState(s => {
+                                            const oldState = s as FinishedState;
+                                            return {
+                                                ...oldState,
+                                                data: { ...oldState.data, items: newItems }
+                                            };
+                                        });
+                                    }} 
+                                />
+                                <Divider />
+                            </Fragment>
                         ))}
 
                         <Center>
