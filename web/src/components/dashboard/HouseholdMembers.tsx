@@ -110,7 +110,7 @@ export function HouseholdMembers({ householdId, inviteId, adminId, currentUserId
                 {members.map(m => (
                     <Paper key={m.id} className="hh-card" bg="var(--color-surface)" radius="xl" p="lg" w={140}>
                         <Stack align="center" gap="xs">
-                            <Avatar size={80} src={avatars[m.avatar_id ?? ""]?.url} name={getName(m)} color="initials"/>
+                            <Avatar size={80} src={avatars.get(m.avatar_id ?? "")?.url} name={getName(m)} color="initials"/>
                             <Text size="sm" fw={600} ta="center" truncate maw={120}>
                                 {getName(m)}
                             </Text>

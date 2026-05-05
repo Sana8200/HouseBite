@@ -10,7 +10,7 @@ import {
     removeRestriction,
 } from "../../api/account"
 import { avatars, getAvatarUrl, getUsername } from "../../utils/user"
-import { ActionIcon, Alert, Avatar, Box, Button, Card, Center, Chip, Container, Divider, Flex, Grid, Group, Modal, Space, Stack, Text, TextInput, Title } from "@mantine/core"
+import { ActionIcon, Alert, Avatar, Box, Button, Card, Center, Chip, Container, Divider, Flex, Grid, Group, Modal, Space, Stack, Text, TextInput, Title, type MantineStyleProp } from "@mantine/core"
 import { IconEdit, IconDeviceFloppyFilled, IconAlertCircle } from '@tabler/icons-react';
 import { notifications } from "@mantine/notifications";
 import type { FoodRestriction } from "../../api/schema"
@@ -558,12 +558,14 @@ function AvatarModal(props: AvatarModalProps) {
         onClose();
     };
 
+    const cursorStyle: MantineStyleProp = {cursor: "pointer"};
+
     return (
         <Modal opened={opened} onClose={onClose} title="Change avatar" centered>
             <Flex gap="md" wrap="wrap">
-                <Avatar name={username} color="initials" size="xl" onClick={() => void onChange("")} style={{cursor: "pointer"}}/>
-                {Object.values(avatars).map(avatar => (
-                    <Avatar key={avatar.id} src={avatar.url} size="xl" onClick={() => void onChange(avatar.id)} style={{cursor: "pointer"}}/>
+                <Avatar name={username} color="initials" size="xl" onClick={() => void onChange("")} style={cursorStyle}/>
+                {[...avatars.values()].map(avatar => (
+                    <Avatar key={avatar.id} src={avatar.url} size="xl" onClick={() => void onChange(avatar.id)} style={cursorStyle}/>
                 ))}
             </Flex>
         </Modal>
