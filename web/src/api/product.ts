@@ -54,6 +54,6 @@ export async function getPantryProductNames(householdId: string): Promise<string
             const specs = Array.isArray(product.product_specs) ? product.product_specs[0] : product.product_specs;
             return (specs?.current_quantity ?? 0) > 0;
         })
-        .map((product) => product.name ?? "")
+        .map((product) => (product.name as string | null) ?? "")
         .filter(Boolean);
 }
