@@ -2,6 +2,8 @@ import { useState, useRef, useEffect, type Dispatch, type SetStateAction, Fragme
 import "./Scan.css";
 import { Alert, Button, Card, Center, Flex, NumberInput, Paper, Select, Stack, Text, TextInput, Title, Stepper, Group, Accordion, Grid, Box, Table, Divider, ThemeIcon, Tooltip, Popover, Checkbox } from "@mantine/core";
 import { Dropzone, IMAGE_MIME_TYPE, type FileWithPath } from "@mantine/dropzone";
+import { DatePickerInput } from "@mantine/dates";
+import { getExpirationDateBounds } from "../../utils/date";
 import { IconReceipt, IconAlertCircle, IconBuildingCommunity } from "@tabler/icons-react";
 import { scanReceipt, type ReceiptData, type ReceiptItemData } from "../../api/scan";
 import { getHouseholds } from "../../api/household";
@@ -11,7 +13,8 @@ import type { Household, InsertProduct, InsertProductSpecs, InsertReceipt, Produ
 import type { User } from "@supabase/supabase-js";
 import { useNavigate } from "react-router";
 import { notifications } from "@mantine/notifications";
-import { CustomLoader } from "../../components/CustomLoader.tsx";
+import { DelayedCustomLoader, CustomLoader } from "../../components/CustomLoader.tsx";
+import { formatCurrency } from "../../utils/currency.ts";
 
 const IMG_SIZE = 2000;
 
@@ -92,7 +95,7 @@ export function Scan(props: ScanProps) {
     if (loadingHouseholds) {
         return (
             <Center p="xl">
-                <CustomLoader />
+                <DelayedCustomLoader />
             </Center>
         );
     }
@@ -131,7 +134,7 @@ export function Scan(props: ScanProps) {
                 </Group>
                 <Group justify="space-between" align="flex-start">
                     <Text c="dimmed">You can take a new picture or drag and drop from your computer. You can only do it one receipt at a time. Pre-filled expiration dates are estimates! Please check on your product for the actual expiration date.</Text>
-                    <Text c="red" mb="sm">Don't reload or close this page until you save. You might lose your progress.</Text>
+                    <Text c="dimmed" mb="sm">Don't reload or close this page until you save, you will lose your progress.</Text>
                 </Group>
                 <Paper shadow="md" p="md">
                     <Stepper active={activeStep} onStepClick={handleStepClick}>
@@ -323,7 +326,7 @@ function ScanReady(props: ScanReadyProps) {
                 <Flex direction="column" style={{ flex: 1 }}>
                     {camera}
 
-                    <Dropzone onDrop={onDrop} accept={IMAGE_MIME_TYPE} mr = "xl">
+                    <Dropzone onDrop={onDrop} accept={IMAGE_MIME_TYPE}>
                         <Stack align="center" p="md">
                             <IconReceipt size={54} />
                             <Text>Drag and drop a receipt image, or click to select</Text>
@@ -742,7 +745,7 @@ function ScanSave(props: ScanSaveProps) {
                                                     <Text c="dimmed" size="sm">{item.quantity ?? 1}</Text>
                                                 </Table.Td>
                                                 <Table.Td ta="right">
-                                                    <Text fw={500} size="sm">{item.totalPrice?.toFixed(2) ?? "0.00"}kr</Text>
+                                                    <Text fw={500} size="sm">{formatCurrency(item.totalPrice)}</Text>
                                                 </Table.Td>
                                             </Table.Tr>
                                         ))}
@@ -765,7 +768,7 @@ function ScanSave(props: ScanSaveProps) {
 
                                 <Stack gap={4} align="flex-end">
                                     <Text fw={800} size="xl" c="brand.7">
-                                        {totalValue.toFixed(2)}kr
+                                        {formatCurrency(totalValue)}
                                     </Text>
                                 </Stack>
                             </Group>
@@ -808,6 +811,7 @@ interface ProductCardProps {
 
 function ProductCard(props: ProductCardProps) {
     const { item, setItem } = props;
+    const expirationDateBounds = getExpirationDateBounds();
 
     return (
         <Card shadow="none" pos="relative" style={{ opacity: item.enabled ? 1 : 0.6 }}>
@@ -860,13 +864,24 @@ function ProductCard(props: ProductCardProps) {
             </Flex>
 
             <Flex gap="sm" mt="xs">
-                <TextInput
+                <DatePickerInput
                     label="Expiration date"
-                    type="date"
-                    value={item.expirationDate || ""}
-                    onChange={(e) => setItem({ ...item, expirationDate: e.target.value })}
+                    placeholder="Pick a date"
+                    clearable
+                    value={item.expirationDate || null}
+                    minDate={expirationDateBounds.min}
+                    maxDate={expirationDateBounds.max}
+                    onChange={(value) => setItem({ ...item, expirationDate: value })}
                     flex={3}
                     disabled={!item.enabled}
+                    popoverProps={{ classNames: { dropdown: "app-date-picker__dropdown" } }}
+                    classNames={{
+                        input: "app-date-picker__input",
+                        calendarHeader: "app-date-picker__header",
+                        calendarHeaderControl: "app-date-picker__header-control",
+                        weekday: "app-date-picker__weekday",
+                        day: "app-date-picker__day",
+                    }}
                 />
 
                 <NumberInput label="Price"

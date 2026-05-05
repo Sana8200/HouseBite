@@ -94,15 +94,6 @@
   overflow: hidden;
 }
 
-.header-households-menu [data-menu-label] {
-  color: var(--color-text-muted);
-  font-size: var(--font-size-100);
-  font-weight: var(--font-weight-semibold);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  padding: var(--space-3) var(--space-4) var(--space-2);
-}
-
 .header-households-menu [data-menu-item] {
   min-height: 42px;
   padding: var(--space-3) var(--space-4);

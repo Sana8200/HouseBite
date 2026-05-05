@@ -41,3 +41,26 @@ export async function insertProductWithSpecs(product: InsertProduct, productSpec
         data: [res1.data, res2.data],
     };
 }
+
+export async function getPantryProductNames(householdId: string): Promise<string[]> {
+    const { data, error } = await supabase
+        .from("product")
+        .select(`
+            name,
+            product_specs(current_quantity)
+        `)
+        .eq("household_id", householdId);
+
+    if (error) {
+        throw new Error(error.message);
+    }
+
+    // "Cook this" only cares whether the household currently has some stock of a product.
+    return (data ?? [])
+        .filter((product) => {
+            const specs = Array.isArray(product.product_specs) ? product.product_specs[0] : product.product_specs;
+            return (specs?.current_quantity ?? 0) > 0;
+        })
+        .map((product) => (product.name as string | null) ?? "")
+        .filter(Boolean);
+}

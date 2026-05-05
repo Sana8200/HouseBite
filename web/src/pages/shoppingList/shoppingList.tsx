@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { KeyboardEvent } from "react";
 import { ActionIcon, Alert, Button, Card, Checkbox, Container, Grid, Group, Paper, Stack, Table, Text, TextInput, Title } from "@mantine/core";
 import { IconAlertCircle, IconArrowLeft, IconCheck, IconDeviceFloppy, IconPlus, IconShoppingCart, IconTrash, IconX } from "@tabler/icons-react";
@@ -10,7 +10,7 @@ import type { Household } from "../../api/schema";
 import { HouseholdContextBadge } from "../../components/HouseholdContextBadge";
 import { HouseholdContextDivider } from "../../components/HouseholdContextDivider";
 import "./shoppingList.css";
-import { CustomLoader } from "../../components/CustomLoader";
+import { DelayedCustomLoader } from "../../components/CustomLoader";
 
 interface ShoppingListLocationState {
   householdId?: string;
@@ -45,7 +45,7 @@ export function ShoppingList() {
     void loadShoppingItems(householdId);
   
     return monitorShoppingItems(() => {
-      void loadShoppingItems(householdId);
+      void loadShoppingItems(householdId, false);
     });
   }, [householdId]);
 
@@ -134,8 +134,8 @@ export function ShoppingList() {
     void removeItem(itemId);
   };
 
-  const loadShoppingItems = async (selectedHouseholdId: string) => {
-    setLoading(true);
+  const loadShoppingItems = async (selectedHouseholdId: string, showLoading = true) => {
+    if (showLoading) setLoading(true);
     setError(null);
 
     try {
@@ -144,7 +144,7 @@ export function ShoppingList() {
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "Could not load shopping list");
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   };
 
@@ -243,6 +243,7 @@ export function ShoppingList() {
         </Table.Td>
         <Table.Td className="shopping-list-table__action-column">
           <ActionIcon
+            type="button"
             variant="subtle"
             color="red"
             aria-label={`Delete ${item.name}`}
@@ -326,7 +327,7 @@ export function ShoppingList() {
 
         {loading ? (
           <Group justify="center" py="xl">
-            <CustomLoader />
+            <DelayedCustomLoader />
           </Group>
         ) : (
           <Paper withBorder radius="xl" className="shopping-list-table-panel">
@@ -386,6 +387,7 @@ export function ShoppingList() {
                       <Table.Td className="shopping-list-table__action-column">
                         <Group justify="center" gap={6} wrap="nowrap">
                           <ActionIcon
+                            type="button"
                             variant="light"
                             color="brand"
                             aria-label="Save shopping list item"
@@ -395,6 +397,7 @@ export function ShoppingList() {
                             <IconDeviceFloppy size={16} />
                           </ActionIcon>
                           <ActionIcon
+                            type="button"
                             variant="subtle"
                             color="gray"
                             aria-label="Cancel new shopping list row"

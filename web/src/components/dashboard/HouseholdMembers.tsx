@@ -5,6 +5,7 @@ import { notifications } from "@mantine/notifications"
 import { getHouseholdMembers, kickMember, kickMemberPermanently, transferAdmin, type HouseholdMember } from "../../api/household"
 import { InviteModal } from "./InviteModal"
 import "./HouseholdMembers.css"
+import { avatars, getUsername } from "../../utils/user"
 
 interface HouseholdMembersProps {
     householdId: string
@@ -14,9 +15,6 @@ interface HouseholdMembersProps {
     onInviteIdChange?: (newInviteId: string) => void
     onAdminChange?: (newAdminId: string) => void
 }
-
-const getName = (m: HouseholdMember) =>
-    m.display_name || m.email?.split("@")[0] || "Unknown"
 
 export function HouseholdMembers({ householdId, inviteId, adminId, currentUserId, onInviteIdChange, onAdminChange }: HouseholdMembersProps) {
     const [members, setMembers] = useState<HouseholdMember[]>([])
@@ -109,13 +107,9 @@ export function HouseholdMembers({ householdId, inviteId, adminId, currentUserId
                 {members.map(m => (
                     <Paper key={m.id} className="hh-card" bg="var(--color-surface)" radius="xl" p="lg" w={140}>
                         <Stack align="center" gap="xs">
-                            <Avatar size={80} radius="md"
-                                styles={{ placeholder: { background: "var(--color-surface-muted)", color: "var(--color-text-muted)", fontSize: 32, fontWeight: 700 } }}
-                            >
-                                {getName(m).charAt(0).toUpperCase()}
-                            </Avatar>
+                            <Avatar size={80} src={avatars.get(m.avatar_id ?? "")?.url} name={getUsername(m)} color="initials"/>
                             <Text size="sm" fw={600} ta="center" truncate maw={120}>
-                                {getName(m)}
+                                {getUsername(m)}
                             </Text>
                             {m.id === adminId && (
                                 <Text size="xs" c="yellow.7" fw={600}>admin</Text>
@@ -123,7 +117,7 @@ export function HouseholdMembers({ householdId, inviteId, adminId, currentUserId
                             {isAdmin && m.id !== currentUserId && (
                                 <Menu withinPortal position="bottom-end" shadow="md">
                                     <Menu.Target>
-                                        <ActionIcon variant="subtle" size="sm" aria-label={`Options for ${getName(m)}`}>
+                                        <ActionIcon variant="subtle" size="sm" aria-label={`Options for ${getUsername(m)}`}>
                                             <IconDots size={16} />
                                         </ActionIcon>
                                     </Menu.Target>
@@ -187,8 +181,8 @@ export function HouseholdMembers({ householdId, inviteId, adminId, currentUserId
                 <Stack gap="md">
                     <Text size="sm">
                         {kickTarget?.permanent
-                            ? `Remove ${kickTarget ? getName(kickTarget.member) : ''} and rotate the invite code so they cannot rejoin with the old link?`
-                            : `Remove ${kickTarget ? getName(kickTarget.member) : ''} from the household?`}
+                            ? `Remove ${kickTarget ? getUsername(kickTarget.member) : ''} and rotate the invite code so they cannot rejoin with the old link?`
+                            : `Remove ${kickTarget ? getUsername(kickTarget.member) : ''} from the household?`}
                     </Text>
                     {kickError && <Alert color="red">{kickError}</Alert>}
                     <Group justify="flex-end" gap="sm">
@@ -214,7 +208,7 @@ export function HouseholdMembers({ householdId, inviteId, adminId, currentUserId
             >
                 <Stack gap="md">
                     <Text size="sm">
-                        Make <strong>{transferTarget ? getName(transferTarget) : ''}</strong> the new admin? You will lose your admin rights.
+                        Make <strong>{transferTarget ? getUsername(transferTarget) : ''}</strong> the new admin? You will lose your admin rights.
                     </Text>
                     {transferError && <Alert color="red">{transferError}</Alert>}
                     <Group justify="flex-end" gap="sm">

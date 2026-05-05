@@ -1,15 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import {
-    Button, Container, Text, Title, Stack, Group, SimpleGrid, Card,
-    ThemeIcon, Badge, Paper, Modal,
+import {Button, Container, Text, Title, Stack, Group, SimpleGrid, Card, ThemeIcon, Badge, Paper, Modal,
 } from "@mantine/core";
 import type { User } from "@supabase/supabase-js";
 import { Link, useNavigate } from "react-router";
-import {
-    IconBuildingCommunity, IconChefHat, IconArchive, IconCamera,
-    IconLayoutDashboard, IconUserCircle, IconLeaf, IconArrowRight,
-    IconPlus, IconShoppingCart, IconDeviceMobile,
-} from "@tabler/icons-react";
+import { IconBuildingCommunity, IconChefHat, IconCamera, IconUserCircle, IconLeaf, IconArrowRight,
+         IconPlus, IconShoppingCart, IconDeviceMobile, IconLayoutGrid, IconHome } from "@tabler/icons-react";
 import { notifications } from "@mantine/notifications";
 import { getUsername } from "../../utils/user";
 import { getHouseholds } from "../../api/household";
@@ -48,28 +43,27 @@ const features = [
 type QuickLink = {
     to: string;
     icon: typeof IconBuildingCommunity;
-    color: string;
+    color:string;
     title: string;
-    badge: string;
     description: string;
     /** If true, click triggers the household-picker flow instead of direct navigation */
     householdScoped?: boolean;
 };
 
 const dailyLinks: QuickLink[] = [
-    { to: "/dashboard", icon: IconLayoutDashboard, color: "green", title: "Dashboard", badge: "Overview", description: "Household overview, members, and expiring products.", householdScoped: true },
-    { to: "/pantry", icon: IconArchive, color: "grape", title: "Pantry", badge: "Track", description: "Manage pantry items and expiration dates.", householdScoped: true },
-    { to: "/scan", icon: IconCamera, color: "red", title: "Scan", badge: "Quick Add", description: "Scan receipts to add products quickly." },
-    { to: "/recipes", icon: IconChefHat, color: "orange", title: "Recipes", badge: "Search & Save", description: "Discover recipes and save your favourites." },
+    { to: "/dashboard", icon: IconHome,color:"green", title: "Dashboard", description: "Household overview, members, and expiring products.", householdScoped: true },
+    { to: "/pantry", icon: IconLayoutGrid,color:"red", title: "Pantry", description: "Manage pantry items and expiration dates.", householdScoped: true },
+    { to: "/scan", icon: IconCamera,color:"red", title: "Scan", description: "Scan receipts to add products quickly." },
+    { to: "/recipes", icon: IconChefHat,color:"orange", title: "Recipes", description: "Discover recipes and save your favourites." },
 ];
 
 const manageLinks: QuickLink[] = [
-    { to: "/household", icon: IconBuildingCommunity, color: "brand", title: "Households", badge: "Manage", description: "View, create, or join households." },
-    { to: "/account", icon: IconUserCircle, color: "teal", title: "Account", badge: "Settings", description: "Preferences, restrictions, and account settings." },
+    { to: "/household", icon: IconBuildingCommunity,color:"brand", title: "Households", description: "View, create, or join households." },
+    { to: "/account", icon: IconUserCircle,color:"teal", title: "Account", description: "Preferences, restrictions, and account settings." },
 ];
 
 const installLink: QuickLink = {
-    to: "#", icon: IconDeviceMobile, color: "pink", title: "App", badge: "Install", description: "Install app as an icon on your home screen."
+    to: "#", icon: IconDeviceMobile,color:"pink", title: "App", description: "Install app as an icon on your home screen."
 }
 
 function getTimeOfDayGreeting(): string {
@@ -253,7 +247,6 @@ export function Landing(props: LandingProps) {
                     <ThemeIcon size="lg" radius="md" variant="light" color={link.color}>
                         <link.icon size={22} />
                     </ThemeIcon>
-                    <Badge size="sm" variant="light">{link.badge}</Badge>
                 </Group>
                 <Text fw={700}>{link.title}</Text>
                 <Text size="sm" c="dimmed">{link.description}</Text>
@@ -270,22 +263,22 @@ export function Landing(props: LandingProps) {
                         background: "linear-gradient(135deg, var(--color-primary-50) 0%, var(--color-surface) 70%)",
                         border: "1px solid var(--color-border)",
                     }}>
-                    <Group justify="space-between" align="center" wrap="nowrap">
-                        <Stack gap={4}>
-                            <Title order={2} fz={28} fw={700}>
-                                {greeting}, {displayName || "there"} 👋
-                            </Title>
-                            <Text c="dimmed">{subtitle}</Text>
-                        </Stack>
-                        {!loadingHouseholds && households.length === 0 && (
-                            <Button
-                                leftSection={<IconPlus size={18} />}
-                                onClick={() => void navigate("/household")}
-                            >
-                                Create household
-                            </Button>
-                        )}
-                    </Group>
+                <Group justify="space-between" align="center" wrap="nowrap">
+                    <Stack gap={4}>
+                        <Title order={2} fz={28} fw={700}>
+                            {greeting}, {displayName || "there"}
+                        </Title>
+                        <Text c="dimmed">{subtitle}</Text>
+                    </Stack>
+                    {!loadingHouseholds && households.length === 0 && (
+                        <Button
+                            leftSection={<IconPlus size={18} />}
+                            onClick={() => void navigate("/household")}
+                        >
+                            Create household
+                        </Button>
+                    )}
+                </Group>
                 </Paper>
 
                 {/* Daily section */}
