@@ -12,7 +12,7 @@ import { RecipeSearchModal } from "../../components/RecipeSearchModal";
 import type { User } from "@supabase/supabase-js";
 import { getExpirationDateBounds, getDaysUntilExpiry, formatOptionalDate, formatExpiry } from "../../utils/date";
 import { getManualEntryReceipt, incrementReceiptTotal } from "../../api/receipt";
-import { insertProductWithSpecs } from "../../api/product";
+import { insertProductWithSpecs, softDeleteProduct } from "../../api/product";
 import { getHouseholdMembers } from "../../api/household";
 import type { Household, ProductSizeUnit } from "../../api/schema";
 import { useMediaQuery } from "@mantine/hooks";
@@ -420,7 +420,7 @@ export function Pantry({ user }: PantryProps) {
       const householdIdsInResults = Array.from(
         new Set(rows.map(r => r.household_id as string).filter(Boolean))
       );
-      
+
       const buyerNames = new Map<string, string>();
       await Promise.all(
         householdIdsInResults.map(async hhId => {
@@ -448,7 +448,7 @@ export function Pantry({ user }: PantryProps) {
           shopName: receipt?.store_name as string ?? null,
           boughtBy: buyerId ? (buyerNames.get(buyerId) ?? null) : null,
         };
-      });
+      }).filter(p => p.current_quantity > 0);
 
       setProducts(mapped);
     } catch (e) {
@@ -562,10 +562,7 @@ export function Pantry({ user }: PantryProps) {
 
   const handleDelete = async (productId: string) => {
     const product = products.find((p) => p.id === productId);
-    const { error } = await supabase
-      .from("product")
-      .delete()
-      .eq("id", productId);
+    const { error } = await softDeleteProduct(productId);
 
     if (error) {
       notifications.show({

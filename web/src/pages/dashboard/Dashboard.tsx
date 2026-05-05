@@ -15,6 +15,7 @@ import type { User } from '@supabase/supabase-js';
 import { getHouseholds } from '../../api/household';
 import type { Household } from '../../api/schema';
 import { getDaysUntilExpiry, formatExpiry } from "../../utils/date";
+import { softDeleteProduct } from '../../api/product';
 import { notifications } from "@mantine/notifications";
 import { DelayedCustomLoader } from '../../components/CustomLoader';
 import { HouseholdContextBadge } from "../../components/HouseholdContextBadge";
@@ -469,7 +470,7 @@ export default function Dashboard(props: DashboardProps) {
                 householdName: ((p.household as unknown as {house_name: string | null})?.house_name) ?? 'Unknown',
                 householdId: p.household_id as string,
             };
-        });
+        }).filter(p => p.current_quantity > 0);
 
         setProducts(mapped);
     } catch (e) {
@@ -482,10 +483,7 @@ export default function Dashboard(props: DashboardProps) {
 
   const handleDelete = async (productId: string) => {
     const product = products.find(p => p.id === productId);
-    const { error } = await supabase
-      .from('product')
-      .delete()
-      .eq('id', productId);
+    const { error } = await softDeleteProduct(productId);
     if (error) {
       notifications.show({
         color: "red",
