@@ -2,6 +2,8 @@ import { useState, useRef, useEffect, type Dispatch, type SetStateAction, Fragme
 import "./Scan.css";
 import { Alert, Button, Card, Center, Flex, NumberInput, Paper, Select, Stack, Text, TextInput, Title, Stepper, Group, Accordion, Grid, Box, Table, Divider, ThemeIcon, Tooltip, Popover, Checkbox } from "@mantine/core";
 import { Dropzone, IMAGE_MIME_TYPE, type FileWithPath } from "@mantine/dropzone";
+import { DatePickerInput } from "@mantine/dates";
+import { getExpirationDateBounds } from "../../utils/date";
 import { IconReceipt, IconAlertCircle, IconBuildingCommunity } from "@tabler/icons-react";
 import { scanReceipt, type ReceiptData, type ReceiptItemData } from "../../api/scan";
 import { getHouseholds } from "../../api/household";
@@ -808,6 +810,7 @@ interface ProductCardProps {
 
 function ProductCard(props: ProductCardProps) {
     const { item, setItem } = props;
+    const expirationDateBounds = getExpirationDateBounds();
 
     return (
         <Card shadow="none" pos="relative" style={{ opacity: item.enabled ? 1 : 0.6 }}>
@@ -860,13 +863,24 @@ function ProductCard(props: ProductCardProps) {
             </Flex>
 
             <Flex gap="sm" mt="xs">
-                <TextInput
+                <DatePickerInput
                     label="Expiration date"
-                    type="date"
-                    value={item.expirationDate || ""}
-                    onChange={(e) => setItem({ ...item, expirationDate: e.target.value })}
+                    placeholder="Pick a date"
+                    clearable
+                    value={item.expirationDate || null}
+                    minDate={expirationDateBounds.min}
+                    maxDate={expirationDateBounds.max}
+                    onChange={(value) => setItem({ ...item, expirationDate: value })}
                     flex={3}
                     disabled={!item.enabled}
+                    popoverProps={{ classNames: { dropdown: "app-date-picker__dropdown" } }}
+                    classNames={{
+                        input: "app-date-picker__input",
+                        calendarHeader: "app-date-picker__header",
+                        calendarHeaderControl: "app-date-picker__header-control",
+                        weekday: "app-date-picker__weekday",
+                        day: "app-date-picker__day",
+                    }}
                 />
 
                 <NumberInput label="Price"
