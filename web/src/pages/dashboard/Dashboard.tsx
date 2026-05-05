@@ -13,15 +13,9 @@ import { getUsername } from "../../utils/user";
 import { HouseholdBudgetSummary } from '../../components/budget_summary/HouseholdBudgetSummary';
 import type { User } from '@supabase/supabase-js';
 import { getHouseholds } from '../../api/household';
-<<<<<<< HEAD
-import type { Household, ProductSizeUnit } from '../../api/schema';
-import { getExpirationDateBounds, getDaysUntilExpiry, formatExpiry } from "../../utils/date";
-import { insertReceipt } from '../../api/receipt';
-import { insertProductWithSpecs, softDeleteProduct } from '../../api/product';
-=======
 import type { Household } from '../../api/schema';
 import { getDaysUntilExpiry, formatExpiry } from "../../utils/date";
->>>>>>> main
+import { softDeleteProduct } from '../../api/product';
 import { notifications } from "@mantine/notifications";
 import { CustomLoader } from '../../components/CustomLoader';
 import { HouseholdContextBadge } from "../../components/HouseholdContextBadge";
