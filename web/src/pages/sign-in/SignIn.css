@@ -4,6 +4,22 @@
   gap: var(--space-4);
 }
 
+/* Google sign-in button — neutral surface with subtle elevation,
+   matching the radius/height of the primary auth button. */
+.auth-google-button {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  font-weight: var(--font-weight-semibold);
+  transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.auth-google-button:hover:not([data-loading="true"]):not(:disabled) {
+  background: var(--color-surface-muted);
+  border-color: var(--color-primary-300);
+  box-shadow: var(--shadow-sm);
+}
+
 .auth-content {
   margin-top: var(--space-7);
 }
