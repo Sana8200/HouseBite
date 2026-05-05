@@ -2,6 +2,13 @@ import type { PostgrestSingleResponse } from "@supabase/supabase-js";
 import { supabase } from "../supabase";
 import type { InsertProduct, InsertProductSpecs, Product, ProductSpecs } from "./schema";
 
+export async function softDeleteProduct(productId: string) {
+    return await supabase
+        .from("product_specs")
+        .update({ current_quantity: 0 })
+        .eq("product_id", productId);
+}
+
 
 export async function insertProduct(product: InsertProduct): Promise<PostgrestSingleResponse<Product>> {
     return await supabase
