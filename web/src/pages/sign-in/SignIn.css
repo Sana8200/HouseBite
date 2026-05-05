@@ -4,8 +4,6 @@
   gap: var(--space-4);
 }
 
-/* Google sign-in button — neutral surface with subtle elevation,
-   matching the radius/height of the primary auth button. */
 .auth-google-button {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -66,5 +64,3 @@
 .auth-switch__option.is-active {
   color: var(--color-white);
 }
-
-
