@@ -1,6 +1,6 @@
 import './Dashboard.css';
 import React, { useState, useMemo, useEffect } from 'react';
-import { ActionIcon, Alert, Badge, Button, Card, Checkbox, Container, Group, Paper, Popover, SimpleGrid, Stack, Text, Title, Affix, Transition, Modal } from '@mantine/core';
+import { ActionIcon, Alert, Badge, Button, Card, Checkbox, Container, Group, Paper, Popover, SimpleGrid, Stack, Text, Title, Affix, Modal } from '@mantine/core';
 import { IconLayoutGrid, IconReceiptEuro, IconShoppingCart, IconTrash, IconToolsKitchen2Off, IconChefHat, IconUsers, IconClock, IconAlertCircle } from '@tabler/icons-react';
 import { AddToShoppingListModal } from "../../components/AddToShoppingListModal";
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -62,25 +62,25 @@ const dashboardNavCards: DashboardNavCards[] = [
     title: 'Shopping List',
     description: 'Manage the household shopping list and keep track of what still needs to be bought.',
     route: '/shoppinglist',
-    icon: <IconShoppingCart size={25} stroke={1.9} />,
+    icon: <IconShoppingCart size={25} stroke={1.9} color="#40c057"/>,
   },
   {
     title: 'Pantry',
     description: 'Review pantry items, spot products that are running low and check what expires soon.',
     route: '/pantry',
-    icon: <IconLayoutGrid size={25} stroke={1.9} />,
+    icon: <IconLayoutGrid size={25} stroke={1.9} color="#be4bdb"/>,
   },
   {
     title: 'Receipts',
     description: 'Open recent receipts and review purchases already captured for the household.',
     route: '/receipts',
-    icon: <IconReceiptEuro size={25} stroke={1.9} />,
+    icon: <IconReceiptEuro size={25} stroke={1.9} color="#fa5252"/>,
   },
   {
     title: 'Food Restrictions',
     description: 'Manage allergies and dietary preferences of your household for better recipes and shopping.',
     action: 'food-restrictions',
-    icon: <IconToolsKitchen2Off size={25} stroke={1.9} />,
+    icon: <IconToolsKitchen2Off size={25} stroke={1.9} color="#fd7e14"/>,
   },
 ];
 
@@ -90,10 +90,9 @@ const dashboardNavCards: DashboardNavCards[] = [
 const ProductsInDanger: React.FC<{
   products: Product[];
   onDelete: (id: string) => Promise<void>;
-  userId: string;
   selectedProducts: string[];
   onSelectedProductsChange: (selected: string[]) => void;
-}> = ({ products, onDelete, userId, selectedProducts, onSelectedProductsChange }) => {
+}> = ({ products, onDelete, selectedProducts, onSelectedProductsChange }) => {
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [shoppingListProduct, setShoppingListProduct] = useState<{ name: string; householdId: string } | null>(null);
   const navigate = useNavigate();
@@ -458,6 +457,7 @@ export default function Dashboard(props: DashboardProps) {
       }
 
         const mapped: Product[] = (data ?? []).map(p => {
+            // Supabase may return product_specs as an object or array depending on version
             const specs = Array.isArray(p.product_specs)
                 ? p.product_specs[0]
                 : p.product_specs;
@@ -647,13 +647,12 @@ export default function Dashboard(props: DashboardProps) {
         {loading ? (
           <Group justify="center" py="xl"><CustomLoader /></Group>
         ) : (
-          <ProductsInDanger
-            products={expiringProducts}
-            onDelete={handleDelete}
-            userId={user.id}
-            selectedProducts={selectedProducts}
-            onSelectedProductsChange={setSelectedProducts}
-          />
+            <ProductsInDanger
+              products={expiringProducts}
+              onDelete={handleDelete}
+              selectedProducts={selectedProducts}
+              onSelectedProductsChange={setSelectedProducts}
+            />
         )}
 
         {/* Household members */}
