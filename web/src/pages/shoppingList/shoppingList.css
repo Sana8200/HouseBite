@@ -17,6 +17,7 @@
   padding: 16px 18px;
   border: 1px solid var(--color-border);
   vertical-align: middle;
+  overflow-wrap: break-word;
 }
 
 .shopping-list-table thead th {
@@ -148,4 +149,19 @@
 
 .shopping-list-table-empty {
   padding: 28px 24px;
+}
+
+@media (max-width: 48em) {
+  .shopping-list-table th,
+  .shopping-list-table td {
+    padding: 4px 6px;
+  }
+
+  .shopping-list-table__checkbox-column {
+    width: 50px;
+  }
+
+  .shopping-list-table__action-column {
+    width: 75px;
+  }
 }
