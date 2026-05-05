@@ -32,3 +32,36 @@
   outline: 2px solid var(--color-primary-600);
   outline-offset: 3px;
 }
+
+@media (max-width: 992px) {
+  .receipts-grid {
+    flex-direction: column;
+  }
+  
+  .receipts-details-col {
+    margin-top: 16px;
+  }
+}
+
+
+.receipts-desktop {
+  display: block;
+}
+
+.receipts-mobile {
+  display: none;
+}
+
+@media (max-width: 992px) {
+  .receipts-desktop {
+    display: none;
+  }
+  
+  .receipts-mobile {
+    display: block;
+  }
+  
+  .mobile-receipt-details {
+    margin-top: 16px;
+  }
+}

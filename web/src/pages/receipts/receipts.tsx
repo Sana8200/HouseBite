@@ -383,142 +383,187 @@ export function Receipts() {
           </Alert>
         )}
 
-        {/* Main split layout: list on the left, detail on the right */}
-        <Grid align="start">
-          <Grid.Col span={{ base: 12, lg: 5 }}>
-            <Stack gap="md">
-              {loading ? (
-                <Group justify="center" py="md"><DelayedCustomLoader size="sm" /></Group>
-              ) : visibleReceipts.length === 0 ? (
-                <Text c="dimmed">No receipts found for this period.</Text>
-              ) : (
-                visibleReceipts.map(receipt => (
+        {/* Mobile view: show details under selected receipt */}
+        <div className="receipts-mobile">
+          <Stack gap="md">
+            {loading ? (
+              <Group justify="center" py="md"><DelayedCustomLoader size="sm" /></Group>
+            ) : visibleReceipts.length === 0 ? (
+              <Text c="dimmed">No receipts found for this period.</Text>
+            ) : (
+              visibleReceipts.map(receipt => (
+                <div key={receipt.id}>
                   <ReceiptListItem
-                    key={receipt.id}
                     receipt={receipt}
                     selected={receipt.id === selectedReceipt?.id}
                     onSelect={() => { setSelectedReceiptId(receipt.id); setConfirmDelete(false); }}
                   />
-                ))
-              )}
-            </Stack>
-          </Grid.Col>
-
-          <Grid.Col span={{ base: 12, lg: 7 }}>
-            <Paper withBorder radius="xl" p={{ base: "lg", sm: "xl" }} shadow="sm">
-              {selectedReceipt ? (
-                <Stack gap="xl">
-                  {/* Header of the selected receipt */}
-                  <Stack gap="xs">
-                    <Title order={3} c="brand.7">
-                      {selectedReceipt.storeName}
-                    </Title>
-
-                    <Group gap="lg" c="dimmed">
-                      <Group gap="xs">
-                        <IconCalendarEvent size={18} stroke={1.8} />
-                        <Text>{selectedReceipt.date}</Text>
-                      </Group>
-                      <Group gap="xs">
-                        <IconUser size={18} stroke={1.8} />
-                        <Text>Bought by {selectedReceipt.buyerName ?? "Unknown"}</Text>
-                      </Group>
-                    </Group>
-                  </Stack>
-
-                  {/* Items that belong to the selected receipt */}
-                  <Table
-                    verticalSpacing="md"
-                    horizontalSpacing="sm"
-                    highlightOnHover={false}
-                    withRowBorders={false}
-                  >
-                    <Table.Thead>
-                      <Table.Tr>
-                        <Table.Th>Product</Table.Th>
-                        <Table.Th ta="center">Qty</Table.Th>
-                        <Table.Th ta="right">Price</Table.Th>
-                      </Table.Tr>
-                    </Table.Thead>
-                    <Table.Tbody>
-                      {selectedReceipt.items.map(item => (
-                        <Table.Tr key={item.id}>
-                          <Table.Td>
-                            <Text fw={500}>{item.name}</Text>
-                          </Table.Td>
-                          <Table.Td ta="center">
-                            <Text c="dimmed" fw={600}>
-                              {item.bought_quantity}
-                            </Text>
-                          </Table.Td>
-                          <Table.Td ta="right">
-                            <Text fw={500}>{item.price}</Text>
-                          </Table.Td>
-                        </Table.Tr>
-                      ))}
-                    </Table.Tbody>
-                  </Table>
-
-                  {/* Summary footer with the total amount */}
-                  <Divider />
-
-                  <Group justify="space-between" align="center">
-                    <Group gap="sm">
-                      <ThemeIcon size={34} radius="xl" variant="light" color="brand">
-                        <IconReceipt2 size={18} stroke={1.8} />
-                      </ThemeIcon>
-                      <Text fw={700} size="xl">
-                        Total
-                      </Text>
-                    </Group>
-
-                    <Text fw={800} size="2rem" c="brand.7">
-                      {selectedReceipt.total}
-                    </Text>
-                  </Group>
-
-                  <Group justify="flex-end">
-                    <Popover
-                      opened={confirmDelete}
-                      onClose={() => setConfirmDelete(false)}
-                      position="bottom-end"
-                      withArrow
-                      shadow="md"
-                    >
-                      <Popover.Target>
-                        <Button
-                          variant="subtle"
-                          color="red"
-                          size="xs"
-                          leftSection={<IconTrash size={14} />}
-                          onClick={() => setConfirmDelete(prev => !prev)}
-                        >
-                          Delete receipt
-                        </Button>
-                      </Popover.Target>
-                      <Popover.Dropdown>
-                        <Stack gap="xs">
-                          <Text size="sm">Delete this receipt and all its products?</Text>
-                          <Group gap="xs" justify="flex-end">
-                            <Button size="xs" variant="default" onClick={() => setConfirmDelete(false)} disabled={deleting}>
-                              Cancel
-                            </Button>
-                            <Button size="xs" color="red" loading={deleting} onClick={() => void handleDeleteReceipt(selectedReceipt.id)}>
-                              Yes, delete
-                            </Button>
+                  {receipt.id === selectedReceipt?.id && (
+                    <div className="mobile-receipt-details">
+                      <Paper withBorder radius="xl" p={{ base: "lg", sm: "xl" }} shadow="sm" mt="md">
+                        {/* Same receipt details content */}
+                        <Stack gap="xl">
+                          <Stack gap="xs">
+                            <Title order={3} c="brand.7">{selectedReceipt.storeName}</Title>
+                            <Group gap="lg" c="dimmed">
+                              <Group gap="xs">
+                                <IconCalendarEvent size={18} stroke={1.8} />
+                                <Text>{selectedReceipt.date}</Text>
+                              </Group>
+                              <Group gap="xs">
+                                <IconUser size={18} stroke={1.8} />
+                                <Text>Bought by {selectedReceipt.buyerName ?? "Unknown"}</Text>
+                              </Group>
+                            </Group>
+                          </Stack>
+                          <Table verticalSpacing="md" horizontalSpacing="sm" highlightOnHover={false} withRowBorders={false}>
+                            <Table.Thead>
+                              <Table.Tr>
+                                <Table.Th>Product</Table.Th>
+                                <Table.Th ta="center">Quantity</Table.Th>
+                                <Table.Th ta="right">Price</Table.Th>
+                              </Table.Tr>
+                            </Table.Thead>
+                            <Table.Tbody>
+                              {selectedReceipt.items.map(item => (
+                                <Table.Tr key={item.id}>
+                                  <Table.Td><Text fw={500}>{item.name}</Text></Table.Td>
+                                  <Table.Td ta="center"><Text c="dimmed" fw={600}>{item.bought_quantity}</Text></Table.Td>
+                                  <Table.Td ta="right"><Text fw={500}>{item.price}</Text></Table.Td>
+                                </Table.Tr>
+                              ))}
+                            </Table.Tbody>
+                          </Table>
+                          <Divider />
+                          <Group justify="space-between" align="center">
+                            <Group gap="sm">
+                              <ThemeIcon size={34} radius="xl" variant="light" color="brand">
+                                <IconReceipt2 size={18} stroke={1.8} />
+                              </ThemeIcon>
+                              <Text fw={700} size="xl">Total</Text>
+                            </Group>
+                            <Text fw={800} size="2rem" c="brand.7">{selectedReceipt.total}</Text>
+                          </Group>
+                          <Group justify="flex-end">
+                            <Popover opened={confirmDelete} onClose={() => setConfirmDelete(false)} position="bottom-end" withArrow shadow="md">
+                              <Popover.Target>
+                                <Button variant="subtle" color="red" size="xs" leftSection={<IconTrash size={14} />} onClick={() => setConfirmDelete(prev => !prev)}>
+                                  Delete receipt
+                                </Button>
+                              </Popover.Target>
+                              <Popover.Dropdown>
+                                <Stack gap="xs">
+                                  <Text size="sm">Delete this receipt and all its products?</Text>
+                                  <Group gap="xs" justify="flex-end">
+                                    <Button size="xs" variant="default" onClick={() => setConfirmDelete(false)} disabled={deleting}>Cancel</Button>
+                                    <Button size="xs" color="red" loading={deleting} onClick={() => void handleDeleteReceipt(selectedReceipt.id)}>Yes, delete</Button>
+                                  </Group>
+                                </Stack>
+                              </Popover.Dropdown>
+                            </Popover>
                           </Group>
                         </Stack>
-                      </Popover.Dropdown>
-                    </Popover>
-                  </Group>
-                </Stack>
-              ) : (
-                /* Empty state in case there is no receipt data. */
-                <Text c="dimmed">No receipts available.</Text>
-              )}
-            </Paper>
-          </Grid.Col>
-        </Grid>
+                      </Paper>
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
+          </Stack>
+        </div>
+
+        {/* Desktop view: side by side */}
+        <div className="receipts-desktop">
+          <Grid align="start">
+            <Grid.Col span={5}>
+              <Stack gap="md">
+                {loading ? (
+                  <Group justify="center" py="md"><DelayedCustomLoader size="sm" /></Group>
+                ) : visibleReceipts.length === 0 ? (
+                  <Text c="dimmed">No receipts found for this period.</Text>
+                ) : (
+                  visibleReceipts.map(receipt => (
+                    <ReceiptListItem
+                      key={receipt.id}
+                      receipt={receipt}
+                      selected={receipt.id === selectedReceipt?.id}
+                      onSelect={() => { setSelectedReceiptId(receipt.id); setConfirmDelete(false); }}
+                    />
+                  ))
+                )}
+              </Stack>
+            </Grid.Col>
+            <Grid.Col span={7}>
+              <Paper withBorder radius="xl" p={{ base: "lg", sm: "xl" }} shadow="sm">
+                {selectedReceipt ? (
+                  <Stack gap="xl">
+                    <Stack gap="xs">
+                      <Title order={3} c="brand.7">{selectedReceipt.storeName}</Title>
+                      <Group gap="lg" c="dimmed">
+                        <Group gap="xs">
+                          <IconCalendarEvent size={18} stroke={1.8} />
+                          <Text>{selectedReceipt.date}</Text>
+                        </Group>
+                        <Group gap="xs">
+                          <IconUser size={18} stroke={1.8} />
+                          <Text>Bought by {selectedReceipt.buyerName ?? "Unknown"}</Text>
+                        </Group>
+                      </Group>
+                    </Stack>
+                    <Table verticalSpacing="md" horizontalSpacing="sm" highlightOnHover={false} withRowBorders={false}>
+                      <Table.Thead>
+                        <Table.Tr>
+                          <Table.Th>Product</Table.Th>
+                          <Table.Th ta="center">Quantity</Table.Th>
+                          <Table.Th ta="right">Price</Table.Th>
+                        </Table.Tr>
+                      </Table.Thead>
+                      <Table.Tbody>
+                        {selectedReceipt.items.map(item => (
+                          <Table.Tr key={item.id}>
+                            <Table.Td><Text fw={500}>{item.name}</Text></Table.Td>
+                            <Table.Td ta="center"><Text c="dimmed" fw={600}>{item.bought_quantity}</Text></Table.Td>
+                            <Table.Td ta="right"><Text fw={500}>{item.price}</Text></Table.Td>
+                          </Table.Tr>
+                        ))}
+                      </Table.Tbody>
+                    </Table>
+                    <Divider />
+                    <Group justify="space-between" align="center">
+                      <Group gap="sm">
+                        <ThemeIcon size={34} radius="xl" variant="light" color="brand">
+                          <IconReceipt2 size={18} stroke={1.8} />
+                        </ThemeIcon>
+                        <Text fw={700} size="xl">Total</Text>
+                      </Group>
+                      <Text fw={800} size="2rem" c="brand.7">{selectedReceipt.total}</Text>
+                    </Group>
+                    <Group justify="flex-end">
+                      <Popover opened={confirmDelete} onClose={() => setConfirmDelete(false)} position="bottom-end" withArrow shadow="md">
+                        <Popover.Target>
+                          <Button variant="subtle" color="red" size="s" leftSection={<IconTrash size={14} />} onClick={() => setConfirmDelete(prev => !prev)}>
+                            Delete receipt
+                          </Button>
+                        </Popover.Target>
+                        <Popover.Dropdown>
+                          <Stack gap="xs">
+                            <Text size="sm">Delete this receipt and all its products?</Text>
+                            <Group gap="xs" justify="flex-end">
+                              <Button size="xs" variant="default" onClick={() => setConfirmDelete(false)} disabled={deleting}>Cancel</Button>
+                              <Button size="xs" color="red" loading={deleting} onClick={() => void handleDeleteReceipt(selectedReceipt.id)}>Yes, delete</Button>
+                            </Group>
+                          </Stack>
+                        </Popover.Dropdown>
+                      </Popover>
+                    </Group>
+                  </Stack>
+                ) : (
+                  <Text c="dimmed">No receipts available.</Text>
+                )}
+              </Paper>
+            </Grid.Col>
+          </Grid>
+        </div>
       </Stack>
     </Container>
   );
