@@ -73,6 +73,7 @@ export function HouseHold(props: HouseHoldProps) {
     const [editingHousehold, setEditingHousehold] = useState<Household | null>(null)
     const [editName, setEditName] = useState("")
     const [editBudget, setEditBudget] = useState<number | string>("")
+    const [editColor, setEditColor] = useState(HOUSEHOLD_COLORS[0])
     const [saving, setSaving] = useState(false)
     const [editError, setEditError] = useState<string | null>(null)
 
@@ -179,6 +180,7 @@ export function HouseHold(props: HouseHoldProps) {
         setEditingHousehold(h)
         setEditName(h.house_name)
         setEditBudget(h.monthly_budget ?? "")
+        setEditColor(h.household_color ?? HOUSEHOLD_COLORS[0])
         setEditError(null)
     }
 
@@ -190,7 +192,7 @@ export function HouseHold(props: HouseHoldProps) {
         setSaving(true)
         setEditError(null)
         try {
-            const { error } = await updateHousehold(editingHousehold.id, editName.trim(), budget)
+            const { error } = await updateHousehold(editingHousehold.id, editName.trim(), budget, editColor)
             if (error) { setEditError(error.message); return }
             setEditingHousehold(null)
             void fetchHouseholds()
@@ -459,6 +461,10 @@ export function HouseHold(props: HouseHoldProps) {
                         onChange={e => setEditName(e.target.value)} />
                     <NumberInput label="Monthly Budget (optional)" placeholder="e.g. 5000"
                         min={0} value={editBudget} onChange={v => setEditBudget(v)} />
+                    <div>
+                        <Text size="sm" fw={500} mb={6}>Color</Text>
+                        <ColorPicker value={editColor} onChange={setEditColor} />
+                    </div>
                     <Group justify="flex-end" gap="sm">
                         <Button variant="default" onClick={() => setEditingHousehold(null)}>Cancel</Button>
                         <Button onClick={() => void handleSaveEdit()} loading={saving}>Save Changes</Button>
