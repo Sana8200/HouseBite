@@ -20,6 +20,7 @@ import { getHouseholds } from "../../api/household";
 import { HouseholdContextBadge } from "../../components/HouseholdContextBadge";
 import { HouseholdContextDivider } from "../../components/HouseholdContextDivider";
 import "./pantry.css";
+import { getUsername } from "../../utils/user";
 
 type PantryViewMode = "grid" | "list";
 type ExpiryStatusFilter = "all" | "expired" | "critical" | "warning" | "fresh" | "no-date";
@@ -426,7 +427,7 @@ export function Pantry({ user }: PantryProps) {
           const result = await getHouseholdMembers(hhId);
           const members = result.data ?? [];
           for (const m of members) {
-            if (m.display_name) buyerNames.set(m.id, m.display_name);
+            buyerNames.set(m.id, getUsername(m));
           }
         })
       );

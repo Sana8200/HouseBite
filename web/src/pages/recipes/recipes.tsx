@@ -46,7 +46,7 @@ interface ParsedIngredient {
 function isQuantityToken(token: string) {
   return /^\d+([.,]\d+)?$/.test(token)
     || /^\d+\/\d+$/.test(token)
-    || /^\d+\-\d+$/.test(token);
+    || /^\d+-\d+$/.test(token);
 }
 
 // Normalize recipe and pantry names into a comparable form for matching.

@@ -13,6 +13,7 @@ import { HouseholdContextDivider } from "../../components/HouseholdContextDivide
 import type { Household } from "../../api/schema";
 import "./receipts.css";
 import { DelayedCustomLoader } from "../../components/CustomLoader";
+import { getUsername } from "../../utils/user";
 
 type ReceiptItem = {
   id: string;
@@ -166,7 +167,7 @@ export function Receipts() {
         const result = await getHouseholdMembers(hhId);
         const members = result.data ?? [];
         for (const m of members) {
-          if (m.display_name) buyerNames.set(m.id, m.display_name);
+          buyerNames.set(m.id, getUsername(m));
         }
       })
     );
