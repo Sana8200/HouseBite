@@ -32,3 +32,28 @@
   outline: 2px solid var(--color-primary-600);
   outline-offset: 3px;
 }
+
+/* Desktop layout */
+.receipts-desktop {
+  display: block;
+}
+
+/* Mobile layout */
+.receipts-mobile {
+  display: none;
+}
+
+/* Responsive: show mobile, hide desktop on screens below 992px */
+@media (max-width: 992px) {
+  .receipts-desktop {
+    display: none;
+  }
+  
+  .receipts-mobile {
+    display: block;
+  }
+  
+  .mobile-receipt-details {
+    margin-top: 16px;
+  }
+}
