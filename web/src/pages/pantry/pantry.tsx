@@ -11,7 +11,7 @@ import { RecipeSearchModal } from "../../components/RecipeSearchModal";
 import type { User } from "@supabase/supabase-js";
 import { getExpirationDateBounds, getDaysUntilExpiry, formatOptionalDate, formatExpiry,getExpiryLabel} from "../../utils/date";
 import { insertReceipt } from "../../api/receipt";
-import { insertProductWithSpecs } from "../../api/product";
+import { insertProductWithSpecs, softDeleteProduct } from "../../api/product";
 import type { ProductSizeUnit } from "../../api/schema";
 import { useMediaQuery } from "@mantine/hooks";
 
@@ -418,7 +418,7 @@ export function Pantry({ user }: PantryProps) {
           shopName: null,
           boughtBy: null,
         };
-      });
+      }).filter(p => p.current_quantity > 0);
 
       setProducts(mapped);
     } catch (e) {
@@ -532,10 +532,7 @@ export function Pantry({ user }: PantryProps) {
 
   const handleDelete = async (productId: string) => {
     const product = products.find((p) => p.id === productId);
-    const { error } = await supabase
-      .from("product")
-      .delete()
-      .eq("id", productId);
+    const { error } = await softDeleteProduct(productId);
 
     if (error) {
       notifications.show({

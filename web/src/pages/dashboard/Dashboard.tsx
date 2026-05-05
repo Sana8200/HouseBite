@@ -16,7 +16,7 @@ import { getHouseholds } from '../../api/household';
 import type { Household, ProductSizeUnit } from '../../api/schema';
 import { getExpirationDateBounds, getDaysUntilExpiry, formatExpiry } from "../../utils/date";
 import { insertReceipt } from '../../api/receipt';
-import { insertProductWithSpecs } from '../../api/product';
+import { insertProductWithSpecs, softDeleteProduct } from '../../api/product';
 import { notifications } from "@mantine/notifications";
 
 
@@ -448,7 +448,7 @@ export default function Dashboard(props: DashboardProps) {
                 householdName: p.household?.house_name ?? 'Unknown',
                 householdId: p.household_id,
             };
-        });
+        }).filter(p => p.current_quantity > 0);
 
         setProducts(mapped);
     } catch (e) {
@@ -531,10 +531,7 @@ export default function Dashboard(props: DashboardProps) {
 
   const handleDelete = async (productId: string) => {
     const product = products.find(p => p.id === productId);
-    const { error } = await supabase
-      .from('product')
-      .delete()
-      .eq('id', productId);
+    const { error } = await softDeleteProduct(productId);
     if (error) {
       notifications.show({
         color: "red",
