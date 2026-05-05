@@ -3,8 +3,8 @@ import {Button, Container, Text, Title, Stack, Group, SimpleGrid, Card, ThemeIco
 } from "@mantine/core";
 import type { User } from "@supabase/supabase-js";
 import { Link, useNavigate } from "react-router";
-import { IconBuildingCommunity, IconChefHat, IconArchive, IconCamera, IconUserCircle, IconLeaf, IconArrowRight,
-         IconPlus, IconShoppingCart, IconDeviceMobile, IconLayoutGrid } from "@tabler/icons-react";
+import { IconBuildingCommunity, IconChefHat, IconCamera, IconUserCircle, IconLeaf, IconArrowRight,
+         IconPlus, IconShoppingCart, IconDeviceMobile, IconLayoutGrid, IconHome } from "@tabler/icons-react";
 import { notifications } from "@mantine/notifications";
 import { getUsername } from "../../utils/user";
 import { getHouseholds } from "../../api/household";
@@ -51,7 +51,7 @@ type QuickLink = {
 };
 
 const dailyLinks: QuickLink[] = [
-    { to: "/dashboard", icon: IconArchive,color:"green", title: "Dashboard", description: "Household overview, members, and expiring products.", householdScoped: true },
+    { to: "/dashboard", icon: IconHome,color:"green", title: "Dashboard", description: "Household overview, members, and expiring products.", householdScoped: true },
     { to: "/pantry", icon: IconLayoutGrid,color:"red", title: "Pantry", description: "Manage pantry items and expiration dates.", householdScoped: true },
     { to: "/scan", icon: IconCamera,color:"red", title: "Scan", description: "Scan receipts to add products quickly." },
     { to: "/recipes", icon: IconChefHat,color:"orange", title: "Recipes", description: "Discover recipes and save your favourites." },
