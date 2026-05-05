@@ -131,7 +131,7 @@ export function Scan(props: ScanProps) {
                 </Group>
                 <Group justify="space-between" align="flex-start">
                     <Text c="dimmed">You can take a new picture or drag and drop from your computer. You can only do it one receipt at a time. Pre-filled expiration dates are estimates! Please check on your product for the actual expiration date.</Text>
-                    <Text c="red" mb="sm">Don't reload or close this page until you save. You might lose your progress.</Text>
+                    <Text c="dimmed" mb="sm">Don't reload or close this page until you save, you will lose your progress.</Text>
                 </Group>
                 <Paper shadow="md" p="md">
                     <Stepper active={activeStep} onStepClick={handleStepClick}>
@@ -323,7 +323,7 @@ function ScanReady(props: ScanReadyProps) {
                 <Flex direction="column" style={{ flex: 1 }}>
                     {camera}
 
-                    <Dropzone onDrop={onDrop} accept={IMAGE_MIME_TYPE} mr = "xl">
+                    <Dropzone onDrop={onDrop} accept={IMAGE_MIME_TYPE}>
                         <Stack align="center" p="md">
                             <IconReceipt size={54} />
                             <Text>Drag and drop a receipt image, or click to select</Text>
