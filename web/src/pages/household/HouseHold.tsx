@@ -10,7 +10,7 @@ import type { Household } from "../../api/schema"
 import { notifications } from "@mantine/notifications"
 import type { User } from "@supabase/supabase-js"
 import "./HouseHold.css"
-import { CustomLoader } from "../../components/CustomLoader"
+import { DelayedCustomLoader } from "../../components/CustomLoader"
 
 export interface HouseHoldProps {
     user: User;
@@ -328,7 +328,7 @@ export function HouseHold(props: HouseHoldProps) {
                 <Title order={2} size="h3">Your Households ({households.length}/5)</Title>
 
                 {loading ? (
-                    <Group justify="center" py="xl"><CustomLoader /></Group>
+                    <Group justify="center" py="xl"><DelayedCustomLoader /></Group>
                 ) : households.length === 0 ? (
                     <Text c="dimmed" ta="center" py="xl">
                         You are not part of any household yet. Create one or join with an invite code.

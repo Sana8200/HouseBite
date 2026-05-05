@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { KeyboardEvent } from "react";
 import { ActionIcon, Alert, Button, Card, Checkbox, Container, Grid, Group, Paper, Stack, Table, Text, TextInput, Title } from "@mantine/core";
 import { IconAlertCircle, IconArrowLeft, IconCheck, IconDeviceFloppy, IconPlus, IconShoppingCart, IconTrash, IconX } from "@tabler/icons-react";
@@ -10,7 +10,7 @@ import type { Household } from "../../api/schema";
 import { HouseholdContextBadge } from "../../components/HouseholdContextBadge";
 import { HouseholdContextDivider } from "../../components/HouseholdContextDivider";
 import "./shoppingList.css";
-import { CustomLoader } from "../../components/CustomLoader";
+import { DelayedCustomLoader } from "../../components/CustomLoader";
 
 interface ShoppingListLocationState {
   householdId?: string;
@@ -327,7 +327,7 @@ export function ShoppingList() {
 
         {loading ? (
           <Group justify="center" py="xl">
-            <CustomLoader />
+            <DelayedCustomLoader />
           </Group>
         ) : (
           <Paper withBorder radius="xl" className="shopping-list-table-panel">
