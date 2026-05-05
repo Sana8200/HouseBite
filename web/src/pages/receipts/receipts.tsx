@@ -6,7 +6,8 @@ import { IconAlertCircle, IconArrowLeft, IconCalendarEvent, IconChevronRight, Ic
 import * as XLSX from "xlsx";
 import { fetchReceiptsByHousehold, deleteReceipt } from "../../api/receipt";
 import { notifications } from "@mantine/notifications";
-import { formatCurrency, formatDate } from "../../utils/date";
+import { formatDate } from "../../utils/date";
+import { formatCurrency } from "../../utils/currency";
 import { getHouseholds, getHouseholdMembers } from "../../api/household";
 import { HouseholdContextBadge } from "../../components/HouseholdContextBadge";
 import { HouseholdContextDivider } from "../../components/HouseholdContextDivider";

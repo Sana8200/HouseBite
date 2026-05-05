@@ -40,11 +40,6 @@ export function getExpiryLabel(daysUntilExpiry: number | null): string {
   return `Expires in ${daysUntilExpiry} day(s)`;
 }
 
-export function formatCurrency(amount: number | null): string {
-  if (amount === null) return "-";
-  return amount.toFixed(2).replace(".", ",") + " kr";
-}
-
 export function formatDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString("en-US", {
     month: "short",

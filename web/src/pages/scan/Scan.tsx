@@ -14,6 +14,7 @@ import type { User } from "@supabase/supabase-js";
 import { useNavigate } from "react-router";
 import { notifications } from "@mantine/notifications";
 import { DelayedCustomLoader, CustomLoader } from "../../components/CustomLoader.tsx";
+import { formatCurrency } from "../../utils/currency.ts";
 
 const IMG_SIZE = 2000;
 
@@ -744,7 +745,7 @@ function ScanSave(props: ScanSaveProps) {
                                                     <Text c="dimmed" size="sm">{item.quantity ?? 1}</Text>
                                                 </Table.Td>
                                                 <Table.Td ta="right">
-                                                    <Text fw={500} size="sm">{item.totalPrice?.toFixed(2) ?? "0.00"}kr</Text>
+                                                    <Text fw={500} size="sm">{formatCurrency(item.totalPrice)}</Text>
                                                 </Table.Td>
                                             </Table.Tr>
                                         ))}
@@ -767,7 +768,7 @@ function ScanSave(props: ScanSaveProps) {
 
                                 <Stack gap={4} align="flex-end">
                                     <Text fw={800} size="xl" c="brand.7">
-                                        {totalValue.toFixed(2)}kr
+                                        {formatCurrency(totalValue)}
                                     </Text>
                                 </Stack>
                             </Group>
