@@ -37,3 +37,23 @@
   border-color: var(--color-primary-300);
   background: var(--color-primary-100);
 }
+
+/* Mirrors .dashboard-nav-card__icon — same cream box, dark green icon, no per-link colour. */
+.landing-card__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #fdf8f2 0%, #f0e6d8 100%);
+  border: 1px solid #ddd0c0;
+  color: #00572E;
+}
+
+.landing-card--interactive:hover .landing-card__icon,
+.landing-card--interactive:focus-visible .landing-card__icon,
+.landing-card--interactive:active .landing-card__icon {
+  border-color: var(--color-primary-300);
+  background: linear-gradient(180deg, var(--color-primary-50) 0%, #f0e6d8 100%);
+}
