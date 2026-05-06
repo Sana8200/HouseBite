@@ -1,5 +1,5 @@
 import { ActionIcon, Alert, Badge, Button, Card, Checkbox, Container, Group, Menu, Modal, NumberInput, Paper, Popover, SegmentedControl,
-  Select, SimpleGrid, Stack, Table, Text, TextInput, Title, useMantineTheme } from "@mantine/core";
+  Select, SimpleGrid, Stack, Table, Text, TextInput, Title, Tooltip, useMantineTheme } from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates";
 import { IconAlertCircle, IconArrowLeft, IconGridDots, IconList, IconPlus, IconSearch, IconShoppingCart, IconTrash } from "@tabler/icons-react";
 import { notifications } from "@mantine/notifications";
@@ -256,33 +256,35 @@ function PantryAllProductsList({
 
     return (
       <Table.Tr key={product.id}>
-        <Table.Td>
+        <Table.Td ta="center">
           <Checkbox
             aria-label={`Select ${product.name}`}
             checked={selectedProducts.includes(product.id)}
             onChange={() => onToggleProduct(product.id)}
+            style={{ display: "inline-flex" }}
           />
         </Table.Td>
         <Table.Td>{product.name}</Table.Td>
-        <Table.Td>{formatExpiry(product.expirationDate)}</Table.Td>
-        <Table.Td>{formatOptionalDate(product.purchasedOn)}</Table.Td>
+        <Table.Td style={{ whiteSpace: "nowrap" }}>{formatExpiry(product.expirationDate)}</Table.Td>
+        <Table.Td ta="center" style={{ whiteSpace: "nowrap" }}>{formatOptionalDate(product.purchasedOn)}</Table.Td>
         <Table.Td>{product.shopName ?? "-"}</Table.Td>
         <Table.Td>{product.boughtBy ?? "-"}</Table.Td>
-        <Table.Td>{product.current_quantity}</Table.Td>
-        <Table.Td>{product.size ?? "-"}</Table.Td>
-        <Table.Td>{product.unit ?? "-"}</Table.Td>
-        <Table.Td>{renderExpiryBadge(daysUntilExpiry)}</Table.Td>
-        <Table.Td>
-          <Button
-            size="xs"
-            variant="light"
-            leftSection={<IconShoppingCart size={12} />}
-            onClick={() => onAddToShoppingList(product)}
-          >
-            Add to shopping list
-          </Button>
+        <Table.Td ta="center">{product.current_quantity}</Table.Td>
+        <Table.Td ta="center">{product.size ?? "-"}</Table.Td>
+        <Table.Td ta="center">{product.unit ?? "-"}</Table.Td>
+        <Table.Td ta="center" style={{ whiteSpace: "nowrap" }}>{renderExpiryBadge(daysUntilExpiry)}</Table.Td>
+        <Table.Td ta="center">
+          <Tooltip label="Add to shopping list" withArrow>
+            <ActionIcon
+              variant="light"
+              aria-label={`Add ${product.name} to shopping list`}
+              onClick={() => onAddToShoppingList(product)}
+            >
+              <IconShoppingCart size={16} />
+            </ActionIcon>
+          </Tooltip>
         </Table.Td>
-        <Table.Td>
+        <Table.Td ta="center">
           <Popover
             opened={confirmDeleteId === product.id}
             onClose={onDeleteCancel}
@@ -320,18 +322,18 @@ function PantryAllProductsList({
       <Table highlightOnHover stickyHeader>
         <Table.Thead>
           <Table.Tr>
-            <Table.Th>Select</Table.Th>
+            <Table.Th ta="center">Select</Table.Th>
             <Table.Th>Product</Table.Th>
-            <Table.Th>Expires</Table.Th>
-            <Table.Th>Purchased on</Table.Th>
+            <Table.Th style={{ whiteSpace: "nowrap" }}>Expires</Table.Th>
+            <Table.Th ta="center" style={{ whiteSpace: "nowrap" }}>Purchased on</Table.Th>
             <Table.Th>Shop name</Table.Th>
             <Table.Th>Bought by</Table.Th>
-            <Table.Th>Quantity</Table.Th>
-            <Table.Th>Size</Table.Th>
-            <Table.Th>Unit</Table.Th>
-            <Table.Th>Status</Table.Th>
-            <Table.Th>Shopping list</Table.Th>
-            <Table.Th>Delete</Table.Th>
+            <Table.Th ta="center">Quantity</Table.Th>
+            <Table.Th ta="center">Size</Table.Th>
+            <Table.Th ta="center">Unit</Table.Th>
+            <Table.Th ta="center">Status</Table.Th>
+            <Table.Th ta="center" style={{ whiteSpace: "nowrap" }}>Shopping list</Table.Th>
+            <Table.Th ta="center">Delete</Table.Th>
           </Table.Tr>
         </Table.Thead>
         <Table.Tbody>{rows}</Table.Tbody>
