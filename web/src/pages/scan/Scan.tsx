@@ -716,12 +716,21 @@ function ScanSave(props: ScanSaveProps) {
                                     size="sm"
                                 />
 
-                                <TextInput
+                                <DatePickerInput
                                     label="Purchase date"
-                                    type="date"
-                                    value={purchaseDate}
-                                    onChange={(e) => setPurchaseDate(e.target.value)}
+                                    placeholder="Pick a date"
+                                    clearable
                                     size="sm"
+                                    value={purchaseDate || null}
+                                    onChange={(value) => setPurchaseDate(value ?? "")}
+                                    popoverProps={{ classNames: { dropdown: "app-date-picker__dropdown" } }}
+                                    classNames={{
+                                        input: "app-date-picker__input",
+                                        calendarHeader: "app-date-picker__header",
+                                        calendarHeaderControl: "app-date-picker__header-control",
+                                        weekday: "app-date-picker__weekday",
+                                        day: "app-date-picker__day",
+                                    }}
                                 />
                             </Flex>
 

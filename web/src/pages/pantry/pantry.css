@@ -89,6 +89,20 @@
   padding-inline: var(--space-2);
 }
 
+.pantry-table-shell thead th {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.pantry-table-shell thead tr:first-child th:first-child {
+  border-top-left-radius: var(--radius-md);
+  border-bottom-left-radius: var(--radius-md);
+}
+
+.pantry-table-shell thead tr:first-child th:last-child {
+  border-top-right-radius: var(--radius-md);
+  border-bottom-right-radius: var(--radius-md);
+}
+
 @media (min-width: 75em) {
   .pantry-products-panel {
     width: calc(100% + (var(--space-6) * 2));
