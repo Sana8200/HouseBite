@@ -600,7 +600,10 @@ function ScanSave(props: ScanSaveProps) {
     // Local state for editable fields
     const [storeName, setStoreName] = useState(state.data.storeName ?? "");
     const [purchaseDate, setPurchaseDate] = useState(state.data.purchaseDate ?? "");
-    const totalPrice = state.data.totalPrice ?? null;
+
+    const enabledItems = state.data.items.filter(i => i.enabled && i.name?.trim());
+    const totalProducts = enabledItems.length;
+    const totalValue = enabledItems.reduce((sum, i) => sum + (i.totalPrice ?? 0), 0);
 
     const handleSave = async () => {
         if (!selectedHousehold) return;
@@ -611,7 +614,7 @@ function ScanSave(props: ScanSaveProps) {
             const receipt: InsertReceipt = {
                 household_id: selectedHousehold,
                 store_name: storeName || "Unknown Store",
-                total: totalPrice ?? 0,
+                total: totalValue,
                 purchase_at: purchaseDate || new Date().toISOString().split("T")[0],
                 buyer_id: user.id,
             };
@@ -619,12 +622,11 @@ function ScanSave(props: ScanSaveProps) {
             const receipt_res = await insertReceipt(receipt);
             if (receipt_res.error) throw receipt_res.error;
 
-            for (const item of state.data.items) {
-                if (!item.name || !item.enabled) continue;
+            for (const item of enabledItems) {
                 items.push([
                     {
                         household_id: selectedHousehold,
-                        name: item.name,
+                        name: item.name as string,
                         receipt_id: receipt_res.data.id,
                     },
                     {
@@ -668,10 +670,6 @@ function ScanSave(props: ScanSaveProps) {
         }
     };
 
-    const enabledItems = state.data.items.filter(i => i.enabled && i.name && i.name.trim() !== "");
-    const totalProducts = enabledItems.length;
-    const totalValue = enabledItems.reduce((sum, i) => sum + (i.totalPrice ?? 0), 0);
-
     const noProductsTooltip = "No products have been added yet. Please go back to the review step and add products.";
 
     return (
@@ -695,9 +693,7 @@ function ScanSave(props: ScanSaveProps) {
                         <Stack gap="md">
                             {/* Receipt Header */}
                             <Flex 
-                                  gap="xl"
-                                  justify="center"
-                                  direction={{ base: "column", sm: "row" }} 
+                                  gap="md"
                                   wrap="wrap">
 
                                 <Select
@@ -736,30 +732,32 @@ function ScanSave(props: ScanSaveProps) {
 
                             {/* Products Table */}
                             {totalProducts > 0 ? (
-                                <Table verticalSpacing="sm" horizontalSpacing="sm">
-                                    <Table.Thead>
-                                        <Table.Tr>
-                                            <Table.Th>Product</Table.Th>
-                                            <Table.Th ta="center">Quantity</Table.Th>
-                                            <Table.Th ta="right">Price</Table.Th>
-                                        </Table.Tr>
-                                    </Table.Thead>
-                                    <Table.Tbody>
-                                        {enabledItems.map((item) => (
-                                            <Table.Tr key={item.key}>
-                                                <Table.Td>
-                                                    <Text fw={500} size="sm">{item.name}</Text>
-                                                </Table.Td>
-                                                <Table.Td ta="center">
-                                                    <Text c="dimmed" size="sm">{item.quantity ?? 1}</Text>
-                                                </Table.Td>
-                                                <Table.Td ta="right">
-                                                    <Text fw={500} size="sm">{formatCurrency(item.totalPrice)}</Text>
-                                                </Table.Td>
+                                <div style={{overflow: "auto"}}>
+                                    <Table verticalSpacing="sm" horizontalSpacing="sm">
+                                        <Table.Thead>
+                                            <Table.Tr>
+                                                <Table.Th>Product</Table.Th>
+                                                <Table.Th ta="center">Quantity</Table.Th>
+                                                <Table.Th ta="right">Price</Table.Th>
                                             </Table.Tr>
-                                        ))}
-                                    </Table.Tbody>
-                                </Table>
+                                        </Table.Thead>
+                                        <Table.Tbody>
+                                            {enabledItems.map((item) => (
+                                                <Table.Tr key={item.key}>
+                                                    <Table.Td>
+                                                        <Text fw={500} size="sm">{item.name}</Text>
+                                                    </Table.Td>
+                                                    <Table.Td ta="center">
+                                                        <Text c="dimmed" size="sm">{item.quantity ?? 1}</Text>
+                                                    </Table.Td>
+                                                    <Table.Td ta="right">
+                                                        <Text fw={500} size="sm">{formatCurrency(item.totalPrice)}</Text>
+                                                    </Table.Td>
+                                                </Table.Tr>
+                                            ))}
+                                        </Table.Tbody>
+                                    </Table>
+                                </div>
                             ) : (
                                 <Text c="dimmed" ta="center" py="md">No products added yet</Text>
                             )}
@@ -822,6 +820,8 @@ function ProductCard(props: ProductCardProps) {
     const { item, setItem } = props;
     const expirationDateBounds = getExpirationDateBounds();
 
+    const disabled = !item.enabled || !item.name?.trim();
+
     return (
         <Card shadow="none" pos="relative" style={{ opacity: item.enabled ? 1 : 0.6 }}>
             <Checkbox
@@ -832,7 +832,6 @@ function ProductCard(props: ProductCardProps) {
                 right={8} 
                 top={8} 
                 size="md"
-                label={!item.name ? "Add name to enable" : ""}
             />
 
             <TextInput label="Name"
@@ -845,19 +844,19 @@ function ProductCard(props: ProductCardProps) {
             <Flex gap="sm" mt="xs">
                 <NumberInput label="Quantity"
                     value={item.quantity ?? ""}
-                    onChange={val => setItem({ ...item, quantity: typeof val == "number" ? val : null })}
+                    onChange={val => setItem({ ...item, quantity: parseFloat(val as string) || null })}
                     allowDecimal={false}
                     flex={1}
-                    disabled={!item.enabled}
+                    disabled={disabled}
                 />
 
                 <NumberInput label="Size"
                     value={item.weight ?? ""}
-                    onChange={val => setItem({ ...item, weight: typeof val == "number" ? val : null })}
+                    onChange={val => setItem({ ...item, weight: parseFloat(val as string) || null })}
                     decimalScale={2}
                     fixedDecimalScale
                     flex={1}
-                    disabled={!item.enabled}
+                    disabled={disabled}
                 />
 
                 <Select
@@ -868,7 +867,7 @@ function ProductCard(props: ProductCardProps) {
                     value={item.unit}
                     onChange={val => setItem({ ...item, unit: val })}
                     flex={1}
-                    disabled={!item.enabled}
+                    disabled={disabled}
                 />
             </Flex>
 
@@ -882,7 +881,7 @@ function ProductCard(props: ProductCardProps) {
                     maxDate={expirationDateBounds.max}
                     onChange={(value) => setItem({ ...item, expirationDate: value })}
                     flex={3}
-                    disabled={!item.enabled}
+                    disabled={disabled}
                     popoverProps={{ classNames: { dropdown: "app-date-picker__dropdown" } }}
                     classNames={{
                         input: "app-date-picker__input",
@@ -895,11 +894,11 @@ function ProductCard(props: ProductCardProps) {
 
                 <NumberInput label="Price"
                     value={item.totalPrice ?? ""}
-                    onChange={val => setItem({ ...item, totalPrice: typeof val == "number" ? val : null })}
+                    onChange={val => setItem({ ...item, totalPrice: parseFloat(val as string) || null })}
                     decimalScale={2}
                     fixedDecimalScale
                     flex={2}
-                    disabled={!item.enabled}
+                    disabled={disabled}
                 />
             </Flex>
         </Card>
