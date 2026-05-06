@@ -263,7 +263,7 @@ export function Landing(props: LandingProps) {
                         background: "linear-gradient(135deg, var(--color-primary-50) 0%, var(--color-surface) 70%)",
                         border: "1px solid var(--color-border)",
                     }}>
-                <Group justify="space-between" align="center" wrap="nowrap">
+                <Group justify="space-between" align="center" wrap="wrap">
                     <Stack gap={4}>
                         <Title order={2} fz={28} fw={700}>
                             {greeting}, {displayName || "there"}
