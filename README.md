@@ -1,4 +1,7 @@
 # HouseBite
+housebite.app
+
+https://arpega75.github.io/houseBite/
 
 ## Prerequisites
 
