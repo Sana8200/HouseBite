@@ -7,7 +7,7 @@
 [![Live App](https://img.shields.io/badge/Live%20App-housebite.app-4CAF50?style=for-the-badge&logo=vercel)](https://housebite.app/)
 [![Info Site](https://img.shields.io/badge/Info%20Site-arpega75.github.io-orange?style=for-the-badge&logo=github)](https://arpega75.github.io/houseBite/)
 
-![HouseBite Product Poster](product_poster.png)
+<img src="product_poster.png" width="600" alt="HouseBite Product Poster" />
 
 *A KTH student project by Team Riebnes — Project in Information and Communication Technology (II1305)*
 
