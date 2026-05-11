@@ -4,176 +4,47 @@
 
 **Manage and Track Your Virtual Pantry**
 
-*Track groceries across households, monitor your budget, and get recipe suggestions before items expire.*
-
 [![Live App](https://img.shields.io/badge/Live%20App-housebite.app-4CAF50?style=for-the-badge&logo=vercel)](https://housebite.app/)
 [![Info Site](https://img.shields.io/badge/Info%20Site-arpega75.github.io-orange?style=for-the-badge&logo=github)](https://arpega75.github.io/houseBite/)
-[![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react)](https://react.dev/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-Strict-3178C6?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
-[![Supabase](https://img.shields.io/badge/Supabase-Backend-3ECF8E?style=for-the-badge&logo=supabase)](https://supabase.com/)
 
 ![HouseBite Product Poster](product_poster.png)
 
+*A KTH student project by Team Riebnes — Project in Information and Communication Technology (II1305)*
+
 </div>
-
----
-
-## What is HouseBite?
-
-HouseBite is a web app for households and shared living spaces to manage food together. It helps you:
-
-- Know what's in your fridge and when it expires
-- Scan grocery receipts to auto-log purchases
-- Find recipes based on what you already have
-- Coordinate a shared shopping list
-- Track your household's grocery budget
-
-> A KTH student project by **Team Riebnes**, built for the course  
-> **Project in Information and Communication Technology (II1305)**
-
----
-
-## Features
-
-| Feature | Description |
-|---|---|
-| **Virtual Pantry** | Monitor food inventory with expiry dates; get alerts for items expiring soon |
-| **Receipt Scanner** | Photograph a receipt and have items auto-extracted via OCR into your pantry |
-| **Recipe Suggestions** | Search recipes filtered by ingredients you own and household dietary restrictions |
-| **Shopping List** | Shared, real-time list with checkboxes and notes for your whole household |
-| **Budget Tracking** | Set a monthly budget per household and track spending over time |
-| **Multiple Households** | Belong to multiple households and switch context instantly |
-| **Dietary Restrictions** | Per-member diet and intolerance preferences respected across recipe search |
-| **PWA Support** | Installable as a Progressive Web App on mobile and desktop |
 
 ---
 
 ## Tech Stack
 
-**Frontend**
-- [React 19](https://react.dev/) + TypeScript (strict)
-- [Vite](https://vitejs.dev/) with React Compiler (auto-memoization)
-- [Mantine](https://mantine.dev/) UI component library
-- [React Router 7](https://reactrouter.com/) for client-side navigation
-
-**Backend & Database**
-- [Supabase](https://supabase.com/) — PostgreSQL, Auth, Storage, Row-Level Security
-- [Deno](https://deno.com/) Edge Functions (receipt scanning, recipe proxy)
-
-**External APIs**
-- [Spoonacular](https://spoonacular.com/food-api) — Recipe search and nutrition data
-
-**Tooling**
-- Docker & Docker Compose for local development
-- ESLint 9 with TypeScript rules
+- **Frontend** — React 19, TypeScript, Vite, Mantine UI
+- **Backend** — Supabase (PostgreSQL, Auth, Storage), Deno Edge Functions
+- **APIs** — Spoonacular (recipes), custom OCR Edge Function (receipt scanning)
 
 ---
 
 ## Getting Started
 
-### Prerequisites
-
-- [Node.js LTS 24](https://nodejs.org/en/download)
-- [Deno](https://deno.com/)
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/)
-- [Supabase CLI](https://supabase.com/docs/guides/cli)
-
-### Local Development
+**Prerequisites:** [Node.js LTS 24](https://nodejs.org/en/download), [Deno](https://deno.com/), [Docker Desktop](https://www.docker.com/products/docker-desktop/), [Supabase CLI](https://supabase.com/docs/guides/cli)
 
 ```bash
-# 1. Clone the repo
-git clone https://github.com/your-username/HouseBite.git
-cd HouseBite
-
-# 2. Set up environment variables
+# Set up environment
 cp web/.env.example web/.env
 
-# 3. Start local Supabase (database + auth + storage)
+# Start local Supabase
 supabase start
 
-# 4. Serve edge functions
+# Serve edge functions
 supabase functions serve --env-file supabase/functions/.env &
 
-# 5. Start the frontend
+# Start the app
 docker compose up --build
 ```
 
 App runs at **http://localhost:5173**
 
-### Frontend only (no Docker)
+**Frontend only (no Docker):**
 
 ```bash
-cd web
-npm install
-npm run dev
+cd web && npm install && npm run dev
 ```
-
-### Useful Commands
-
-```bash
-npm run build      # Production build
-npm run lint       # ESLint check
-npm run preview    # Preview production build locally
-
-supabase db reset  # Re-apply all migrations locally
-```
-
----
-
-## Project Structure
-
-```
-HouseBite/
-├── web/                    # React + TypeScript frontend
-│   └── src/
-│       ├── pages/          # App pages (dashboard, pantry, recipes, scan, …)
-│       ├── components/     # Shared UI components
-│       ├── api/            # Supabase data layer
-│       ├── hooks/          # Custom React hooks
-│       └── utils/          # Date, currency, user helpers
-│
-├── supabase/
-│   ├── functions/          # Deno edge functions
-│   │   ├── scan-receipt/   # OCR receipt parsing
-│   │   ├── search-recipes/ # Spoonacular recipe proxy
-│   │   └── save-recipe/    # Favorite recipe persistence
-│   └── migrations/         # SQL schema migrations
-│
-├── database/               # Schema documentation
-├── docker-compose.yml
-└── start.sh                # One-shot bootstrap script
-```
-
----
-
-## Deployment
-
-**Supabase Edge Functions**
-
-```bash
-# Deploy a specific function
-npx supabase functions deploy <function-name> --project-ref ikemmjauwrahrrlgewta
-
-# Push schema migrations to production
-supabase db push --project-ref ikemmjauwrahrrlgewta
-```
-
----
-
-## Contributing
-
-1. Check [gitHubWorkflow.md](gitHubWorkflow.md) for the branching and PR convention used on this project.
-2. Open an issue or pick an existing one.
-3. Branch off `main`, make your changes, and open a pull request.
-
----
-
-<div align="center">
-
-*Reduce food waste. Save money. Eat better.*
-
-A KTH student project — [Project in Information and Communication Technology (II1305)](https://www.kth.se/student/kurser/kurs/II1305)
-
-[housebite.app](https://housebite.app/) · [arpega75.github.io/houseBite](https://arpega75.github.io/houseBite/)
-
-</div>
