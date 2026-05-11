@@ -2,13 +2,17 @@
 
 # 🍽️ HouseBite
 
-**Smart household food management — track your pantry, scan receipts, discover recipes, and reduce waste together.**
+**Manage and Track Your Virtual Pantry**
 
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-housebite.app-4CAF50?style=for-the-badge&logo=vercel)](https://housebite.app/)
+*Track groceries across households, monitor your budget, and get recipe suggestions before items expire.*
+
+[![Live App](https://img.shields.io/badge/Live%20App-housebite.app-4CAF50?style=for-the-badge&logo=vercel)](https://housebite.app/)
+[![Info Site](https://img.shields.io/badge/Info%20Site-arpega75.github.io-orange?style=for-the-badge&logo=github)](https://arpega75.github.io/houseBite/)
 [![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-Strict-3178C6?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
 [![Supabase](https://img.shields.io/badge/Supabase-Backend-3ECF8E?style=for-the-badge&logo=supabase)](https://supabase.com/)
-[![Vite](https://img.shields.io/badge/Vite-Build-646CFF?style=for-the-badge&logo=vite)](https://vitejs.dev/)
+
+![HouseBite Product Poster](product_poster.png)
 
 </div>
 
@@ -24,7 +28,8 @@ HouseBite is a web app for households and shared living spaces to manage food to
 - Coordinate a shared shopping list
 - Track your household's grocery budget
 
-Built as a university project for **ICT II (1305)**.
+> A KTH student project by **Team Riebnes**, built for the course  
+> **Project in Information and Communication Technology (II1305)**
 
 ---
 
@@ -32,12 +37,12 @@ Built as a university project for **ICT II (1305)**.
 
 | Feature | Description |
 |---|---|
-| **Pantry Tracker** | Monitor food inventory with expiry dates; get alerts for items expiring soon |
+| **Virtual Pantry** | Monitor food inventory with expiry dates; get alerts for items expiring soon |
 | **Receipt Scanner** | Photograph a receipt and have items auto-extracted via OCR into your pantry |
-| **Recipe Discovery** | Search recipes filtered by ingredients you own and household dietary restrictions |
+| **Recipe Suggestions** | Search recipes filtered by ingredients you own and household dietary restrictions |
 | **Shopping List** | Shared, real-time list with checkboxes and notes for your whole household |
 | **Budget Tracking** | Set a monthly budget per household and track spending over time |
-| **Multi-Household** | Belong to multiple households, switch context instantly |
+| **Multiple Households** | Belong to multiple households and switch context instantly |
 | **Dietary Restrictions** | Per-member diet and intolerance preferences respected across recipe search |
 | **PWA Support** | Installable as a Progressive Web App on mobile and desktop |
 
@@ -143,8 +148,6 @@ HouseBite/
 
 ## Deployment
 
-**Frontend** — deployed automatically via hosting platform of choice.
-
 **Supabase Edge Functions**
 
 ```bash
@@ -167,8 +170,10 @@ supabase db push --project-ref ikemmjauwrahrrlgewta
 
 <div align="center">
 
-Made with ❤️ as part of ICT II (1305)
+*Reduce food waste. Save money. Eat better.*
 
-[housebite.app](https://housebite.app/)
+A KTH student project — [Project in Information and Communication Technology (II1305)](https://www.kth.se/student/kurser/kurs/II1305)
+
+[housebite.app](https://housebite.app/) · [arpega75.github.io/houseBite](https://arpega75.github.io/houseBite/)
 
 </div>
