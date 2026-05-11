@@ -8,12 +8,12 @@ fetch recipes via Spoonacular, and save favourites to the database. Dietary rest
 
 ## Local setup
 
-1. Copy the course proxy credentials into `supabase/functions/.env`:
+1. Copy the proxy credentials into `supabase/functions/.env`:
    ```
-   SPOONACULAR_PROXY_URL=https://brfenergi.se/iprog/group/399/https://spoonacular-recipe-food-nutrition-v1.p.rapidapi.com
+   SPOONACULAR_PROXY_URL=https://brfenergi.se/iprog/group/399/https:...
    SPOONACULAR_PROXY_KEY=<key>
    ```
-   > This file is gitignored — never commit it.
+   > This file is gitignored — never committed.
 
 2. Start Supabase and serve both functions **on the host machine** (not inside Docker):
    ```bash
