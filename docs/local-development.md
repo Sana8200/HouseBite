@@ -1,8 +1,8 @@
-# Local Development Environment Setup
+# Local Development
 
-## What changed and why
+## Why a local environment
 
-We were all developing against the **production Supabase database**. This means every test user, junk data, and broken insert from any of the 7 devs went straight into the real database. Two people testing at the same time could easily step on each other's data. This setup fixes that by giving each developer their own local database.
+In the beginning of the project we were all working against the production Supabase database. All test users, junk data and broken inserts from the 7 of us ended up in the real database, and if two people tested at the same time they could mess up each other's data. With this setup everyone has their own local database instead.
 
 ## Prerequisites
 
@@ -45,7 +45,24 @@ The `.env` file is gitignored — it never gets committed. The reason is simple:
 
 The `.env.example` is committed to git and acts as a template with the correct local development values. Everyone copies it to create their own `.env`. The values in `.env.example` are safe to commit — they only work with the local Supabase instance that runs on your machine.
 
-### 3. Start the frontend
+### 3. (Optional) Serve the Edge Functions
+
+You only need this if you want to test receipt scanning or recipe search. Their API keys go in `supabase/functions/.env` (this file is not committed):
+
+| Variable | Used for |
+|---|---|
+| `OPENAI_API_KEY` | Receipt scanning |
+| `OPENAI_MODEL` | Optional, to use a different OpenAI model |
+| `SCAN_LIMIT` | Optional, how many scans are allowed per minute (default is 10) |
+| `SPOONACULAR_PROXY_URL`, `SPOONACULAR_PROXY_KEY` | Recipe search, see [recipe-search.md](recipe-search.md) |
+
+Then start the functions:
+
+```bash
+supabase functions serve --env-file supabase/functions/.env
+```
+
+### 4. Start the frontend
 
 ```bash
 docker compose up --build
@@ -53,7 +70,7 @@ docker compose up --build
 
 Open [http://localhost:5173](http://localhost:5173) in your browser.
 
-### 4. (Optional) Connect DBeaver to your local database
+### 5. (Optional) Connect DBeaver to your local database
 
 | Field    | Value       |
 |----------|-------------|
