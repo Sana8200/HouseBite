@@ -15,8 +15,7 @@
 
 HouseBite is a web app for people who share food at home, like families or flatmates. You can keep track of what's in your pantry and when it expires, scan grocery receipts to add products, follow your household's budget, and find recipes that use what you already have.
 
-We built it as a team of seven students for the course [Project in Information and Communication Technology (II1305)](https://www.kth.se/student/kurser/kurs/II1305) at KTH in spring 2026, working in Scrum sprints. The app is live at [housebite.app](https://housebite.app/).
-
+We built it as a team of seven students for the course [Project in Information and Communication Technology (II1305)](https://www.kth.se/student/kurser/kurs/II1305) at KTH in spring 2026, working in Scrum sprints.
 ## Features
 
 - Pantry with quantities, prices and expiry dates, and a warning for products that expire soon
@@ -29,8 +28,6 @@ We built it as a team of seven students for the course [Project in Information a
 - Can be installed as a PWA on mobile and desktop
 
 ## My part
-
-I'm Sana. I mostly worked on the frontend, but also did some work on the database. These are the main things I worked on:
 
 - The household page: creating, joining, editing and leaving a household, the members list and the invite pop-up
 - Dietary restrictions: changed the database design so restrictions match the ones Spoonacular uses, and built the preferences section on the Account page and the household restrictions modal
